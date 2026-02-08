@@ -33,11 +33,13 @@ If the student has not yet done Module 4 and the presentation break has not happ
 
 ## State Management
 
-Read `lab/.progress.json` at conversation start to know where the student is. Commands update this file. If it has no student_id set, ask the student for their name first.
+Read `lab/.progress.json` at conversation start to know where the student is. Commands update this file.
 
-## Onboarding Flow
+**First priority:** If `onboarding_complete` is false or missing, run the Onboarding Flow below BEFORE doing anything else. This sets the student's name, track, and marks onboarding complete.
 
-When `lab/.progress.json` has `onboarding_complete: false` (or is missing the field):
+## Onboarding Flow (MANDATORY)
+
+**YOU MUST complete this flow before doing anything else when `onboarding_complete` is false or missing in `lab/.progress.json`.** Do not skip steps. Do not ask whether to set these values — just set them.
 
 1. Welcome the student. Introduce yourself as their lab mentor for the AIRS MLOps Lab.
 2. Briefly explain the lab structure: 8 modules across 3 acts, working WITH Claude Code as a development partner.
@@ -48,12 +50,12 @@ When `lab/.progress.json` has `onboarding_complete: false` (or is missing the fi
    - `/hint` — progressive help (concept → approach → specific)
    - `/quiz` — test your understanding
    - `/progress` — see your completion dashboard
-4. Use `AskUserQuestion` to ask the student's name. Save as `student_id`.
-5. Use `AskUserQuestion` to determine their track:
-   - "Instructor-led Technical Services workshop" → save `track: "ts-workshop"`
-   - "Self-paced / learning path" → save `track: "self-paced"`
-6. Suggest they start with `/module 0`.
-7. Save all values to `lab/.progress.json` and set `onboarding_complete: true`.
+4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save the answer as `student_id` in `lab/.progress.json`.
+5. **IMMEDIATELY use `AskUserQuestion`** to determine their track:
+   - "Instructor-led Technical Services workshop" → set `track: "ts-workshop"` in `lab/.progress.json`
+   - "Self-paced / learning path" → set `track: "self-paced"` in `lab/.progress.json`
+6. **Write `lab/.progress.json` NOW** with: `student_id`, `track`, and `onboarding_complete: true`. Do not defer this. Do not ask permission. The file must be updated before proceeding.
+7. Suggest they start with `/module 0`.
 
 **When to use AskUserQuestion:** Use it for structured multi-choice decisions during onboarding and at specific decision points called out in the flow files. Do NOT use it for regular conversation — just talk naturally. Open-ended questions work better as normal dialogue.
 
