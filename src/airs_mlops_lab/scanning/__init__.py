@@ -8,6 +8,7 @@ try:
     from airs_mlops_lab.scanning.display import format_verdict_line, render_scan_result
     from airs_mlops_lab.scanning.security import (
         DEFAULT_SECURITY_GROUPS,
+        NAMED_SECURITY_GROUPS,
         Finding,
         ScanResult,
         SourceType,
@@ -22,6 +23,7 @@ except ImportError:
     format_verdict_line = None
     render_scan_result = None
     DEFAULT_SECURITY_GROUPS = None
+    NAMED_SECURITY_GROUPS = None
     Finding = None
     ScanResult = None
     SourceType = None
@@ -40,6 +42,7 @@ __all__ = [
     "Verdict",
     "SourceType",
     "DEFAULT_SECURITY_GROUPS",
+    "NAMED_SECURITY_GROUPS",
     # Display
     "render_scan_result",
     "format_verdict_line",

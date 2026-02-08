@@ -31,17 +31,22 @@ console = Console()
 # Keys are shorthand names; values are (UUID, source_type) tuples.
 SECURITY_GROUPS = {
     "local":       (UUID("00000000-0000-0000-0000-000000000001"), "LOCAL"),
-    "gcs-default": (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),
+    "gcs":         (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),
+    "gcs-default": (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),  # alias for backwards compat
     "hf":          (UUID("00000000-0000-0000-0000-000000000003"), "HUGGING_FACE"),
     "warn":        (UUID("00000000-0000-0000-0000-000000000004"), "GCS"),
     "block":       (UUID("00000000-0000-0000-0000-000000000005"), "GCS"),
+    "s3":          (UUID("00000000-0000-0000-0000-000000000006"), "S3"),
+    "azure":       (UUID("00000000-0000-0000-0000-000000000007"), "AZURE"),
 }
 
 # Default group per source type (used when --security-group is not specified)
 DEFAULT_GROUPS = {
     "LOCAL":        SECURITY_GROUPS["local"][0],
-    "GCS":          SECURITY_GROUPS["gcs-default"][0],
+    "GCS":          SECURITY_GROUPS["gcs"][0],
     "HUGGING_FACE": SECURITY_GROUPS["hf"][0],
+    "S3":           SECURITY_GROUPS["s3"][0],
+    "AZURE":        SECURITY_GROUPS["azure"][0],
 }
 
 
@@ -51,7 +56,7 @@ def parse_args():
     parser.add_argument(
         "--security-group",
         default=None,
-        help="Security group UUID or shorthand key (local, gcs-default, hf, warn, block). "
+        help="Security group UUID or shorthand key (local, gcs, hf, warn, block, s3, azure). "
              "Auto-detected from model path if not specified.",
     )
     parser.add_argument(

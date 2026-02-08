@@ -1,8 +1,0 @@
-fastapi
-uvicorn[standard]
-pydantic
-transformers
-torch
-peft
-python-dotenv
-rich
