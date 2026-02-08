@@ -1,6 +1,10 @@
 {
   "student_id": "",
+  "track": "",
   "current_module": 0,
+  "current_challenge": "",
+  "blockers": [],
   "modules": {},
-  "leaderboard_points": 0
+  "leaderboard_points": 0,
+  "onboarding_complete": false
 }

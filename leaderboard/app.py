@@ -39,13 +39,13 @@ students_db: dict[str, dict[str, Any]] = {}
 # Module metadata — titles for Modules 0-7
 MODULE_META: dict[str, str] = {
     "module-0": "Setup",
-    "module-1": "Base Scan",
-    "module-2": "Fine-Tune",
-    "module-3": "Merge",
-    "module-4": "Publish",
-    "module-5": "Deploy",
-    "module-6": "App",
-    "module-7": "Pipeline",
+    "module-1": "ML Fundamentals",
+    "module-2": "Train",
+    "module-3": "Deploy",
+    "module-4": "AIRS Deep Dive",
+    "module-5": "Pipeline",
+    "module-6": "Threat Zoo",
+    "module-7": "Gaps",
 }
 
 # Points per module
@@ -77,6 +77,7 @@ class VerificationResults(BaseModel):
 class VerificationPayload(BaseModel):
     student_id: str
     module: str
+    track: str = Field(default="")
     verification_hash: str = Field(default="")
     timestamp: str = Field(default="")
     results: VerificationResults
@@ -112,16 +113,25 @@ def relative_time(iso_timestamp: str) -> str:
 
 
 def compute_points(student: dict[str, Any]) -> int:
-    """Compute total points for a student based on completed modules."""
+    """Compute total points for a student based on completed modules.
+
+    Uses points_awarded from verification payload when available (new format).
+    Falls back to MODULE_POINTS lookup for older payloads.
+    """
     total = 0
     modules = student.get("modules", {})
     for mod_key, mod_data in modules.items():
         if mod_data.get("status") == "complete" and mod_data.get("verified"):
-            total += MODULE_POINTS.get(mod_key, 10)
-            # Bonus for quiz score (up to 3 extra points)
-            quiz = mod_data.get("quiz_score")
-            if quiz is not None and isinstance(quiz, int):
-                total += min(quiz // 3, 3)
+            # Prefer points_awarded from verify command (new format)
+            awarded = mod_data.get("points_awarded")
+            if awarded is not None and isinstance(awarded, int):
+                total += awarded
+            else:
+                # Fallback for old-format payloads
+                total += MODULE_POINTS.get(mod_key, 10)
+                quiz = mod_data.get("quiz_score")
+                if quiz is not None and isinstance(quiz, int):
+                    total += min(quiz // 3, 3)
     return total
 
 
@@ -147,6 +157,7 @@ async def receive_verification(payload: VerificationPayload):
     if student_id not in students_db:
         students_db[student_id] = {
             "student_id": student_id,
+            "track": payload.track or "",
             "modules": {},
             "first_seen": ts,
             "last_active": ts,
@@ -154,6 +165,8 @@ async def receive_verification(payload: VerificationPayload):
 
     student = students_db[student_id]
     student["last_active"] = ts
+    if payload.track:
+        student["track"] = payload.track
 
     # Store module results
     student["modules"][module] = {
