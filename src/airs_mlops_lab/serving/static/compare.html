@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Comparison - Cloud Security Advisor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Effects */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .model-panel {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #60a5fa;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+            margin-right: 4px;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        /* Response formatting */
+        .response-text h1,
+        .response-text h2,
+        .response-text h3 {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .response-text strong {
+            color: #60a5fa;
+        }
+
+        .response-text ul,
+        .response-text ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .response-text li {
+            margin-bottom: 0.25rem;
+        }
+
+        .response-text code {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1
+                class="text-3xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent mb-2">
+                <i class="fas fa-balance-scale mr-3"></i>Model Comparison
+            </h1>
+            <p class="text-slate-400">Compare responses from different model versions side-by-side</p>
+        </header>
+
+        <!-- Configuration Panel -->
+        <div class="glass-panel rounded-xl p-6 mb-8">
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Model A Config -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        <span class="text-blue-400">●</span> Model A (Stable)
+                    </label>
+                    <input type="text" id="modelA" value="/"
+                        class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Endpoint URL (default: /)">
+                </div>
+
+                <!-- Model B Config -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-2">
+                        <span class="text-emerald-400">●</span> Model B (Canary)
+                    </label>
+                    <input type="text" id="modelB" value="/"
+                        class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="Endpoint URL (or same)">
+                </div>
+
+                <!-- Status -->
+                <div class="flex items-end">
+                    <div id="status" class="flex items-center gap-2 text-slate-400">
+                        <span class="pulse-dot w-2 h-2 bg-green-500 rounded-full"></span>
+                        Ready to compare
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="glass-panel rounded-xl p-6 mb-8">
+            <label class="block text-sm font-medium text-slate-300 mb-2">
+                <i class="fas fa-comment-alt mr-2"></i>Security Question
+            </label>
+            <div class="flex gap-4">
+                <textarea id="prompt" rows="3"
+                    class="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    placeholder="Enter a security question to compare model responses..."></textarea>
+                <button onclick="compareModels()"
+                    class="px-8 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 rounded-lg font-medium transition-all duration-300 flex items-center gap-2">
+                    <i class="fas fa-play"></i>
+                    Compare
+                </button>
+            </div>
+
+            <!-- Quick Prompts -->
+            <div class="mt-4 flex flex-wrap gap-2">
+                <span class="text-slate-500 text-sm">Try:</span>
+                <button onclick="setPrompt('Is it safe to open port 22 to 0.0.0.0/0?')"
+                    class="text-sm px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 rounded-full text-slate-300 transition">
+                    SSH Security
+                </button>
+                <button onclick="setPrompt('How do I encrypt an RDS database?')"
+                    class="text-sm px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 rounded-full text-slate-300 transition">
+                    Database Encryption
+                </button>
+                <button onclick="setPrompt('What are IAM best practices?')"
+                    class="text-sm px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 rounded-full text-slate-300 transition">
+                    IAM Best Practices
+                </button>
+                <button onclick="setPrompt('How should I handle S3 bucket permissions?')"
+                    class="text-sm px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 rounded-full text-slate-300 transition">
+                    S3 Permissions
+                </button>
+            </div>
+        </div>
+
+        <!-- Comparison Results -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Model A Response -->
+            <div class="model-panel rounded-xl overflow-hidden">
+                <div class="bg-blue-600/20 border-b border-blue-500/30 px-6 py-3 flex items-center justify-between">
+                    <h3 class="font-medium text-blue-300">
+                        <i class="fas fa-robot mr-2"></i>Model A (Stable)
+                    </h3>
+                    <span id="modelA-latency" class="text-sm text-blue-400/70"></span>
+                </div>
+                <div id="modelA-response" class="p-6 min-h-[300px] response-text">
+                    <p class="text-slate-500 italic">Response will appear here...</p>
+                </div>
+            </div>
+
+            <!-- Model B Response -->
+            <div class="model-panel rounded-xl overflow-hidden">
+                <div
+                    class="bg-emerald-600/20 border-b border-emerald-500/30 px-6 py-3 flex items-center justify-between">
+                    <h3 class="font-medium text-emerald-300">
+                        <i class="fas fa-flask mr-2"></i>Model B (Canary)
+                    </h3>
+                    <span id="modelB-latency" class="text-sm text-emerald-400/70"></span>
+                </div>
+                <div id="modelB-response" class="p-6 min-h-[300px] response-text">
+                    <p class="text-slate-500 italic">Response will appear here...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Panel -->
+        <div class="glass-panel rounded-xl p-6 mt-8">
+            <h3 class="text-lg font-medium text-slate-300 mb-4">
+                <i class="fas fa-chart-bar mr-2"></i>Comparison Metrics
+            </h3>
+            <div class="grid md:grid-cols-4 gap-6 text-center">
+                <div>
+                    <div id="metric-latency-a" class="text-2xl font-bold text-blue-400">--</div>
+                    <div class="text-sm text-slate-500">Model A Latency</div>
+                </div>
+                <div>
+                    <div id="metric-latency-b" class="text-2xl font-bold text-emerald-400">--</div>
+                    <div class="text-sm text-slate-500">Model B Latency</div>
+                </div>
+                <div>
+                    <div id="metric-length-a" class="text-2xl font-bold text-blue-400">--</div>
+                    <div class="text-sm text-slate-500">Model A Chars</div>
+                </div>
+                <div>
+                    <div id="metric-length-b" class="text-2xl font-bold text-emerald-400">--</div>
+                    <div class="text-sm text-slate-500">Model B Chars</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-8 text-slate-500 text-sm">
+            <p>A/B Model Testing • AIRS MLOps Lab</p>
+        </footer>
+    </div>
+
+    <script>
+        function setPrompt(text) {
+            document.getElementById('prompt').value = text;
+        }
+
+        function showTyping(elementId) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+        }
+
+        function formatMarkdown(text) {
+            // Simple markdown formatting
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n\n/g, '</p><p class="mt-3">')
+                .replace(/\n- /g, '</p><ul><li>')
+                .replace(/\n(\d+)\. /g, '</p><ol><li>')
+                .replace(/<\/li>\n/g, '</li>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>');
+        }
+
+        async function queryModel(endpoint, message) {
+            const startTime = performance.now();
+            try {
+                const response = await fetch(`${endpoint}api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await response.json();
+                const latency = Math.round(performance.now() - startTime);
+                return { reply: data.reply, latency, success: true };
+            } catch (error) {
+                const latency = Math.round(performance.now() - startTime);
+                return { reply: `Error: ${error.message}`, latency, success: false };
+            }
+        }
+
+        async function compareModels() {
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) {
+                alert('Please enter a question to compare');
+                return;
+            }
+
+            const modelAEndpoint = document.getElementById('modelA').value || '/';
+            const modelBEndpoint = document.getElementById('modelB').value || '/';
+
+            // Show loading
+            showTyping('modelA-response');
+            showTyping('modelB-response');
+            document.getElementById('status').innerHTML = `
+                <span class="pulse-dot w-2 h-2 bg-yellow-500 rounded-full"></span>
+                Querying models...
+            `;
+
+            // Query both models in parallel
+            const [resultA, resultB] = await Promise.all([
+                queryModel(modelAEndpoint, prompt),
+                queryModel(modelBEndpoint, prompt)
+            ]);
+
+            // Display results
+            document.getElementById('modelA-response').innerHTML = `<p>${formatMarkdown(resultA.reply)}</p>`;
+            document.getElementById('modelB-response').innerHTML = `<p>${formatMarkdown(resultB.reply)}</p>`;
+
+            // Update latency badges
+            document.getElementById('modelA-latency').textContent = `${resultA.latency}ms`;
+            document.getElementById('modelB-latency').textContent = `${resultB.latency}ms`;
+
+            // Update metrics
+            document.getElementById('metric-latency-a').textContent = `${resultA.latency}ms`;
+            document.getElementById('metric-latency-b').textContent = `${resultB.latency}ms`;
+            document.getElementById('metric-length-a').textContent = resultA.reply.length;
+            document.getElementById('metric-length-b').textContent = resultB.reply.length;
+
+            // Update status
+            document.getElementById('status').innerHTML = `
+                <span class="pulse-dot w-2 h-2 bg-green-500 rounded-full"></span>
+                Comparison complete
+            `;
+        }
+
+        // Enter key to submit
+        document.getElementById('prompt').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                compareModels();
+            }
+        });
+    </script>
+</body>
+
+</html>

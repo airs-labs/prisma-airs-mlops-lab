@@ -1,0 +1,95 @@
+name: "Deploy App"
+
+# Lightweight Cloud Run-only deploy for code changes.
+# Does NOT touch the Vertex AI model endpoint (no GPU, no AIRS scan).
+# For model deployments, use Gate 3.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  SERVICE_NAME: cloud-security-advisor
+  REGION: us-central1
+  PROJECT_ID: your-gcp-project-id
+
+jobs:
+  deploy-app:
+    name: "Deploy App to Cloud Run"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Resolve Vertex AI Endpoint
+        id: resolve
+        run: |
+          # Find the existing endpoint (deployed by Gate 3)
+          ENDPOINT_ID=$(gcloud ai endpoints list \
+            --project=$PROJECT_ID \
+            --region=$REGION \
+            --filter="displayName=cloud-security-advisor-endpoint" \
+            --format='value(name)' \
+            --limit=1 2>/dev/null | xargs basename 2>/dev/null || echo "")
+
+          if [ -z "$ENDPOINT_ID" ]; then
+            echo "::warning::No Vertex AI endpoint found. App will deploy but inference will fail until Gate 3 runs."
+          fi
+
+          echo "endpoint_id=$ENDPOINT_ID" >> $GITHUB_OUTPUT
+          echo "Vertex AI Endpoint: ${ENDPOINT_ID:-none}"
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          ENV_VARS="INFERENCE_BACKEND=vertex_ai"
+          ENV_VARS="${ENV_VARS},VERTEX_ENDPOINT_ID=${{ steps.resolve.outputs.endpoint_id }}"
+          ENV_VARS="${ENV_VARS},VERTEX_PROJECT=${PROJECT_ID}"
+          ENV_VARS="${ENV_VARS},VERTEX_LOCATION=${REGION}"
+
+          gcloud run deploy $SERVICE_NAME \
+            --source . \
+            --region $REGION \
+            --memory 512Mi \
+            --cpu 1 \
+            --timeout 300 \
+            --port 8080 \
+            --set-env-vars "$ENV_VARS" \
+            --quiet
+
+          SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region=$REGION \
+            --format='value(status.url)')
+
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "Deployed: $SERVICE_URL"
+
+      - name: Summary
+        run: |
+          echo "## Deploy App" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Service URL | \`${{ steps.deploy.outputs.url }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Endpoint | \`${{ steps.resolve.outputs.endpoint_id }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trigger | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY

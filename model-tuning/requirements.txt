@@ -1,0 +1,12 @@
+# Training dependencies for Vertex AI pytorch-gpu.2-4 container
+# Container ships with PyTorch 2.4, Python 3.10
+# Use --no-4bit flag to avoid bitsandbytes/PyTorch compat issues
+transformers>=4.45
+datasets>=2.18
+accelerate>=0.34
+peft>=0.13
+trl>=0.12
+bitsandbytes>=0.43
+rich
+python-dotenv
+huggingface_hub

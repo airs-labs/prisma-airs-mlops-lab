@@ -1,0 +1,428 @@
+name: "Gate 2: Publish Model"
+
+# Gate 2 scans trained models and publishes them to the model registry.
+# Supports both manual dispatch and automatic chaining from Gate 1.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_source:
+        description: 'Source path of trained model (gs://...)'
+        required: true
+        default: 'gs://your-model-bucket/raw-models/cloud-security-advisor'
+
+      model_name:
+        description: 'Name/ID for the published model'
+        required: true
+        default: 'cloud-security-advisor'
+
+      model_version:
+        description: 'Version tag for the model'
+        required: true
+        default: 'v1.0.0'
+
+      publish_to:
+        description: 'Target registry backend'
+        type: choice
+        options:
+          - gcs
+          - huggingface
+          - vertex_ai
+        default: gcs
+
+      base_model:
+        description: 'Base model used for training (needed for LoRA merge)'
+        required: true
+        default: 'Qwen/Qwen2.5-3B-Instruct'
+
+      security_group:
+        description: 'AIRS Security Group (UUID or shorthand: local, gcs-default, hf, warn, block). Leave empty for auto-detect.'
+        required: false
+        default: ''
+
+      auto_chain:
+        description: 'Automatically trigger Gate 3 on completion'
+        type: boolean
+        default: false
+
+  workflow_run:
+    workflows: ["Gate 1: Train Model"]
+    types: [completed]
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+env:
+  MODEL_SECURITY_API_ENDPOINT: https://api.sase.paloaltonetworks.com/aims
+  GCS_BLESSED_BUCKET: gs://your-model-bucket/approved-models
+
+jobs:
+  # ============================================
+  # Resolve Inputs (from dispatch or chain)
+  # ============================================
+  resolve-inputs:
+    name: "Resolve Pipeline Inputs"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+
+    outputs:
+      should_run: ${{ steps.resolve.outputs.should_run }}
+      model_source: ${{ steps.resolve.outputs.model_source }}
+      model_name: ${{ steps.resolve.outputs.model_name }}
+      model_version: ${{ steps.resolve.outputs.model_version }}
+      base_model: ${{ steps.resolve.outputs.base_model }}
+      security_group: ${{ steps.resolve.outputs.security_group }}
+      auto_chain: ${{ steps.resolve.outputs.auto_chain }}
+      publish_to: ${{ steps.resolve.outputs.publish_to }}
+
+    steps:
+      - name: Resolve from workflow_dispatch
+        if: github.event_name == 'workflow_dispatch'
+        id: dispatch
+        run: |
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "model_source=${{ inputs.model_source }}" >> $GITHUB_OUTPUT
+          echo "model_name=${{ inputs.model_name }}" >> $GITHUB_OUTPUT
+          echo "model_version=${{ inputs.model_version }}" >> $GITHUB_OUTPUT
+          echo "base_model=${{ inputs.base_model }}" >> $GITHUB_OUTPUT
+          echo "security_group=${{ inputs.security_group }}" >> $GITHUB_OUTPUT
+          echo "auto_chain=${{ inputs.auto_chain }}" >> $GITHUB_OUTPUT
+          echo "publish_to=${{ inputs.publish_to }}" >> $GITHUB_OUTPUT
+
+      - name: Resolve from Gate 1 chain
+        if: github.event_name == 'workflow_run'
+        id: chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID=${{ github.event.workflow_run.id }}
+          CONCLUSION=${{ github.event.workflow_run.conclusion }}
+
+          echo "Gate 1 run $RUN_ID concluded: $CONCLUSION"
+
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "Gate 1 did not succeed. Skipping."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Download chain config from Gate 1
+          gh run download $RUN_ID -n gate1-chain-config -D ./chain-config 2>/dev/null || {
+            echo "No gate1-chain-config artifact found. Skipping."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          AUTO_CHAIN=$(cat ./chain-config/auto_chain.txt 2>/dev/null || echo "false")
+          if [ "$AUTO_CHAIN" != "true" ]; then
+            echo "Auto-chain not requested by Gate 1. Skipping."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          ADAPTER_PATH=$(cat ./chain-config/adapter_path.txt)
+          BASE_MODEL=$(cat ./chain-config/base_model.txt)
+          MODEL_NAME=$(cat ./chain-config/model_name.txt)
+          VERSION="v$(date +%Y%m%d-%H%M%S)"
+
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "model_source=$ADAPTER_PATH" >> $GITHUB_OUTPUT
+          echo "model_name=$MODEL_NAME" >> $GITHUB_OUTPUT
+          echo "model_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "base_model=$BASE_MODEL" >> $GITHUB_OUTPUT
+          echo "security_group=" >> $GITHUB_OUTPUT
+          echo "auto_chain=true" >> $GITHUB_OUTPUT
+          echo "publish_to=gcs" >> $GITHUB_OUTPUT
+
+      - name: Consolidate
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_run=${{ steps.dispatch.outputs.should_run }}" >> $GITHUB_OUTPUT
+            echo "model_source=${{ steps.dispatch.outputs.model_source }}" >> $GITHUB_OUTPUT
+            echo "model_name=${{ steps.dispatch.outputs.model_name }}" >> $GITHUB_OUTPUT
+            echo "model_version=${{ steps.dispatch.outputs.model_version }}" >> $GITHUB_OUTPUT
+            echo "base_model=${{ steps.dispatch.outputs.base_model }}" >> $GITHUB_OUTPUT
+            echo "security_group=${{ steps.dispatch.outputs.security_group }}" >> $GITHUB_OUTPUT
+            echo "auto_chain=${{ steps.dispatch.outputs.auto_chain }}" >> $GITHUB_OUTPUT
+            echo "publish_to=${{ steps.dispatch.outputs.publish_to }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=${{ steps.chain.outputs.should_run }}" >> $GITHUB_OUTPUT
+            echo "model_source=${{ steps.chain.outputs.model_source }}" >> $GITHUB_OUTPUT
+            echo "model_name=${{ steps.chain.outputs.model_name }}" >> $GITHUB_OUTPUT
+            echo "model_version=${{ steps.chain.outputs.model_version }}" >> $GITHUB_OUTPUT
+            echo "base_model=${{ steps.chain.outputs.base_model }}" >> $GITHUB_OUTPUT
+            echo "security_group=${{ steps.chain.outputs.security_group }}" >> $GITHUB_OUTPUT
+            echo "auto_chain=${{ steps.chain.outputs.auto_chain }}" >> $GITHUB_OUTPUT
+            echo "publish_to=${{ steps.chain.outputs.publish_to }}" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================
+  # Gate 2: Scan & Publish
+  # ============================================
+  gate2-scan-and-publish:
+    name: "Gate 2: Scan & Publish"
+    runs-on: ubuntu-latest
+    needs: [resolve-inputs]
+    if: needs.resolve-inputs.outputs.should_run == 'true'
+
+    outputs:
+      scan_verdict: ${{ steps.scan.outputs.verdict }}
+      scan_id: ${{ steps.scan.outputs.scan_id }}
+      published_path: ${{ steps.publish.outputs.path }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install AIRS SDK
+        env:
+          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
+          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+          TSG_ID: ${{ secrets.TSG_ID }}
+        run: |
+          python -m pip install --upgrade pip
+          chmod +x scripts/get-pypi-url.sh
+          PYPI_URL=$(./scripts/get-pypi-url.sh)
+          pip install --extra-index-url "$PYPI_URL" -r airs/requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Free disk space
+        run: |
+          # Remove unnecessary software to free disk for model merge
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc 2>/dev/null || true
+          df -h /
+
+      - name: Install merge dependencies
+        run: |
+          # CPU-only PyTorch (150MB vs 4GB+ with CUDA) - merge runs on CPU
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install transformers peft accelerate rich
+
+      - name: Download LoRA Adapter
+        if: startsWith(needs.resolve-inputs.outputs.model_source, 'gs://')
+        run: |
+          echo "Downloading LoRA adapter from GCS..."
+          mkdir -p ./adapter-download
+          gcloud storage cp -r "${{ needs.resolve-inputs.outputs.model_source }}/*" ./adapter-download/
+          echo "ADAPTER_PATH=./adapter-download" >> $GITHUB_ENV
+
+      - name: Merge LoRA Adapter with Base Model
+        run: |
+          echo "Merging LoRA adapter with base model..."
+          echo "   Base model: ${{ needs.resolve-inputs.outputs.base_model }}"
+          echo "   Adapter: $ADAPTER_PATH"
+
+          python model-tuning/merge_adapter.py \
+            --base-model "${{ needs.resolve-inputs.outputs.base_model }}" \
+            --adapter-path "$ADAPTER_PATH" \
+            --output-dir ./merged-model
+
+          echo "MODEL_PATH=./merged-model" >> $GITHUB_ENV
+
+      - name: "GATE 2: AIRS Security Scan"
+        id: scan
+        env:
+          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
+          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+          TSG_ID: ${{ secrets.TSG_ID }}
+        run: |
+          echo ""
+          echo "======================================================="
+          echo "  GATE 2: SCANNING TRAINED MODEL"
+          echo "  Model: ${{ needs.resolve-inputs.outputs.model_source }}"
+          echo "======================================================="
+          echo ""
+
+          # --warn-only: BLOCKED verdict exits 0 (policy rules shouldn't block publishing)
+          echo "Scanning merged model at ./merged-model"
+
+          # Security group auto-detected from source type (LOCAL for merged model on disk)
+          SCAN_ARGS="--model-path ./merged-model --warn-only --output-json gate2-scan-results.json"
+          SECURITY_GROUP="${{ needs.resolve-inputs.outputs.security_group }}"
+          if [ -n "$SECURITY_GROUP" ]; then
+            SCAN_ARGS="$SCAN_ARGS --security-group $SECURITY_GROUP"
+          fi
+
+          python airs/scan_model.py $SCAN_ARGS
+
+          # Parse verdict and scan UUID for reporting
+          VERDICT=$(python -c "
+          import json
+          with open('gate2-scan-results.json') as f:
+              data = json.load(f)
+          v = str(data.get('eval_outcome', 'UNKNOWN'))
+          print(v.split('.')[-1].upper())
+          ")
+
+          SCAN_UUID=$(python -c "
+          import json
+          with open('gate2-scan-results.json') as f:
+              data = json.load(f)
+          print(data.get('uuid', 'unknown'))
+          ")
+
+          echo "verdict=$VERDICT" >> $GITHUB_OUTPUT
+          echo "scan_id=$SCAN_UUID" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "======================================================="
+          echo "  GATE 2 RESULT: $VERDICT"
+          echo "  Scan UUID: $SCAN_UUID"
+          echo "======================================================="
+
+      - name: Publish to GCS
+        id: publish-gcs
+        if: success() && needs.resolve-inputs.outputs.publish_to == 'gcs'
+        run: |
+          DEST="${GCS_BLESSED_BUCKET}/${{ needs.resolve-inputs.outputs.model_name }}/${{ needs.resolve-inputs.outputs.model_version }}"
+          echo "Publishing to GCS: $DEST"
+
+          gcloud storage cp -r "$MODEL_PATH/*" "$DEST/"
+
+          echo "path=$DEST" >> $GITHUB_OUTPUT
+          echo "Published to $DEST"
+
+      - name: Publish to HuggingFace Hub
+        id: publish-hf
+        if: success() && needs.resolve-inputs.outputs.publish_to == 'huggingface'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          pip install huggingface_hub
+
+          python <<EOF
+          from huggingface_hub import HfApi
+          api = HfApi()
+          api.create_repo(repo_id="${{ needs.resolve-inputs.outputs.model_name }}", repo_type="model", exist_ok=True)
+          api.upload_folder(
+              folder_path="$MODEL_PATH",
+              repo_id="${{ needs.resolve-inputs.outputs.model_name }}",
+              commit_message="Gate 2 - Scan ID: ${{ steps.scan.outputs.scan_id }}"
+          )
+          print("Published to HuggingFace Hub")
+          EOF
+
+          echo "path=https://huggingface.co/${{ needs.resolve-inputs.outputs.model_name }}" >> $GITHUB_OUTPUT
+
+      - name: Publish to Vertex AI Model Registry
+        id: publish-vertex
+        if: success() && needs.resolve-inputs.outputs.publish_to == 'vertex_ai'
+        run: |
+          STAGING_PATH="gs://your-model-bucket/vertex-models/${{ needs.resolve-inputs.outputs.model_name }}/${{ needs.resolve-inputs.outputs.model_version }}"
+          gcloud storage cp -r "$MODEL_PATH/*" "$STAGING_PATH/"
+
+          gcloud ai models upload \
+            --region=us-central1 \
+            --display-name="${{ needs.resolve-inputs.outputs.model_name }}" \
+            --artifact-uri="$STAGING_PATH" \
+            --container-image-uri=us-docker.pkg.dev/vertex-ai/prediction/pytorch-cpu.2-0:latest \
+            || echo "Note: May require additional Vertex AI setup"
+
+          echo "path=$STAGING_PATH" >> $GITHUB_OUTPUT
+
+      - name: Consolidate Output
+        id: publish
+        run: |
+          case "${{ needs.resolve-inputs.outputs.publish_to }}" in
+            gcs) echo "path=${{ steps.publish-gcs.outputs.path }}" >> $GITHUB_OUTPUT ;;
+            huggingface) echo "path=${{ steps.publish-hf.outputs.path }}" >> $GITHUB_OUTPUT ;;
+            vertex_ai) echo "path=${{ steps.publish-vertex.outputs.path }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Download Gate 1 Manifest
+        run: |
+          MODEL_SRC="${{ needs.resolve-inputs.outputs.model_source }}"
+          gcloud storage cp "$MODEL_SRC/manifest.json" ./manifest.json 2>/dev/null || {
+            echo "No Gate 1 manifest found. Creating fresh manifest."
+            python scripts/manifest.py create \
+              --model-name "${{ needs.resolve-inputs.outputs.model_name }}" \
+              --base-model "${{ needs.resolve-inputs.outputs.base_model }}" \
+              --output manifest.json
+          }
+
+      - name: Update Manifest with Gate 2 Scan
+        run: |
+          python scripts/manifest.py add-scan \
+            --manifest manifest.json \
+            --gate gate2 \
+            --scan-uuid "${{ steps.scan.outputs.scan_id }}" \
+            --verdict "${{ steps.scan.outputs.verdict }}" \
+            --security-group "${{ needs.resolve-inputs.outputs.security_group || 'auto-detected' }}" \
+            --target "${{ needs.resolve-inputs.outputs.model_name }}" \
+            --target-type merged_model \
+            --warn-only
+
+          python scripts/manifest.py set-version \
+            --manifest manifest.json \
+            --version "${{ needs.resolve-inputs.outputs.model_version }}" \
+            --merged-model-path "${{ steps.publish.outputs.path }}"
+
+      - name: Upload Manifest to Published Model
+        if: steps.publish.outputs.path != ''
+        run: |
+          gcloud storage cp manifest.json "${{ steps.publish.outputs.path }}/manifest.json"
+          echo "Manifest uploaded to ${{ steps.publish.outputs.path }}/manifest.json"
+
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate2-scan-results-${{ needs.resolve-inputs.outputs.model_version }}
+          path: gate2-scan-results.json
+          retention-days: 90
+
+      - name: Upload Chain Metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate2-chain
+          path: manifest.json
+          retention-days: 7
+
+      - name: Upload Chain Config
+        run: |
+          mkdir -p ./chain-config
+          echo "${{ steps.publish.outputs.path }}" > ./chain-config/published_path.txt
+          echo "${{ needs.resolve-inputs.outputs.model_name }}" > ./chain-config/model_name.txt
+          echo "${{ needs.resolve-inputs.outputs.model_version }}" > ./chain-config/model_version.txt
+          echo "${{ needs.resolve-inputs.outputs.auto_chain }}" > ./chain-config/auto_chain.txt
+
+      - name: Upload Chain Config Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate2-chain-config
+          path: chain-config/
+          retention-days: 7
+
+      - name: Summary
+        run: |
+          echo "## Gate 2: Publish Model" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Model | \`${{ needs.resolve-inputs.outputs.model_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ needs.resolve-inputs.outputs.model_version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source | \`${{ needs.resolve-inputs.outputs.model_source }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Registry | ${{ needs.resolve-inputs.outputs.publish_to }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Verdict | **${{ steps.scan.outputs.verdict }}** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Published | \`${{ steps.publish.outputs.path }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "Run **Gate 3: Deploy** with: \`model_version: ${{ needs.resolve-inputs.outputs.model_version }}\`" >> $GITHUB_STEP_SUMMARY

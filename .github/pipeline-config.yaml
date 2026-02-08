@@ -1,0 +1,158 @@
+# AIRS MLOps Lab - Pipeline Configuration
+# =========================================
+# Shared configuration for all CI/CD workflows
+
+# ============================================
+# Workflow Naming (Gate 1/2/3)
+# ============================================
+workflows:
+  gate_1_train: gate-1-train.yaml      # Scan base model + Vertex AI training
+  gate_2_publish: gate-2-publish.yaml  # Merge + scan trained model + publish
+  gate_3_deploy: gate-3-deploy.yaml    # Verify provenance + deploy endpoint + deploy app
+  deploy_app: deploy-app.yaml          # Cloud Run-only deploy (no model/GPU)
+
+# ============================================
+# Pipeline Chaining
+# ============================================
+# Gates can run independently (workflow_dispatch) or chained:
+#   Gate 1 --[auto_chain]--> Gate 2 --[auto_chain]--> Gate 3
+# The deploy-app workflow runs on push to main (code changes only).
+# Gate 3 does NOT run on push to main (model deploys are intentional).
+chaining:
+  mechanism: workflow_run        # GitHub Actions native event
+  data_passing: artifacts        # gate1-chain-config, gate2-chain-config
+  auto_chain_default: false      # Must be explicitly enabled per run
+
+# ============================================
+# Model Manifest (Provenance Tracking)
+# ============================================
+manifest:
+  schema_version: "1.0"
+  filename: manifest.json        # Lives alongside model artifacts in GCS
+  # Manifest accumulates provenance through gates:
+  #   Gate 1: Creates manifest (base model, scan, training config)
+  #   Gate 2: Adds gate2 scan, version, merged model path
+  #   Gate 3: Verifies gate2 scan exists, adds deployment record
+
+# ============================================
+# Model Registry Configuration
+# ============================================
+model_registry:
+  default_backend: gcs
+  
+  backends:
+    gcs:
+      staging_bucket: gs://your-model-bucket/raw-models
+      blessed_bucket: gs://your-model-bucket/approved-models
+      scan_results_bucket: gs://your-model-bucket/scan-results
+    
+    huggingface:
+      # For private HF repos, set HF_TOKEN secret
+      staging_repo: ""
+      blessed_repo: ""
+    
+    vertex_ai:
+      project: ""
+      location: us-central1
+
+# ============================================
+# Test Models (for CI validation)
+# ============================================
+test_models:
+  pass: "Qwen/Qwen2.5-0.5B-Instruct"       # safetensors, verified, small
+  fail: "ykilcher/totally-harmless-model"    # known GGUF template exploit
+
+# ============================================
+# AIRS Security Scanning
+# ============================================
+airs:
+  # Security groups are auto-detected from model source type (LOCAL/GCS/HF).
+  # Override per-gate with --security-group UUID or shorthand key.
+  # Available shorthand keys: local, gcs-default, hf, warn, block
+  api_endpoint: https://api.sase.paloaltonetworks.com/aims
+
+  # Direct scanning (no download!)
+  # Supported: https://huggingface.co/..., gs://, s3://, azure://, jfrog://
+  direct_scan_sources:
+    - huggingface_public
+    - gcs
+    - s3
+    - azure
+
+# ============================================
+# Training Configuration (Gate 1)
+# ============================================
+training:
+  default_base_model: Qwen/Qwen2.5-3B-Instruct
+  default_dataset: ethanolivertroy/nist-cybersecurity-training
+  
+  # Model source types
+  model_sources:
+    huggingface_public: "Direct AIRS scan (no download)"
+    huggingface_private: "Download first, then scan"
+    gcs: "Direct AIRS scan via gs://"
+  
+  vertex_ai:
+    region: us-central1
+    default_machine_type: a2-highgpu-1g
+    container_image: us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-4.py310:latest
+  
+  defaults:
+    max_steps: 5000
+    batch_size: 8
+    learning_rate: 2.0e-4
+
+# ============================================
+# Inference Configuration
+# ============================================
+inference:
+  # Backend: vertex_ai (model served on GPU endpoint, not in Cloud Run container)
+  backend: vertex_ai
+
+  # Vertex AI - managed GPU endpoint for model inference
+  vertex_ai:
+    project: your-gcp-project-id
+    region: us-central1
+    endpoint_display_name: cloud-security-advisor-endpoint
+    machine_type: g2-standard-12
+    accelerator_type: nvidia-l4
+    accelerator_count: 1
+    vllm_image: "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250202_0916_RC00"
+
+# ============================================
+# Deployment Configuration (Gate 3)
+# ============================================
+deployment:
+  cloud_run:
+    service_name: cloud-security-advisor
+    region: us-central1
+    min_instances: 0
+    max_instances: 10
+    memory: 512Mi
+    cpu: 1
+    timeout: 300
+    port: 8080
+
+# ============================================
+# A/B Testing Configuration
+# ============================================
+ab_testing:
+  enabled: true
+  
+  strategies:
+    full:
+      description: "100% traffic to new version"
+      stable: 0
+      new: 100
+    
+    canary:
+      description: "10% traffic to new version"
+      stable: 90
+      new: 10
+    
+    ab_test:
+      description: "50/50 split for comparison"
+      stable: 50
+      new: 50
+  
+  default_strategy: canary

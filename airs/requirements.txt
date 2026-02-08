@@ -1,0 +1,5 @@
+model-security-client[gcp]>=0.3.0
+google-cloud-storage
+click
+rich
+python-dotenv

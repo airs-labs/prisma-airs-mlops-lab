@@ -1,0 +1,422 @@
+[
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What information does Security Content Automation Protocol (SCAP) Version 1.2 Validation Program Test Requirements provide? (Section 3)"
+      },
+      {
+        "role": "assistant",
+        "content": "; SCAP validated modules; SCAP validation The authors, Melanie Cook, Stephen Quinn, and David Waltermire of the National Institute of Standards and Technology (NIST), and Dragos Prisaca of G2, Inc. would like to thank the many people who reviewed and contributed to this document, in particular, John Banghart of Microsoft who was the original author and pioneered the first SCAP Validation Program. The authors thank Matt Kerr, and Danny Haynes of the MITRE Corporation for their insightful technical contribution to the design of the SCAP 1.2 Validation Program and creation of original SCAP 1.2 validation test content. We also thank our document reviewers, Kelley Dempsey of NIST and Jeffrey Blank of the National Security Agency for their input. This publication is intended for NVLAP accredited laboratories conducting SCAP product and module testing for the program, vendors interested in receiving SCAP validation for their products or modules, and organizations deploying SCAP products in their environments. Accredited laboratories use the information in this report to guide their testing and ensure all necessary requirements are met by a product before recommending to NIST that the product be awarded the requested validation. Vendors may use the information in this report to understand the features that products and modules need in order to be eligible for an SCAP validation. Government agencies and integrators use the information to gain insight into the criteria required for SCAP validated products. The secondary audience for this publication includes end users, who can review the test requirements in order to understand the capabilities of SCAP validated products and gain knowledge about SCAP validation. OVAL and CVE are registered trademarks, and CCE, CPE, and OCIL are trademarks of The MITRE Corporation. Red Hat is a registered trademark of Red Hat, Inc. Windows operating system is registered trademark of Microsoft Corporation."
+      }
+    ],
+    "metadata": {
+      "source": "Security Content Automation Protocol (SCAP) Version 1.2 Validation Program Test Requirements",
+      "type": "semantic_chunk",
+      "chunk_id": 2
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does A Conformance Test for FDDI Medium Access Control (MAC) say about Continued from previous page.? (Part 10)"
+      },
+      {
+        "role": "assistant",
+        "content": "According to A Conformance Test for FDDI Medium Access Control (MAC), Continued from previous page.: The length of the Echo_data SMT InfoField Frame Check Sequence Ending Delimiter Frame Status | | | Data Type Declaration | Data Type Declaration | Data Type Declaration | |--------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| | PDU Name: ECHO_Resp | PDU Name: ECHO_Resp | Comments : SMT ECHO Response Frame | | Protocol Control Infoimiation | Protocol Control Infoimiation | Protocol Control Infoimiation | | Field Name | Type | Comments | | PA SD FC DA SA Frame_Class # Frame Type # Version ID # # # Transaction ID # # Station ID # # Pad InfoField Length # Parameter_Type Echo_data FCS | Sstring [16] Sstring [2] OCTETSTRING [1] OCTETSTRING [6] OCTETSTRING [6] OCTETSTRING [1] | Preamble Starting Delimiter Frame Control Destination Address Source Address To identify the function of the frame."
+      }
+    ],
+    "metadata": {
+      "source": "A Conformance Test for FDDI Medium Access Control (MAC)",
+      "type": "section",
+      "chunk_id": 9
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What information does Cell Phone Forensic Tools_ an Overview and Analysis provide? (Section 1)"
+      },
+      {
+        "role": "assistant",
+        "content": "<!-- image --> NISTIR 7250 Rick Ayers Wayne Jansen Nicolas Cilleros Ronan Daniellou NISTIR 7250 An Overview and Analysis Rick Ayers Wayne Jansen Nicolas Cilleros Ronan Daniellou Computer Security Division Information Technology Laboratory National Institute of Standards and Technology Gaithersburg, MD 20988-8930 October 2005 <!-- image --> Carlos M. Gutierrez, Secretary Michelle O'Neill, Acting Under Secretary of Commerce for Technology National Institute of Standards and Technology William A. Jeffrey, Director iii The Information Technology Laboratory (ITL) at the National Institute of Standards and Technology (NIST) promotes the U.S. economy and public welfare by providing technical leadership for the Nation's measurement and standards infrastructure. ITL develops tests, test methods, reference data, proof of concept implementations, and technical analysis to advance the development and productive use of information technology. ITL's responsibilities include the development of technical, physical, administrative, and management standards and guidelines for the cost-effective security and privacy of sensitive unclassified information in Federal computer systems. This Interagency Report discusses ITL's research, guidance, and outreach efforts in computer security, and its collaborative activities with industry, government, and academic organizations. National Institute of Standards and Technology Interagency Report 187 pages (2005) Certain commercial entities, equipment, or materials may be identified in this document in order to describe an experimental procedure or concept adequately. Such identification is not intended to imply recommendation or endorsement by the National Institute of Standards and Technology, nor is it intended to imply that the entities, materials, or equipment are necessarily the best available for the purpose."
+      }
+    ],
+    "metadata": {
+      "source": "Cell Phone Forensic Tools_ an Overview and Analysis",
+      "type": "semantic_chunk",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Validating the Integrity of Computing Devices say about PATENT DISCLOSURE NOTICE?"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Validating the Integrity of Computing Devices, PATENT DISCLOSURE NOTICE: NOTICE: The Information Technology Laboratory (ITL) has requested that holders of patent claims whose use may be required for compliance with the guidance or requirements of this publication disclose such patent claims to ITL. However, holders of patents are not obligated to respond to ITL calls for patents and ITL has not undertaken a patent search in order to identify which, if any, patents may apply to this publication. As of the date of publication and following call(s) for the identification of patent claims whose use may be required for compliance with the guidance or requirements of this publication, no such patent claims have been identified to ITL. No representation is made or implied by ITL that licenses are not required to avoid patent infringement in the use of this publication."
+      }
+    ],
+    "metadata": {
+      "source": "Validating the Integrity of Computing Devices",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Identifying and Estimating Cybersecurity Risk for Enterprise Risk Management say about 2 Cybersecurity Risk Considerations Throughout the ERM Process? (Part 1)"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Identifying and Estimating Cybersecurity Risk for Enterprise Risk Management, 2 Cybersecurity Risk Considerations Throughout the ERM Process: 2 Cybersecurity Risk Considerations Throughout the ERM Process Because digital information and technology are valuable enablers for enterprise success and growth, they must be sufficiently protected from various types of risk. Government entities for whom growth may not be a strategic objective are still likely to find value in dynamically adding or changing their services or offerings as their constituents' needs evolve. Thus, both private and public sector entities need to evaluate the role of information and technology in achieving enterprise objectives. This understanding enables a deeper consideration of the various uncertainties that jeopardize those objectives. In the context of ERM, senior leaders must clearly express expectations regarding how risk should be managed. Those expectations provide CSRM practitioners with objectives for managing cybersecurity risks, including methods for reporting the extent to which risk management activities successfully achieve those objectives. The document for recording and sharing information about those risks is the cybersecurity risk register (CSRR). NISTIR 8286 describes the use of risk registers, example fields for those registers, and the fact that prioritized risk register contents serve as the basis of a risk profile. That report also states that, while a risk register represents various risks at a single point in time, it is important for the enterprise to ensure that the model is used in a consistent and iterative way. As risks are identified (including calculation of likelihood and impact), the risk register will be populated with relevant information once decisions have been made. As risk responses are applied to each item in the risk register, the updated state of that risk will become the new current state in the next assessment cycle. Risk management policy designates which roles are appropriate for completing the CSRR at each level. Figure 4 provides an example of a blank risk register."
+      }
+    ],
+    "metadata": {
+      "source": "Identifying and Estimating Cybersecurity Risk for Enterprise Risk Management",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is control IA-4 in IoT Device Cybersecurity Guidance for the Federal Government_ IoT Device Cybersecurity Requirement Catalog? (Part 95)"
+      },
+      {
+        "role": "assistant",
+        "content": "Control IA-4: LA: XCN(1) DS: COM(7) | | | SC-8(1) | DP: STX(1), STX(3) | | | SC-10 | DS: COM(3), COM(4), COM(5) | | | SC-11 | DS: COM(6) | | | SC-12 | DP: KEY(1) | | | SC-16(2) | DS: COM(11) | | | SC-12(6) | DP: KEY(1) | | | SC-13 | DP: CRY(1), CRY(2),CRY(3), CRY(4), CRY(5), KEY(1) | | | SC-15 | CS: EIM(8), EIM(9), EVR(5) | | | SC-16 | DS: ONB(1), ONB(3) | | | SC-16(2) | DS: COM(11) | | | SC-17 | DP: CRY(2) | | | SC-18 | | | | SC-20 | | | | SC-21 | DS: COM(8) | | | SC-22 | | | | SC-23 | DS: COM(7), COM(9), COM(10) | | | SC-24 | DS: RSC(6), OPS(3), OPS(5), OPS(6), OPS(8) | | | SC-25 | | | | SC-26 | | | | SC-27 | | | | SC-28 | DP: STO(1), STO(2) | | | SC-29 | | | | RMF Control | NIST SP 800-213A Technical Capabilities | NIST SP 800-213A Non-Technical Capabilities | |---------------|----------------------------------------------------------------------------------------------------------|----------------------------------------------------------| | SC-30 | | | | SC-31 | | | | SC-32 | | | | SC-34 | DS: RSC(7),"
+      }
+    ],
+    "metadata": {
+      "source": "IoT Device Cybersecurity Guidance for the Federal Government_ IoT Device Cybersecurity Requirement Catalog",
+      "type": "control",
+      "chunk_id": 94
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Guide to Intrusion Detection and Prevention Systems (IDPS) say about 8.1 The Need for Multiple IDPS Technologies? (Part 3)"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Guide to Intrusion Detection and Prevention Systems (IDPS), 8.1 The Need for Multiple IDPS Technologies: Wireless IDPSs may also be needed if the organization determines that its wireless networks need additional monitoring or if the organization wants to ensure that rogue wireless networks are not in use in the organization's facilities. NBA products can also be deployed if organizations desire additional detection capabilities for denial of service (DoS) attacks, worms, and other threats as discussed in Section 6. In addition to using multiple types of IDPS technologies, some organizations also use multiple products of the same IDPS technology type. This is often done to improve detection capabilities. Because each product uses somewhat different detection methodologies and detects some events that another product cannot, using multiple products can allow for more comprehensive detection of possible incidents. Also, having multiple products in use, particularly to monitor the same activity, makes it easier for analysts to confirm the validity of alerts and identify false positives, and also provides redundancy, should one product fail for any reason."
+      }
+    ],
+    "metadata": {
+      "source": "Guide to Intrusion Detection and Prevention Systems (IDPS)",
+      "type": "section",
+      "chunk_id": 2
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is National Institute of Standards and Technology Attn according to Recommendation for Stateful Hash-Based Signature Schemes?"
+      },
+      {
+        "role": "assistant",
+        "content": "National Institute of Standards and Technology Attn: Computer Security Division, Information Technology Laboratory 100 Bureau Drive (Mail Stop 8930) Gaithersburg, MD 20899-8930 Email: pqc-comments@nist.gov"
+      }
+    ],
+    "metadata": {
+      "source": "Recommendation for Stateful Hash-Based Signature Schemes",
+      "type": "definition",
+      "chunk_id": null
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does A Profile for U.S. Federal Cryptographic Key Management Systems (CKMS) say about 4.4 FCKMS Module Security Policy? (Part 1)"
+      },
+      {
+        "role": "assistant",
+        "content": "According to A Profile for U.S. Federal Cryptographic Key Management Systems (CKMS), 4.4 FCKMS Module Security Policy: 4.4 FCKMS Module Security Policy As shown in Figure 1 of Section 2.10, an FCKMS consists of one or more computers containing an FCKMS module, with an associated cryptographic module. The computer could, in fact, have more than one FCKMS module and more than one cryptographic module. Each FCKMS module is designed to support one or more FCKMSs, along with their FCKMS Security Policies. Each FCKMS module must have its own FCKMS Module Security Policy, which supports one or more FCKMS Security Policies. However, the security policy for an FCKMS module may not be a full FCKMS Security Policy. The FCKMS Module Security Policy need only deal with the subset of the FCKMS Security Policy that applies to the module itself. Figure 3 depicts an example of a network consisting of three Federal Entities and three FCKMSs, each with its own FCKMS Security Policy as indicated by the colors red, blue, and green. The arrowed lines between FCKMS modules indicate communications links over which cryptographic keys and metadata may be established according to the policy indicated by the color of the line. Thus, Federal Entity 1 can establish keys with Federal Entity 2 using the blue FCKMS with the blue FCKMS Security Policy. Federal Entity 1 can also establish keys with Federal Entity 3 using the red FCKMS with the red FCKMS Security Policy. Finally, Federal Entity 1 could store keys that it uses only for its own purposes using the green FCKMS with the green FCKMS Security Policy. Figure 3: An FCKMS Network <!-- image --> Figure 3 shows that a module may function in different FCKMSs and support different FCKMS Security Policies. For example, Federal Entity 1 has a module that can support either a blue FCKMS Security Policy or a red FCKMS Security Policy."
+      }
+    ],
+    "metadata": {
+      "source": "A Profile for U.S. Federal Cryptographic Key Management Systems (CKMS)",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is control CM-05(03) in Assessing Security and Privacy Controls in Information Systems and Organizations?"
+      },
+      {
+        "role": "assistant",
+        "content": "Control CM-05(03): ACCESS RESTRICTIONS FOR CHANGE | SIGNED COMPONENTS [WITHDRAWN: Moved to CM-14.]"
+      }
+    ],
+    "metadata": {
+      "source": "Assessing Security and Privacy Controls in Information Systems and Organizations",
+      "type": "control",
+      "chunk_id": null
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Report on the Design-A-Thon_ Designing Effective and Accessible Approaches for Digital Product Cybersecurity Education and Awareness say about Report on the Design-A-Thon: Designing Effective and Accessible Approaches for Digital Product Cybersecurity Education and Awareness?"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Report on the Design-A-Thon_ Designing Effective and Accessible Approaches for Digital Product Cybersecurity Education and Awareness, Report on the Design-A-Thon: Designing Effective and Accessible Approaches for Digital Product Cybersecurity Education and Awareness: Michael Fagan Daniel Eliot Barbara Cuthill Kristina Rigopoulos Applied Cybersecurity Division Information Technology Laboratory Julie Haney Information Access Division Information Technology Laboratory This publication is available free of charge from: https://doi.org/10.6028/NIST.IR.8558 September 2025 <!-- image --> U.S. Department of Commerce Howard Lutnick, Secretary Certain equipment, instruments, software, or materials, commercial or non-commercial, are identified in this paper in order to specify the experimental procedure adequately. Such identification does not imply recommendation or endorsement of any product or service by NIST, nor does it imply that the materials or equipment identified are necessarily the best available for the purpose. There may be references in this publication to other publications currently under development by NIST in accordance with its assigned statutory responsibilities. The information in this publication, including concepts and methodologies, may be used by federal agencies even before the completion of such companion publications. Thus, until each publication is completed, current requirements, guidelines, and procedures, where they exist, remain operative. For planning and transition purposes, federal agencies may wish to closely follow the development of these new publications by NIST. Organizations are encouraged to review all draft publications during public comment periods and provide feedback to NIST. Many NIST cybersecurity publications, other than the ones noted above, are available at "
+      }
+    ],
+    "metadata": {
+      "source": "Report on the Design-A-Thon_ Designing Effective and Accessible Approaches for Digital Product Cybersecurity Education and Awareness",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Interfaces for Personal Identity Verification_ Part 2 \u2013 PIV Card Application Card Command Interface say about A.3. Authentication of PIV Cardholder? (Part 3)"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Interfaces for Personal Identity Verification_ Part 2 \u2013 PIV Card Application Card Command Interface, A.3. Authentication of PIV Cardholder: ---------------------------------------------------------------------------------------------------------------------------------| | '10 87 07 9A FF 7C 82 01 06 82 00 81 82 01 00 00 01 FF FF FF FF ... FF FF FF FF FF 00 9D F4 6E 09 E7 D6 19 18 53 1E 6E 1C 66 87 C4 3E CF FF 7D 53 47 BD 2E 93 19' ( '..' represents 208 bytes of challenge data) | | The client application sends a challenge to the PIV Card Application indicating that the reference data associated with key reference '9A' is to be used with algorithm '07' [SP800-78, Tables 9 and 10]. The challenge data, which in this example is encoded as specified for TLS version 1.3 client authentication, is '00 01 FF ... 18 BC A7'. Bit 5 of the CLA byte is set to one to indicate that command chaining is needed. L e is absent to indicate that no data is expected. | | | '90 00' | The PIV Card Application indicates that it received the command successfully."
+      }
+    ],
+    "metadata": {
+      "source": "Interfaces for Personal Identity Verification_ Part 2 \u2013 PIV Card Application Card Command Interface",
+      "type": "section",
+      "chunk_id": 2
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "Explain PM-29 RISK MANAGEMENT PROGRAM LEADERSHIP ROLES according to NIST Cybersecurity Supply Chain Risk Management Practices for Systems and Organizations"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Cybersecurity Supply Chain Risk Management Practices for Systems and Organizations, PM-29 RISK MANAGEMENT PROGRAM LEADERSHIP ROLES: Supplemental C-SCRM Guidance: Risk management program leadership roles should include C-SCRM responsibilities and be included in C-SCRM collaboration across the enterprise. Section 2 and Appendix C provide detailed guidance for C-SCRM roles and responsibilities."
+      }
+    ],
+    "metadata": {
+      "source": "Cybersecurity Supply Chain Risk Management Practices for Systems and Organizations",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is control IA-4 in NIST_SP_800-53r5_Security_Privacy_Controls? (Part 1)"
+      },
+      {
+        "role": "assistant",
+        "content": "Control IA-4: IDENTIFIER MANAGEMENT Control: Manage system identifiers by: a. Receiving authorization from [Assignment: organization-defined personnel or roles] to assign an individual, group, role, service, or device identifier; b. Selecting an identifier that identifies an individual, group, role, service, or device; c. Assigning the identifier to the intended individual, group, role, service, or device; and d. Preventing reuse of identifiers for [Assignment: organization-defined time period]. Discussion: Common device identifiers include Media Access Control (MAC) addresses, Internet Protocol (IP) addresses, or device-unique token identifiers. The management of individual identifiers is not applicable to shared system accounts. Typically, individual identifiers are the usernames of the system accounts assigned to those individuals. In such instances, the account management activities of AC-2 use account names provided by IA-4. Identifier management also addresses individual identifiers not necessarily associated with system accounts. Preventing the reuse of identifiers implies preventing the assignment of previously used individual, group, role, service, or device identifiers to different individuals, groups, roles, services, or devices. Related Controls: AC-5, IA-2, IA-3, IA-5, IA-8, IA-9, IA-12, MA-4, PE-2, PE-3, PE-4, PL-4, PM-12, PS- 3, PS-4, PS-5, SC-37. Control Enhancements: (1) IDENTIFIER MANAGEMENT | PROHIBIT ACCOUNT IDENTIFIERS AS PUBLIC IDENTIFIERS Prohibit the use of system account identifiers that are the same as public identifiers for individual accounts. Discussion: Prohibiting account identifiers as public identifiers applies to any publicly disclosed account identifier used for communication such as, electronic mail and instant CHAPTER THREE PAGE 136 T h s i p u b l i c a t i o n i s a v a i l l a b e f r e e o f c h a r g e f r o m : h t t p s : / / d o i . o r g / 1 0 . 6 0 2 8 / N S T S P . 8 0 0 - 5 3 r 5 I ."
+      }
+    ],
+    "metadata": {
+      "source": "NIST_SP_800-53r5_Security_Privacy_Controls",
+      "type": "control",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What information does U.S. Department of Energy Risk Assessment Methodology provide? (Section 87)"
+      },
+      {
+        "role": "assistant",
+        "content": "OLLED NUCLEAR INFORMATION (UCNI) | PROTECTION OF UNCLASSIFIED CONTROLLED NUCLEAR INFORMATION (UCNI) | 8. | | 5636. 3A | TECHNCAL SURVEILLANCE COUNTERMEASURES PROGRAM | TECHNCAL SURVEILLANCE COUNTERMEASURES PROGRAM | 0. | | 5637.1 | CLASSIFIED COMPUTER SECURITY PROGRAM | CLASSIFIED COMPUTER SECURITY PROGRAM | p | | 5670.1 | MANAGEMENT AND CONTROL OF FOREIGN INTELLIGENCE | MANAGEMENT AND CONTROL OF FOREIGN INTELLIGENCE | X. | | DOE-EP-0108 | STANDARD FOR FIRE PROTECTION OF DOE ELECTRONIC COMPUTER/DATA PROCESSING SYSTEMS | STANDARD FOR FIRE PROTECTION OF DOE ELECTRONIC COMPUTER/DATA PROCESSING SYSTEMS | f. | | N/A | SAFEGUARDS AND SECURrv STANDARDS AND CRITERIA | SAFEGUARDS AND SECURrv STANDARDS AND CRITERIA | a. | * NOT ON MASTERLIST c .V 'i' 1 r i ..r, i'' , r \u2022 sJ -V , .. \u2022 / ;i* \u2022 ' -v I , 1 -r \u2022 -? -VJ.'- . , , t I '-^U - '' ' ' : . -\" I ,^,\u00bb\\_. :;M\"i ; -' '\u2022&lt;1 . :; I , j. .-. 7a-j A\u00abir' L If &gt; ^ ' I,.*; ' '. '. ' ... y \\_'(*\u2022' ', --'. :R,^ !,', rt: , \\4i'i &gt;f tMAii..av''' . - \u2022 ,..,-' ' 4 ' ."
+      }
+    ],
+    "metadata": {
+      "source": "U.S. Department of Energy Risk Assessment Methodology",
+      "type": "semantic_chunk",
+      "chunk_id": 86
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Protecting Controlled Unclassified Information in Nonfederal Systems and Organizations say about DISCUSSION?"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Protecting Controlled Unclassified Information in Nonfederal Systems and Organizations, DISCUSSION: Authenticators include passwords, cryptographic devices, biometrics, certificates, one-time password devices, and ID badges. The initial authenticator content is the actual content of the authenticator (e.g., the initial password). In contrast, requirements for authenticator content contain specific characteristics. Authenticator management is supported by organization-defined settings and restrictions for various authenticator characteristics (e.g., password complexity and composition rules, validation time window for time synchronous one-time tokens, and the number of allowed rejections during the verification stage of biometric authentication). The requirement to protect individual authenticators may be implemented by 03.15.03 for authenticators in the possession of individuals and by 03.01.01, 03.01.02, 03.01.05, and 03.13.08 for authenticators stored in organizational systems. This includes passwords stored in hashed or encrypted formats or files that contain hashed or encrypted passwords that are accessible with administrator privileges. Actions can be taken to protect authenticators, including maintaining possession of authenticators, not sharing authenticators with others, and immediately reporting lost, stolen, or compromised authenticators. Developers may deliver system components with factory default authentication credentials to allow for initial installation and configuration. Default authentication credentials are often well-known, easily discoverable, and present a significant risk. Authenticator management includes issuing and revoking authenticators for temporary access when they are no longer needed. The use of long passwords or passphrases may obviate the need to periodically change authenticators."
+      }
+    ],
+    "metadata": {
+      "source": "Protecting Controlled Unclassified Information in Nonfederal Systems and Organizations",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is Contact according to Computer Security Division 2012 Annual Report?"
+      },
+      {
+        "role": "assistant",
+        "content": "Contact: Mr. HarolGLYPH(cmap:df00) Booth (301) 975-8441 harolGLYPH(cmap:df00).booth@nist.gov"
+      }
+    ],
+    "metadata": {
+      "source": "Computer Security Division 2012 Annual Report",
+      "type": "definition",
+      "chunk_id": null
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is Discussion according to IoT Device Cybersecurity Guidance for the Federal Government_ IoT Device Cybersecurity Requirement Catalog?"
+      },
+      {
+        "role": "assistant",
+        "content": "Discussion: Based on the use case, IoT devices may need to display, or restrict display of, specific content to meet security controls and requirements (e.g., notices of use of a federal computer system)."
+      }
+    ],
+    "metadata": {
+      "source": "IoT Device Cybersecurity Guidance for the Federal Government_ IoT Device Cybersecurity Requirement Catalog",
+      "type": "definition",
+      "chunk_id": null
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What does Computer Security Training & Awareness Course Compendium say about VENDOR:?"
+      },
+      {
+        "role": "assistant",
+        "content": "According to Computer Security Training & Awareness Course Compendium, VENDOR:: COMSIS 8737 Colesville Road, Suite 1100 Silver Spring, MD 20910 (301) 588-5922 This course provides essential training to personnel in the areas of physical and environmental security in both large scale (mainframes) and small scale (PC) processing environments. COURSE TITLE: Audit, Control, and Security of LAN and Mainframe Connectivity COURSE LENGTH: 3 DAYS"
+      }
+    ],
+    "metadata": {
+      "source": "Computer Security Training & Awareness Course Compendium",
+      "type": "section",
+      "chunk_id": 0
+    }
+  },
+  {
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a cybersecurity expert with deep knowledge of NIST standards, frameworks, and best practices. You provide accurate, detailed guidance on cybersecurity controls, risk management, cloud security, and compliance based on NIST publications including the 800 series, FIPS, and related documents."
+      },
+      {
+        "role": "user",
+        "content": "What is control HA-1 in Securing Web Transactions_ TLS Server Certificate Management? (Part 208)"
+      },
+      {
+        "role": "assistant",
+        "content": "Control HA-1: rtificates in response to certificate signing requests (CSRs). Administrative access to this component may be supported by using either password-based or secure shell- based public key authentication. | PR.AC-1, PR.AC-3, PR.AC-4, PR.DS-1, PR.DS-2, PR.DS-3, PR.DS-6, PR.PT-1 | | External certificate au- thority | DigiCert External CA | Issues, discovers, installs, inspects, re- mediates, and renews TLS certificates. | PR.AC-1, PR.AC-4, PR.DS-2, PR.DS-3, PR.DS-6 | | Component | Product | Functionality | Cybersecurity Frame- work Subcategories | |---------------------------------------------|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------| | Load balancer | F5 Networks BIG-IP Local Traffic Manager | Acts as a TLS server and distributes re- ceived traffic across a number of other TLS servers."
+      }
+    ],
+    "metadata": {
+      "source": "Securing Web Transactions_ TLS Server Certificate Management",
+      "type": "control",
+      "chunk_id": 207
+    }
+  }
+]

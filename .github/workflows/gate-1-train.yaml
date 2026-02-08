@@ -1,0 +1,458 @@
+name: "Gate 1: Train Model"
+
+# Gate 1 scans base models before fine-tuning (supply chain security).
+# AIRS scans directly via URI for public HuggingFace models - no download needed!
+# For private models, download first then scan locally.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_model:
+        description: 'Base model (HuggingFace model ID or gs:// path)'
+        required: true
+        default: 'Qwen/Qwen2.5-3B-Instruct'
+      
+      base_model_source:
+        description: 'Source of base model'
+        type: choice
+        options:
+          - huggingface_public    # Direct AIRS scan (no download!)
+          - huggingface_private   # Download first, then scan
+          - gcs                   # Direct AIRS scan via gs://
+        default: huggingface_public
+      
+      dataset:
+        description: 'Training dataset (HuggingFace dataset ID)'
+        required: true
+        default: 'ethanolivertroy/nist-cybersecurity-training'
+      
+      output_name:
+        description: 'Name for the trained model'
+        required: true
+        default: 'cloud-security-advisor'
+      
+      max_steps:
+        description: 'Maximum training steps'
+        required: true
+        default: '5000'
+      
+      machine_type:
+        description: 'Vertex AI machine type'
+        type: choice
+        options:
+          - a2-highgpu-1g    # 1x A100 40GB
+          - a2-highgpu-2g    # 2x A100 40GB
+          - g2-standard-12   # 1x L4 24GB (cost-effective)
+        default: a2-highgpu-1g
+      
+      skip_scan:
+        description: 'Skip Gate 1 security scan (for pre-approved models)'
+        type: boolean
+        default: false
+
+      auto_chain:
+        description: 'Automatically trigger Gate 2 on completion'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: us-central1
+  STAGING_BUCKET: gs://your-model-bucket
+  PROJECT_ID: your-gcp-project-id
+  MODEL_SECURITY_API_ENDPOINT: https://api.sase.paloaltonetworks.com/aims
+
+jobs:
+  # ============================================
+  # GATE 1: Scan Base Model
+  # ============================================
+  gate1-scan-base-model:
+    name: "🛡️ Gate 1: Scan Base Model"
+    runs-on: ubuntu-latest
+    if: ${{ inputs.skip_scan != true }}
+    
+    outputs:
+      scan_verdict: ${{ steps.scan.outputs.verdict }}
+      scan_id: ${{ steps.scan.outputs.scan_id }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install AIRS SDK
+        env:
+          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
+          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+          TSG_ID: ${{ secrets.TSG_ID }}
+        run: |
+          python -m pip install --upgrade pip
+          chmod +x scripts/get-pypi-url.sh
+          PYPI_URL=$(./scripts/get-pypi-url.sh)
+          pip install --extra-index-url "$PYPI_URL" -r airs/requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download Model
+        id: download
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          pip install huggingface_hub
+          mkdir -p ./model-download
+          
+          SOURCE="${{ inputs.base_model_source }}"
+          MODEL="${{ inputs.base_model }}"
+          
+          if [ "$SOURCE" == "gcs" ]; then
+            echo "📥 Downloading from GCS: $MODEL"
+            gcloud storage cp -r "${MODEL}/*" ./model-download/
+          else
+            echo "📥 Downloading from HuggingFace: $MODEL"
+            python -c "
+          from huggingface_hub import snapshot_download
+          import os
+          snapshot_download(
+              repo_id='${MODEL}',
+              local_dir='./model-download',
+              local_dir_use_symlinks=False,
+              token=os.environ.get('HF_TOKEN') or None
+          )
+          print('✅ Model downloaded')
+          "
+          fi
+          
+          echo "model_path=./model-download" >> $GITHUB_OUTPUT
+
+      - name: "🛡️ GATE 1: AIRS Security Scan"
+        id: scan
+        env:
+          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
+          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+          TSG_ID: ${{ secrets.TSG_ID }}
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════════════════════"
+          echo "  GATE 1: SCANNING BASE MODEL FOR SECURITY THREATS"
+          echo "  Model: ${{ inputs.base_model }}"
+          echo "  Source: ${{ inputs.base_model_source }}"
+          echo "═══════════════════════════════════════════════════════"
+          echo ""
+          
+          # --warn-only: BLOCKED verdict exits 0 (policy rules shouldn't block training)
+          python airs/scan_model.py \
+            --model-path ./model-download \
+            --warn-only \
+            --output-json gate1-scan-results.json
+
+          # Parse verdict and scan UUID for reporting
+          VERDICT=$(python -c "
+          import json
+          with open('gate1-scan-results.json') as f:
+              data = json.load(f)
+          v = str(data.get('eval_outcome', 'UNKNOWN'))
+          print(v.split('.')[-1].upper())
+          ")
+
+          SCAN_UUID=$(python -c "
+          import json
+          with open('gate1-scan-results.json') as f:
+              data = json.load(f)
+          print(data.get('uuid', 'unknown'))
+          ")
+
+          echo "verdict=$VERDICT" >> $GITHUB_OUTPUT
+          echo "scan_id=$SCAN_UUID" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "======================================================="
+          echo "  GATE 1 RESULT: $VERDICT"
+          echo "  Scan UUID: $SCAN_UUID"
+          echo "======================================================="
+
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate1-scan-results
+          path: gate1-scan-results.json
+          retention-days: 90
+
+  # ============================================
+  # Vertex AI Training Job
+  # ============================================
+  train-on-vertex-ai:
+    name: "🧠 Train on Vertex AI"
+    needs: [gate1-scan-base-model]
+    if: |
+      always() && 
+      (needs.gate1-scan-base-model.result == 'success' || inputs.skip_scan == true)
+    runs-on: ubuntu-latest
+    
+    outputs:
+      trained_model_path: ${{ steps.training.outputs.output_path }}
+      job_id: ${{ steps.training.outputs.job_id }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Prepare Training Config
+        id: config
+        run: |
+          RUN_ID=$(date +%Y%m%d-%H%M%S)
+          OUTPUT_PATH="${STAGING_BUCKET}/raw-models/${{ inputs.output_name }}/${RUN_ID}"
+          
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          echo "output_path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
+          
+          echo "📋 Training Configuration:"
+          echo "   Base Model: ${{ inputs.base_model }}"
+          echo "   Dataset: ${{ inputs.dataset }}"
+          echo "   Output: $OUTPUT_PATH"
+          echo "   Machine: ${{ inputs.machine_type }}"
+          echo "   Max Steps: ${{ inputs.max_steps }}"
+
+      - name: Upload Training Script to GCS
+        run: |
+          gcloud storage cp model-tuning/train_advisor.py ${STAGING_BUCKET}/training-scripts/
+          gcloud storage cp model-tuning/requirements.txt ${STAGING_BUCKET}/training-scripts/
+          echo "✅ Training scripts uploaded"
+
+      - name: Launch Vertex AI Training Job
+        id: training
+        env:
+          JOB_BASE_MODEL: ${{ inputs.base_model }}
+          JOB_DATASET: ${{ inputs.dataset }}
+          JOB_MAX_STEPS: ${{ inputs.max_steps }}
+          JOB_OUTPUT_NAME: ${{ inputs.output_name }}
+          JOB_MACHINE_TYPE: ${{ inputs.machine_type }}
+          JOB_RUN_ID: ${{ steps.config.outputs.run_id }}
+        run: |
+          echo "🚀 Launching Vertex AI Custom Training Job..."
+
+          JOB_NAME="train-${JOB_OUTPUT_NAME}-${JOB_RUN_ID}"
+          OUTPUT_PATH="${{ steps.config.outputs.output_path }}"
+          # GCS FUSE mounts buckets at /gcs/<bucket-name>/ inside Vertex AI containers
+          BUCKET_NAME="${STAGING_BUCKET#gs://}"
+          OUTPUT_DIR="/gcs/${BUCKET_NAME}/raw-models/${JOB_OUTPUT_NAME}/${JOB_RUN_ID}"
+
+          # Generate job config JSON using Python (avoids YAML indentation issues)
+          export JOB_OUTPUT_DIR="$OUTPUT_DIR"
+          export GCS_FUSE_BASE="/gcs/${BUCKET_NAME}"
+          python3 -c "
+          import json, os
+          machine_type = os.environ['JOB_MACHINE_TYPE']
+          machine_spec = {'machineType': machine_type}
+
+          # Vertex AI pre-built PyTorch container (has GCS FUSE at /gcs/)
+          image = 'us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-4.py310:latest'
+
+          # Configure accelerator based on machine type
+          if machine_type.startswith('a2-'):
+              machine_spec['acceleratorType'] = 'NVIDIA_TESLA_A100'
+              machine_spec['acceleratorCount'] = int(machine_type.split('-')[-1].replace('g', ''))
+          elif machine_type.startswith('g2-'):
+              machine_spec['acceleratorType'] = 'NVIDIA_L4'
+              machine_spec['acceleratorCount'] = 1
+
+          output_dir = os.environ['JOB_OUTPUT_DIR']
+          train_args = (
+              ' --base-model=\"' + os.environ['JOB_BASE_MODEL'] + '\"'
+              + ' --dataset=\"' + os.environ['JOB_DATASET'] + '\"'
+              + ' --max-steps=' + os.environ['JOB_MAX_STEPS']
+              + ' --output-dir=\"' + output_dir + '\"'
+              + ' --no-4bit'  # bf16 avoids bitsandbytes/PyTorch version conflicts
+          )
+
+          # Pin transformers to avoid version conflicts with container's PyTorch 2.4
+          # Scripts accessed via GCS FUSE (/gcs/bucket/path)
+          train_cmd = ' && '.join([
+              'set -e',
+              'echo \"Installing training dependencies...\"',
+              'pip install -q -r ' + os.environ['GCS_FUSE_BASE'] + '/training-scripts/requirements.txt',
+              'echo \"Starting training...\"',
+              'python ' + os.environ['GCS_FUSE_BASE'] + '/training-scripts/train_advisor.py' + train_args
+          ])
+
+          config = {
+              'workerPoolSpecs': [{
+                  'machineSpec': machine_spec,
+                  'replicaCount': 1,
+                  'containerSpec': {
+                      'imageUri': image,
+                      'command': ['bash', '-c', train_cmd],
+                  }
+              }]
+          }
+          with open('vertex-job-config.json', 'w') as f:
+              json.dump(config, f, indent=2)
+          print(json.dumps(config, indent=2))
+          "
+
+          gcloud ai custom-jobs create \
+            --region=$REGION \
+            --display-name="$JOB_NAME" \
+            --config=vertex-job-config.json \
+            2>&1 | tee job-output.txt
+
+          # Capture exit code of gcloud (first command in pipe)
+          EXIT_CODE=${PIPESTATUS[0]}
+
+          JOB_ID=$(grep -oP 'customJobs/\K[0-9]+' job-output.txt | head -1)
+
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "❌ Failed to submit Vertex AI Job"
+            echo "::error::Vertex AI submission failed. Check logs for permission errors."
+            exit $EXIT_CODE
+          fi
+
+          if [ -z "$JOB_ID" ]; then
+            echo "❌ Job submitted but ID not found in output"
+            exit 1
+          fi
+
+          echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
+          echo "output_path=$OUTPUT_PATH" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "═══════════════════════════════════════════════════════"
+          echo "  VERTEX AI TRAINING JOB LAUNCHED"
+          echo "  Job ID: $JOB_ID"
+          echo "  Output: $OUTPUT_PATH"
+          echo "═══════════════════════════════════════════════════════"
+          echo ""
+          echo "⏳ Training typically takes 1-2 hours on A100."
+          echo "   Monitor at: https://console.cloud.google.com/vertex-ai/training/custom-jobs"
+
+      - name: Wait for Training Completion
+        if: inputs.auto_chain == true
+        timeout-minutes: 180
+        run: |
+          JOB_ID="${{ steps.training.outputs.job_id }}"
+          echo "Waiting for Vertex AI job $JOB_ID to complete (auto_chain enabled)..."
+
+          while true; do
+            STATE=$(gcloud ai custom-jobs describe $JOB_ID \
+              --region=$REGION --project=$PROJECT_ID --format='value(state)')
+            echo "  $(date +%H:%M:%S) Job state: $STATE"
+
+            case "$STATE" in
+              JOB_STATE_SUCCEEDED)
+                echo "Training completed successfully"
+                break
+                ;;
+              JOB_STATE_FAILED|JOB_STATE_CANCELLED)
+                echo "::error::Training job $STATE"
+                exit 1
+                ;;
+              *)
+                sleep 60
+                ;;
+            esac
+          done
+
+      - name: Create Model Manifest
+        run: |
+          python scripts/manifest.py create \
+            --model-name "${{ inputs.output_name }}" \
+            --base-model "${{ inputs.base_model }}" \
+            --base-model-source "${{ inputs.base_model_source }}" \
+            --dataset "${{ inputs.dataset }}" \
+            --run-id "${{ steps.config.outputs.run_id }}" \
+            --output manifest.json
+
+          # Add Gate 1 scan results if scan was not skipped
+          if [ "${{ inputs.skip_scan }}" != "true" ]; then
+            python scripts/manifest.py add-scan \
+              --manifest manifest.json \
+              --gate gate1 \
+              --scan-uuid "${{ needs.gate1-scan-base-model.outputs.scan_id || 'skipped' }}" \
+              --verdict "${{ needs.gate1-scan-base-model.outputs.scan_verdict || 'SKIPPED' }}" \
+              --security-group "auto-detected" \
+              --target "${{ inputs.base_model }}" \
+              --target-type base_model \
+              --warn-only
+          fi
+
+          # Add training config
+          python scripts/manifest.py add-training \
+            --manifest manifest.json \
+            --vertex-job-id "${{ steps.training.outputs.job_id }}" \
+            --machine-type "${{ inputs.machine_type }}" \
+            --max-steps "${{ inputs.max_steps }}" \
+            --adapter-path "${{ steps.training.outputs.output_path }}"
+
+          # Upload manifest to GCS alongside adapter
+          gcloud storage cp manifest.json "${{ steps.training.outputs.output_path }}/manifest.json"
+
+          echo "Manifest created and uploaded to GCS"
+
+      - name: Upload Chain Metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate1-chain
+          path: |
+            manifest.json
+          retention-days: 7
+
+      - name: Upload Chain Config
+        run: |
+          mkdir -p ./chain-config
+          echo "${{ steps.training.outputs.output_path }}" > ./chain-config/adapter_path.txt
+          echo "${{ inputs.base_model }}" > ./chain-config/base_model.txt
+          echo "${{ inputs.output_name }}" > ./chain-config/model_name.txt
+          echo "${{ inputs.auto_chain }}" > ./chain-config/auto_chain.txt
+
+      - name: Upload Chain Config Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate1-chain-config
+          path: chain-config/
+          retention-days: 7
+
+      - name: Summary
+        run: |
+          echo "## 🛡️ Gate 1: Train Model Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Base Model | \`${{ inputs.base_model }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Source | ${{ inputs.base_model_source }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gate 1 Scan | ✅ ${{ needs.gate1-scan-base-model.outputs.scan_verdict || 'Skipped' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dataset | \`${{ inputs.dataset }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Machine Type | ${{ inputs.machine_type }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Output Path | \`${{ steps.config.outputs.output_path }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auto-Chain | ${{ inputs.auto_chain }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.auto_chain }}" == "true" ]; then
+            echo "Gate 2 will be triggered automatically." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+            echo "1. Monitor training at [Vertex AI Console](https://console.cloud.google.com/vertex-ai/training/custom-jobs)" >> $GITHUB_STEP_SUMMARY
+            echo "2. Once complete, run **Gate 2: Publish Model** with:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`model_source: ${{ steps.config.outputs.output_path }}\`" >> $GITHUB_STEP_SUMMARY
+          fi

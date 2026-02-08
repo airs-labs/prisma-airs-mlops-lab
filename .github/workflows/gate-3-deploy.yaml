@@ -1,0 +1,632 @@
+name: "Gate 3: Deploy"
+
+# Gate 3 performs pre-deploy verification and deploys to Cloud Run
+# with A/B testing support via traffic splitting.
+# Direct AIRS scanning via GCS URI - no download needed!
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target Environment'
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+      model_version:
+        description: 'Model version to deploy (e.g., v1.0.0 or latest)'
+        required: true
+        default: 'latest'
+
+      deployment_strategy:
+        description: 'Deployment strategy'
+        type: choice
+        options:
+          - full
+          - canary
+          - ab_test
+        default: full
+
+      traffic_split:
+        description: 'Custom traffic split (stable:new, e.g., 90:10)'
+        required: false
+        default: ''
+
+      skip_manifest_check:
+        description: 'Skip manifest verification (emergency override)'
+        type: boolean
+        default: false
+
+  workflow_run:
+    workflows: ["Gate 2: Publish Model"]
+    types: [completed]
+
+permissions:
+  contents: read
+  id-token: write
+  actions: read
+
+env:
+  SERVICE_NAME: cloud-security-advisor
+  REGION: us-central1
+  PROJECT_ID: your-gcp-project-id
+  GCS_MODEL_BUCKET: gs://your-model-bucket/approved-models
+  MODEL_SECURITY_API_ENDPOINT: https://api.sase.paloaltonetworks.com/aims
+  VLLM_IMAGE: us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250202_0916_RC00
+
+jobs:
+  # ============================================
+  # Resolve Inputs (from dispatch or chain)
+  # ============================================
+  resolve-inputs:
+    name: "Resolve Pipeline Inputs"
+    runs-on: ubuntu-latest
+
+    outputs:
+      should_run: ${{ steps.resolve.outputs.should_run }}
+      model_version: ${{ steps.resolve.outputs.model_version }}
+      target_env: ${{ steps.resolve.outputs.target_env }}
+      deployment_strategy: ${{ steps.resolve.outputs.deployment_strategy }}
+      traffic_split: ${{ steps.resolve.outputs.traffic_split }}
+      skip_manifest_check: ${{ steps.resolve.outputs.skip_manifest_check }}
+
+    steps:
+      - name: Resolve from workflow_dispatch
+        if: github.event_name == 'workflow_dispatch'
+        id: dispatch
+        run: |
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "model_version=${{ inputs.model_version }}" >> $GITHUB_OUTPUT
+          echo "target_env=${{ inputs.target_env }}" >> $GITHUB_OUTPUT
+          echo "deployment_strategy=${{ inputs.deployment_strategy }}" >> $GITHUB_OUTPUT
+          echo "traffic_split=${{ inputs.traffic_split }}" >> $GITHUB_OUTPUT
+          echo "skip_manifest_check=${{ inputs.skip_manifest_check }}" >> $GITHUB_OUTPUT
+
+      - name: Resolve from Gate 2 chain
+        if: github.event_name == 'workflow_run'
+        id: chain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN_ID=${{ github.event.workflow_run.id }}
+          CONCLUSION=${{ github.event.workflow_run.conclusion }}
+
+          echo "Gate 2 run $RUN_ID concluded: $CONCLUSION"
+
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "Gate 2 did not succeed. Skipping."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Download chain config from Gate 2
+          gh run download $RUN_ID -n gate2-chain-config -D ./chain-config 2>/dev/null || {
+            echo "No gate2-chain-config artifact found. Skipping."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          AUTO_CHAIN=$(cat ./chain-config/auto_chain.txt 2>/dev/null || echo "false")
+          if [ "$AUTO_CHAIN" != "true" ]; then
+            echo "Auto-chain not requested. Skipping."
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          MODEL_VERSION=$(cat ./chain-config/model_version.txt)
+
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "model_version=$MODEL_VERSION" >> $GITHUB_OUTPUT
+          echo "target_env=staging" >> $GITHUB_OUTPUT
+          echo "deployment_strategy=full" >> $GITHUB_OUTPUT
+          echo "traffic_split=" >> $GITHUB_OUTPUT
+          echo "skip_manifest_check=false" >> $GITHUB_OUTPUT
+
+      - name: Consolidate
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SRC="dispatch"
+          else
+            SRC="chain"
+          fi
+          for key in should_run model_version target_env deployment_strategy traffic_split skip_manifest_check; do
+            VAL=$(cat "$GITHUB_OUTPUT" | grep "^${key}=" | tail -1 | cut -d= -f2- || echo "")
+          done
+
+          # Re-emit from correct source
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_run=${{ steps.dispatch.outputs.should_run }}" >> $GITHUB_OUTPUT
+            echo "model_version=${{ steps.dispatch.outputs.model_version }}" >> $GITHUB_OUTPUT
+            echo "target_env=${{ steps.dispatch.outputs.target_env }}" >> $GITHUB_OUTPUT
+            echo "deployment_strategy=${{ steps.dispatch.outputs.deployment_strategy }}" >> $GITHUB_OUTPUT
+            echo "traffic_split=${{ steps.dispatch.outputs.traffic_split }}" >> $GITHUB_OUTPUT
+            echo "skip_manifest_check=${{ steps.dispatch.outputs.skip_manifest_check }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=${{ steps.chain.outputs.should_run }}" >> $GITHUB_OUTPUT
+            echo "model_version=${{ steps.chain.outputs.model_version }}" >> $GITHUB_OUTPUT
+            echo "target_env=${{ steps.chain.outputs.target_env }}" >> $GITHUB_OUTPUT
+            echo "deployment_strategy=${{ steps.chain.outputs.deployment_strategy }}" >> $GITHUB_OUTPUT
+            echo "traffic_split=${{ steps.chain.outputs.traffic_split }}" >> $GITHUB_OUTPUT
+            echo "skip_manifest_check=${{ steps.chain.outputs.skip_manifest_check }}" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================
+  # GATE 3: Pre-Deploy Verification
+  # ============================================
+  gate3-pre-deploy:
+    name: "Gate 3: Pre-Deploy Scan"
+    needs: [resolve-inputs]
+    runs-on: ubuntu-latest
+    if: needs.resolve-inputs.outputs.should_run == 'true'
+
+    outputs:
+      scan_verdict: ${{ steps.scan.outputs.verdict }}
+      model_uri: ${{ steps.resolve.outputs.model_uri }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install AIRS SDK
+        env:
+          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
+          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+          TSG_ID: ${{ secrets.TSG_ID }}
+        run: |
+          python -m pip install --upgrade pip
+          chmod +x scripts/get-pypi-url.sh
+          PYPI_URL=$(./scripts/get-pypi-url.sh)
+          pip install --extra-index-url "$PYPI_URL" -r airs/requirements.txt
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Resolve Model URI
+        id: resolve
+        run: |
+          MODEL_NAME="cloud-security-advisor"
+          VERSION="${{ needs.resolve-inputs.outputs.model_version || 'latest' }}"
+
+          if [ "$VERSION" == "latest" ]; then
+            LATEST=$(gcloud storage ls "${GCS_MODEL_BUCKET}/${MODEL_NAME}/" 2>/dev/null | tail -1 | xargs basename || echo "")
+            if [ -z "$LATEST" ]; then
+              echo "No published models found. Using staging model."
+              MODEL_URI="gs://your-model-bucket/raw-models/clean-advisor"
+            else
+              MODEL_URI="${GCS_MODEL_BUCKET}/${MODEL_NAME}/${LATEST}"
+            fi
+          else
+            MODEL_URI="${GCS_MODEL_BUCKET}/${MODEL_NAME}/${VERSION}"
+          fi
+
+          echo "model_uri=$MODEL_URI" >> $GITHUB_OUTPUT
+          echo "Resolved model: $MODEL_URI"
+
+      - name: "GATE 3: Pre-Deploy AIRS Scan"
+        id: scan
+        env:
+          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
+          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+          TSG_ID: ${{ secrets.TSG_ID }}
+        run: |
+          echo ""
+          echo "======================================================="
+          echo "  GATE 3: PRE-DEPLOY VERIFICATION"
+          echo "  Model: ${{ steps.resolve.outputs.model_uri }}"
+          echo "======================================================="
+          echo ""
+
+          MODEL_URI="${{ steps.resolve.outputs.model_uri }}"
+
+          # Direct GCS scan - no download needed!
+          # Security group auto-detected from source type (GCS for gs:// URIs)
+          echo "Direct GCS scan (no download needed)"
+
+          # --warn-only: BLOCKED verdict exits 0 (policy rules shouldn't block deploy)
+          python airs/scan_model.py \
+            --model-path "$MODEL_URI" \
+            --warn-only \
+            --output-json gate3-scan-results.json
+
+          # Parse verdict for reporting
+          VERDICT=$(python -c "
+          import json
+          with open('gate3-scan-results.json') as f:
+              data = json.load(f)
+          v = str(data.get('eval_outcome', 'UNKNOWN'))
+          print(v.split('.')[-1].upper())
+          ")
+
+          echo "verdict=$VERDICT" >> $GITHUB_OUTPUT
+
+          echo ""
+          echo "======================================================="
+          echo "  GATE 3 RESULT: $VERDICT"
+          echo "======================================================="
+
+      - name: Upload Scan Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate3-scan-results
+          path: gate3-scan-results.json
+          retention-days: 30
+
+  # ============================================
+  # Verify Model Provenance
+  # ============================================
+  verify-manifest:
+    name: "Verify Model Provenance"
+    needs: [resolve-inputs, gate3-pre-deploy]
+    runs-on: ubuntu-latest
+    if: >
+      success() &&
+      needs.resolve-inputs.outputs.skip_manifest_check != 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify Manifest
+        run: |
+          MODEL_URI="${{ needs.gate3-pre-deploy.outputs.model_uri }}"
+
+          echo "Downloading manifest from $MODEL_URI..."
+          gcloud storage cp "$MODEL_URI/manifest.json" ./manifest.json 2>/dev/null || {
+            echo "::error::No manifest.json found at $MODEL_URI"
+            echo "This model has no provenance chain."
+            echo "Use skip_manifest_check=true to override (not recommended)."
+            exit 1
+          }
+
+          echo ""
+          echo "Model Manifest:"
+          python scripts/manifest.py show --manifest ./manifest.json
+          echo ""
+
+          python scripts/manifest.py verify \
+            --manifest ./manifest.json \
+            --require-scan gate2 \
+            --require-verdict ALLOWED BLOCKED
+
+          echo ""
+          echo "Model provenance verified. Safe to deploy."
+
+  # ============================================
+  # Deploy Vertex AI Model Endpoint
+  # ============================================
+  deploy-model:
+    name: "Deploy Model to Vertex AI"
+    needs: [resolve-inputs, gate3-pre-deploy, verify-manifest]
+    runs-on: ubuntu-latest
+    if: |
+      always() &&
+      needs.gate3-pre-deploy.result == 'success' &&
+      (needs.verify-manifest.result == 'success' || needs.resolve-inputs.outputs.skip_manifest_check == 'true')
+
+    outputs:
+      endpoint_id: ${{ steps.endpoint.outputs.endpoint_id }}
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload Model to Vertex AI Registry
+        id: upload
+        run: |
+          MODEL_URI="${{ needs.gate3-pre-deploy.outputs.model_uri }}"
+          echo "Uploading model from: $MODEL_URI"
+
+          # Upload model with vLLM serving container
+          gcloud ai models upload \
+            --project=$PROJECT_ID \
+            --region=$REGION \
+            --display-name=cloud-security-advisor \
+            --artifact-uri="$MODEL_URI" \
+            --container-image-uri=$VLLM_IMAGE \
+            --container-args='python,-m,vllm.entrypoints.openai.api_server,--host=0.0.0.0,--port=7080,--max-model-len=4096,--gpu-memory-utilization=0.9,--dtype=bfloat16' \
+            --container-ports=7080 \
+            --container-health-route=/health \
+            --container-predict-route=/v1/completions
+
+          # Query the model ID after upload (gcloud upload doesn't print it reliably)
+          MODEL_ID=$(gcloud ai models list \
+            --project=$PROJECT_ID \
+            --region=$REGION \
+            --filter="displayName=cloud-security-advisor" \
+            --format='value(name)' \
+            --sort-by=~createTime \
+            --limit=1 | xargs basename)
+
+          if [ -z "$MODEL_ID" ]; then
+            echo "Failed to find model ID after upload"
+            exit 1
+          fi
+
+          echo "model_id=$MODEL_ID" >> $GITHUB_OUTPUT
+          echo "Model ID: $MODEL_ID"
+
+      - name: Get or Create Endpoint
+        id: endpoint
+        run: |
+          # Check for existing endpoint
+          ENDPOINT_ID=$(gcloud ai endpoints list \
+            --project=$PROJECT_ID \
+            --region=$REGION \
+            --filter="displayName=cloud-security-advisor-endpoint" \
+            --format='value(name)' \
+            --limit=1 2>/dev/null | xargs basename 2>/dev/null || echo "")
+
+          if [ -z "$ENDPOINT_ID" ]; then
+            echo "Creating new endpoint..."
+            gcloud ai endpoints create \
+              --project=$PROJECT_ID \
+              --region=$REGION \
+              --display-name=cloud-security-advisor-endpoint \
+              2>&1 | tee endpoint-output.txt
+
+            ENDPOINT_ID=$(grep -oP 'endpoints/\K[0-9]+' endpoint-output.txt | head -1)
+          fi
+
+          echo "endpoint_id=$ENDPOINT_ID" >> $GITHUB_OUTPUT
+          echo "Endpoint ID: $ENDPOINT_ID"
+
+      - name: Undeploy Existing Models
+        run: |
+          ENDPOINT_ID="${{ steps.endpoint.outputs.endpoint_id }}"
+
+          # Remove existing deployed models to avoid conflicts
+          DEPLOYED=$(gcloud ai endpoints describe $ENDPOINT_ID \
+            --project=$PROJECT_ID \
+            --region=$REGION \
+            --format='value(deployedModels.id)' 2>/dev/null || echo "")
+
+          for DM_ID in $DEPLOYED; do
+            echo "Undeploying existing model $DM_ID..."
+            gcloud ai endpoints undeploy-model $ENDPOINT_ID \
+              --project=$PROJECT_ID \
+              --region=$REGION \
+              --deployed-model-id=$DM_ID \
+              --quiet 2>/dev/null || true
+          done
+
+      - name: Deploy Model to Endpoint
+        timeout-minutes: 45
+        run: |
+          MODEL_ID="${{ steps.upload.outputs.model_id }}"
+          ENDPOINT_ID="${{ steps.endpoint.outputs.endpoint_id }}"
+
+          echo "Deploying model $MODEL_ID to endpoint $ENDPOINT_ID..."
+          echo "   This can take 15-40 minutes (GPU provisioning + model loading)"
+
+          # Deploy synchronously; if gcloud times out, check if it actually deployed
+          set +e
+          gcloud ai endpoints deploy-model $ENDPOINT_ID \
+            --project=$PROJECT_ID \
+            --region=$REGION \
+            --model=$MODEL_ID \
+            --display-name=cloud-security-advisor \
+            --machine-type=g2-standard-12 \
+            --accelerator=type=nvidia-l4,count=1 \
+            --min-replica-count=1 \
+            --max-replica-count=1 \
+            --traffic-split=0=100
+          DEPLOY_EXIT=$?
+          set -e
+
+          if [ $DEPLOY_EXIT -eq 0 ]; then
+            echo "Model deployed to Vertex AI endpoint"
+          else
+            echo "gcloud deploy-model exited $DEPLOY_EXIT (may still be deploying)"
+            echo "Checking endpoint state..."
+
+            # Wait and check if deployment completed despite gcloud timeout
+            for i in $(seq 1 20); do
+              sleep 30
+              DEPLOYED=$(gcloud ai endpoints describe $ENDPOINT_ID \
+                --project=$PROJECT_ID \
+                --region=$REGION \
+                --format='value(deployedModels.id)' 2>/dev/null || echo "")
+              echo "  Check $i/20: deployed=$DEPLOYED"
+              if [ -n "$DEPLOYED" ]; then
+                echo "Model deployment confirmed on endpoint"
+                exit 0
+              fi
+            done
+
+            echo "Model deployment failed after extended wait"
+            exit 1
+          fi
+
+  # ============================================
+  # Deploy Application (Cloud Run - thin client)
+  # ============================================
+  deploy:
+    name: "Deploy App to Cloud Run"
+    needs: [resolve-inputs, gate3-pre-deploy, deploy-model]
+    runs-on: ubuntu-latest
+    if: success()
+
+    outputs:
+      service_url: ${{ steps.deploy.outputs.url }}
+      revision: ${{ steps.deploy.outputs.revision }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Determine Deployment Strategy
+        id: strategy
+        run: |
+          STRATEGY="${{ needs.resolve-inputs.outputs.deployment_strategy || 'full' }}"
+          CUSTOM_SPLIT="${{ needs.resolve-inputs.outputs.traffic_split }}"
+
+          if [ -n "$CUSTOM_SPLIT" ]; then
+            STABLE=$(echo $CUSTOM_SPLIT | cut -d: -f1)
+            NEW=$(echo $CUSTOM_SPLIT | cut -d: -f2)
+          elif [ "$STRATEGY" == "canary" ]; then
+            STABLE=90
+            NEW=10
+          elif [ "$STRATEGY" == "ab_test" ]; then
+            STABLE=50
+            NEW=50
+          else
+            STABLE=0
+            NEW=100
+          fi
+
+          echo "strategy=$STRATEGY" >> $GITHUB_OUTPUT
+          echo "stable_percent=$STABLE" >> $GITHUB_OUTPUT
+          echo "new_percent=$NEW" >> $GITHUB_OUTPUT
+
+          echo "Strategy: $STRATEGY (${STABLE}% stable / ${NEW}% new)"
+
+      - name: Deploy New Revision
+        id: deploy
+        env:
+          VERTEX_ENDPOINT_ID: ${{ needs.deploy-model.outputs.endpoint_id }}
+        run: |
+          echo "Deploying Cloud Security Advisor (thin client)..."
+          echo "   Vertex AI Endpoint: $VERTEX_ENDPOINT_ID"
+
+          STRATEGY="${{ steps.strategy.outputs.strategy }}"
+
+          # Set env vars for the Cloud Run service
+          ENV_VARS="INFERENCE_BACKEND=vertex_ai"
+          ENV_VARS="${ENV_VARS},VERTEX_ENDPOINT_ID=${VERTEX_ENDPOINT_ID}"
+          ENV_VARS="${ENV_VARS},VERTEX_PROJECT=${PROJECT_ID}"
+          ENV_VARS="${ENV_VARS},VERTEX_LOCATION=${REGION}"
+
+          if [ "$STRATEGY" == "full" ]; then
+            gcloud run deploy $SERVICE_NAME \
+              --source . \
+              --region $REGION \
+              --memory 512Mi \
+              --cpu 1 \
+              --timeout 300 \
+              --port 8080 \
+              --set-env-vars "$ENV_VARS" \
+              --quiet
+          else
+            REVISION_SUFFIX=$(date +%Y%m%d%H%M%S)
+
+            gcloud run deploy $SERVICE_NAME \
+              --source . \
+              --region $REGION \
+              --memory 512Mi \
+              --cpu 1 \
+              --timeout 300 \
+              --port 8080 \
+              --set-env-vars "$ENV_VARS" \
+              --tag "canary-${REVISION_SUFFIX}" \
+              --no-traffic \
+              --quiet
+
+            NEW_REVISION=$(gcloud run revisions list \
+              --service=$SERVICE_NAME \
+              --region=$REGION \
+              --format='value(name)' \
+              --limit=1)
+
+            echo "revision=$NEW_REVISION" >> $GITHUB_OUTPUT
+
+            NEW_PERCENT=${{ steps.strategy.outputs.new_percent }}
+
+            gcloud run services update-traffic $SERVICE_NAME \
+              --region=$REGION \
+              --to-revisions="${NEW_REVISION}=${NEW_PERCENT}" \
+              --quiet || true
+          fi
+
+          SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
+            --region=$REGION \
+            --format='value(status.url)')
+
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "Deployed: $SERVICE_URL"
+
+      - name: Update Manifest with Deployment
+        if: success()
+        run: |
+          MODEL_URI="${{ needs.gate3-pre-deploy.outputs.model_uri }}"
+
+          # Download manifest
+          gcloud storage cp "$MODEL_URI/manifest.json" ./manifest.json 2>/dev/null || true
+
+          if [ -f ./manifest.json ]; then
+            python scripts/manifest.py add-scan \
+              --manifest manifest.json \
+              --gate gate3 \
+              --scan-uuid "$(cat gate3-scan-results.json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("uuid","unknown"))' 2>/dev/null || echo unknown)" \
+              --verdict "${{ needs.gate3-pre-deploy.outputs.scan_verdict }}" \
+              --security-group "auto-detected" \
+              --target "$MODEL_URI" \
+              --target-type published_model \
+              --warn-only
+
+            python scripts/manifest.py add-deployment \
+              --manifest manifest.json \
+              --vertex-endpoint-id "${{ needs.deploy-model.outputs.endpoint_id }}" \
+              --cloud-run-revision "${{ steps.deploy.outputs.revision || 'latest' }}" \
+              --strategy "${{ needs.resolve-inputs.outputs.deployment_strategy || 'full' }}"
+
+            gcloud storage cp manifest.json "$MODEL_URI/manifest.json"
+            echo "Manifest updated with deployment record"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## Gate 3: Deploy Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ needs.resolve-inputs.outputs.target_env || 'staging' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Model Version | ${{ needs.resolve-inputs.outputs.model_version || 'latest' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Model Endpoint | \`${{ needs.deploy-model.outputs.endpoint_id }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Strategy | ${{ steps.strategy.outputs.strategy }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Traffic | ${{ steps.strategy.outputs.stable_percent }}% / ${{ steps.strategy.outputs.new_percent }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gate 3 Scan | ${{ needs.gate3-pre-deploy.outputs.scan_verdict }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Service URL | \`${{ steps.deploy.outputs.url }}\` |" >> $GITHUB_STEP_SUMMARY
