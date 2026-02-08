@@ -5,7 +5,7 @@
 MODULE=$1
 STUDENT_ID=$2
 RESULT_JSON=$3
-WEBHOOK_URL="${VERIFICATION_WEBHOOK_URL:-https://your-leaderboard-url.run.app/api/verify}"
+WEBHOOK_URL="${VERIFICATION_WEBHOOK_URL:-https://airs-lab-leaderboard-139115513766.us-central1.run.app/api/verify}"
 
 if [ -z "$MODULE" ] || [ -z "$STUDENT_ID" ]; then
     echo "Usage: post-verification.sh <module> <student_id> <result_json>"
