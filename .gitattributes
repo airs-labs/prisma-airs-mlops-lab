@@ -1,0 +1,11 @@
+# Exercise files: keep lab's version when merging from main.
+# These files are intentionally different on the lab branch
+# (stripped/simplified for student exercises).
+#
+# Requires: git config merge.ours.driver true
+.github/workflows/gate-2-publish.yaml merge=ours
+.github/workflows/gate-3-deploy.yaml merge=ours
+airs/scan_model.py merge=ours
+src/airs_mlops_lab/scanning/security.py merge=ours
+src/airs_mlops_lab/scanning/__init__.py merge=ours
+README.md merge=ours

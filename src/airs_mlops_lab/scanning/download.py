@@ -1,4 +1,8 @@
-"""Model download utilities for Hugging Face models."""
+"""Utility functions for downloading models from HuggingFace and GCS.
+
+These are helper utilities for local development and testing,
+not used by the production pipeline.
+"""
 
 from pathlib import Path
 
