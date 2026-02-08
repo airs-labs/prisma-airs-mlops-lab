@@ -1,0 +1,27 @@
+Verify Module 1: ML Fundamentals & HuggingFace
+
+This module is quiz-based (concepts, not code output).
+
+Ask these verification questions (one at a time, wait for answers):
+1. "What is a LoRA adapter and why is it cheaper than full fine-tuning?"
+2. "Why should enterprises prefer safetensors over pickle format for model weights?"
+3. "Name two things you'd check about a model on HuggingFace before using it in production."
+
+Scoring:
+- Good answer (demonstrates understanding): 3 points
+- Partial answer (has the right idea but missing key details): 2 points
+- Needed a hint to answer: 1 point
+- Could not answer: 0 points
+
+Update lab/.progress.json under modules.1:
+- status: "complete"
+- verified: true
+- quiz.score: total points (max 9)
+- quiz.attempts: increment
+
+Add quiz points to leaderboard_points.
+
+If score >= 6: Module complete. Suggest Module 2.
+If score < 6: Suggest reviewing topics they struggled with.
+
+Call: bash lab/verify/post-verification.sh 1 "$STUDENT_ID" "$RESULT_JSON"

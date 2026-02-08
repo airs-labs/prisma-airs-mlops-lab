@@ -1,8 +1,7 @@
 name: "Gate 3: Deploy"
 
-# Gate 3 performs pre-deploy verification and deploys to Cloud Run
-# with A/B testing support via traffic splitting.
-# Direct AIRS scanning via GCS URI - no download needed!
+# Gate 3 resolves the model URI, deploys to Vertex AI, and deploys
+# the thin client app to Cloud Run with A/B testing support.
 
 on:
   workflow_dispatch:
@@ -34,11 +33,6 @@ on:
         required: false
         default: ''
 
-      skip_manifest_check:
-        description: 'Skip manifest verification (emergency override)'
-        type: boolean
-        default: false
-
   workflow_run:
     workflows: ["Gate 2: Publish Model"]
     types: [completed]
@@ -53,7 +47,6 @@ env:
   REGION: us-central1
   PROJECT_ID: your-gcp-project-id
   GCS_MODEL_BUCKET: gs://your-model-bucket/approved-models
-  MODEL_SECURITY_API_ENDPOINT: https://api.sase.paloaltonetworks.com/aims
   VLLM_IMAGE: us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250202_0916_RC00
 
 jobs:
@@ -70,7 +63,6 @@ jobs:
       target_env: ${{ steps.resolve.outputs.target_env }}
       deployment_strategy: ${{ steps.resolve.outputs.deployment_strategy }}
       traffic_split: ${{ steps.resolve.outputs.traffic_split }}
-      skip_manifest_check: ${{ steps.resolve.outputs.skip_manifest_check }}
 
     steps:
       - name: Resolve from workflow_dispatch
@@ -82,7 +74,6 @@ jobs:
           echo "target_env=${{ inputs.target_env }}" >> $GITHUB_OUTPUT
           echo "deployment_strategy=${{ inputs.deployment_strategy }}" >> $GITHUB_OUTPUT
           echo "traffic_split=${{ inputs.traffic_split }}" >> $GITHUB_OUTPUT
-          echo "skip_manifest_check=${{ inputs.skip_manifest_check }}" >> $GITHUB_OUTPUT
 
       - name: Resolve from Gate 2 chain
         if: github.event_name == 'workflow_run'
@@ -122,7 +113,6 @@ jobs:
           echo "target_env=staging" >> $GITHUB_OUTPUT
           echo "deployment_strategy=full" >> $GITHUB_OUTPUT
           echo "traffic_split=" >> $GITHUB_OUTPUT
-          echo "skip_manifest_check=false" >> $GITHUB_OUTPUT
 
       - name: Consolidate
         id: resolve
@@ -132,7 +122,7 @@ jobs:
           else
             SRC="chain"
           fi
-          for key in should_run model_version target_env deployment_strategy traffic_split skip_manifest_check; do
+          for key in should_run model_version target_env deployment_strategy traffic_split; do
             VAL=$(cat "$GITHUB_OUTPUT" | grep "^${key}=" | tail -1 | cut -d= -f2- || echo "")
           done
 
@@ -143,49 +133,27 @@ jobs:
             echo "target_env=${{ steps.dispatch.outputs.target_env }}" >> $GITHUB_OUTPUT
             echo "deployment_strategy=${{ steps.dispatch.outputs.deployment_strategy }}" >> $GITHUB_OUTPUT
             echo "traffic_split=${{ steps.dispatch.outputs.traffic_split }}" >> $GITHUB_OUTPUT
-            echo "skip_manifest_check=${{ steps.dispatch.outputs.skip_manifest_check }}" >> $GITHUB_OUTPUT
           else
             echo "should_run=${{ steps.chain.outputs.should_run }}" >> $GITHUB_OUTPUT
             echo "model_version=${{ steps.chain.outputs.model_version }}" >> $GITHUB_OUTPUT
             echo "target_env=${{ steps.chain.outputs.target_env }}" >> $GITHUB_OUTPUT
             echo "deployment_strategy=${{ steps.chain.outputs.deployment_strategy }}" >> $GITHUB_OUTPUT
             echo "traffic_split=${{ steps.chain.outputs.traffic_split }}" >> $GITHUB_OUTPUT
-            echo "skip_manifest_check=${{ steps.chain.outputs.skip_manifest_check }}" >> $GITHUB_OUTPUT
           fi
 
   # ============================================
-  # GATE 3: Pre-Deploy Verification
+  # Resolve Model URI
   # ============================================
-  gate3-pre-deploy:
-    name: "Gate 3: Pre-Deploy Scan"
+  resolve-model:
+    name: "Resolve Model URI"
     needs: [resolve-inputs]
     runs-on: ubuntu-latest
     if: needs.resolve-inputs.outputs.should_run == 'true'
 
     outputs:
-      scan_verdict: ${{ steps.scan.outputs.verdict }}
       model_uri: ${{ steps.resolve.outputs.model_uri }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install AIRS SDK
-        env:
-          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
-          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
-          TSG_ID: ${{ secrets.TSG_ID }}
-        run: |
-          python -m pip install --upgrade pip
-          chmod +x scripts/get-pypi-url.sh
-          PYPI_URL=$(./scripts/get-pypi-url.sh)
-          pip install --extra-index-url "$PYPI_URL" -r airs/requirements.txt
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -216,116 +184,14 @@ jobs:
           echo "model_uri=$MODEL_URI" >> $GITHUB_OUTPUT
           echo "Resolved model: $MODEL_URI"
 
-      - name: "GATE 3: Pre-Deploy AIRS Scan"
-        id: scan
-        env:
-          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
-          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
-          TSG_ID: ${{ secrets.TSG_ID }}
-        run: |
-          echo ""
-          echo "======================================================="
-          echo "  GATE 3: PRE-DEPLOY VERIFICATION"
-          echo "  Model: ${{ steps.resolve.outputs.model_uri }}"
-          echo "======================================================="
-          echo ""
-
-          MODEL_URI="${{ steps.resolve.outputs.model_uri }}"
-
-          # Direct GCS scan - no download needed!
-          # Security group auto-detected from source type (GCS for gs:// URIs)
-          echo "Direct GCS scan (no download needed)"
-
-          # --warn-only: BLOCKED verdict exits 0 (policy rules shouldn't block deploy)
-          python airs/scan_model.py \
-            --model-path "$MODEL_URI" \
-            --warn-only \
-            --output-json gate3-scan-results.json
-
-          # Parse verdict for reporting
-          VERDICT=$(python -c "
-          import json
-          with open('gate3-scan-results.json') as f:
-              data = json.load(f)
-          v = str(data.get('eval_outcome', 'UNKNOWN'))
-          print(v.split('.')[-1].upper())
-          ")
-
-          echo "verdict=$VERDICT" >> $GITHUB_OUTPUT
-
-          echo ""
-          echo "======================================================="
-          echo "  GATE 3 RESULT: $VERDICT"
-          echo "======================================================="
-
-      - name: Upload Scan Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: gate3-scan-results
-          path: gate3-scan-results.json
-          retention-days: 30
-
-  # ============================================
-  # Verify Model Provenance
-  # ============================================
-  verify-manifest:
-    name: "Verify Model Provenance"
-    needs: [resolve-inputs, gate3-pre-deploy]
-    runs-on: ubuntu-latest
-    if: >
-      success() &&
-      needs.resolve-inputs.outputs.skip_manifest_check != 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Setup Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Verify Manifest
-        run: |
-          MODEL_URI="${{ needs.gate3-pre-deploy.outputs.model_uri }}"
-
-          echo "Downloading manifest from $MODEL_URI..."
-          gcloud storage cp "$MODEL_URI/manifest.json" ./manifest.json 2>/dev/null || {
-            echo "::error::No manifest.json found at $MODEL_URI"
-            echo "This model has no provenance chain."
-            echo "Use skip_manifest_check=true to override (not recommended)."
-            exit 1
-          }
-
-          echo ""
-          echo "Model Manifest:"
-          python scripts/manifest.py show --manifest ./manifest.json
-          echo ""
-
-          python scripts/manifest.py verify \
-            --manifest ./manifest.json \
-            --require-scan gate2 \
-            --require-verdict ALLOWED BLOCKED
-
-          echo ""
-          echo "Model provenance verified. Safe to deploy."
-
   # ============================================
   # Deploy Vertex AI Model Endpoint
   # ============================================
   deploy-model:
     name: "Deploy Model to Vertex AI"
-    needs: [resolve-inputs, gate3-pre-deploy, verify-manifest]
+    needs: [resolve-inputs, resolve-model]
     runs-on: ubuntu-latest
-    if: |
-      always() &&
-      needs.gate3-pre-deploy.result == 'success' &&
-      (needs.verify-manifest.result == 'success' || needs.resolve-inputs.outputs.skip_manifest_check == 'true')
+    if: needs.resolve-model.result == 'success'
 
     outputs:
       endpoint_id: ${{ steps.endpoint.outputs.endpoint_id }}
@@ -343,7 +209,7 @@ jobs:
       - name: Upload Model to Vertex AI Registry
         id: upload
         run: |
-          MODEL_URI="${{ needs.gate3-pre-deploy.outputs.model_uri }}"
+          MODEL_URI="${{ needs.resolve-model.outputs.model_uri }}"
           echo "Uploading model from: $MODEL_URI"
 
           # Upload model with vLLM serving container
@@ -472,7 +338,7 @@ jobs:
   # ============================================
   deploy:
     name: "Deploy App to Cloud Run"
-    needs: [resolve-inputs, gate3-pre-deploy, deploy-model]
+    needs: [resolve-inputs, resolve-model, deploy-model]
     runs-on: ubuntu-latest
     if: success()
 
@@ -591,22 +457,12 @@ jobs:
       - name: Update Manifest with Deployment
         if: success()
         run: |
-          MODEL_URI="${{ needs.gate3-pre-deploy.outputs.model_uri }}"
+          MODEL_URI="${{ needs.resolve-model.outputs.model_uri }}"
 
           # Download manifest
           gcloud storage cp "$MODEL_URI/manifest.json" ./manifest.json 2>/dev/null || true
 
           if [ -f ./manifest.json ]; then
-            python scripts/manifest.py add-scan \
-              --manifest manifest.json \
-              --gate gate3 \
-              --scan-uuid "$(cat gate3-scan-results.json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("uuid","unknown"))' 2>/dev/null || echo unknown)" \
-              --verdict "${{ needs.gate3-pre-deploy.outputs.scan_verdict }}" \
-              --security-group "auto-detected" \
-              --target "$MODEL_URI" \
-              --target-type published_model \
-              --warn-only
-
             python scripts/manifest.py add-deployment \
               --manifest manifest.json \
               --vertex-endpoint-id "${{ needs.deploy-model.outputs.endpoint_id }}" \
@@ -628,5 +484,4 @@ jobs:
           echo "| Model Endpoint | \`${{ needs.deploy-model.outputs.endpoint_id }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Strategy | ${{ steps.strategy.outputs.strategy }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Traffic | ${{ steps.strategy.outputs.stable_percent }}% / ${{ steps.strategy.outputs.new_percent }}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Gate 3 Scan | ${{ needs.gate3-pre-deploy.outputs.scan_verdict }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Service URL | \`${{ steps.deploy.outputs.url }}\` |" >> $GITHUB_STEP_SUMMARY

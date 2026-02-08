@@ -54,13 +54,6 @@ def parse_args():
         help="Security group UUID or shorthand key (local, gcs-default, hf, warn, block). "
              "Auto-detected from model path if not specified.",
     )
-    parser.add_argument(
-        "--label", "-l",
-        action="append",
-        default=[],
-        metavar="KEY=VALUE",
-        help="Add label to scan (repeatable, e.g. -l gate=2 -l run_id=abc). Max 50 labels.",
-    )
     parser.add_argument("--warn-only", action="store_true", help="Treat BLOCKED verdict as warning (exit 0)")
     parser.add_argument("--output-json", help="Path to save JSON report")
     return parser.parse_args()
@@ -129,22 +122,7 @@ def resolve_security_group(group_arg, source_type):
         sys.exit(1)
 
 
-def parse_labels(label_args):
-    """Parse KEY=VALUE label pairs from CLI args into a dict."""
-    labels = {}
-    for item in label_args:
-        if "=" not in item:
-            console.print(f"[bold red]Invalid label format: '{item}' (expected KEY=VALUE)[/bold red]")
-            sys.exit(1)
-        key, value = item.split("=", 1)
-        labels[key.strip()] = value.strip()
-    if len(labels) > 50:
-        console.print(f"[bold red]Too many labels: {len(labels)} (max 50)[/bold red]")
-        sys.exit(1)
-    return labels
-
-
-def scan_model(model_path, security_group_uuid, labels=None):
+def scan_model(model_path, security_group_uuid):
     """Execute the scan using AIRS SDK."""
     if not AIRS_AVAILABLE:
         console.print("[bold red]model-security-client package not installed![/bold red]")
@@ -176,20 +154,14 @@ def scan_model(model_path, security_group_uuid, labels=None):
         )
         client = ModelSecurityAPIClient(base_url=base_url, timeout=60.0)
 
-        # Build scan kwargs
-        scan_kwargs = dict(
-            security_group_uuid=security_group_uuid,
-            model_path=local_path,
-            model_uri=model_uri,
-            poll_timeout_secs=600,
-        )
-        if labels:
-            scan_kwargs["labels"] = labels
-            console.print(f"  Labels: [cyan]{labels}[/cyan]")
-
         # Trigger Scan
         with console.status("[bold green]Scanning model artifacts...[/bold green]"):
-            response = client.scan(**scan_kwargs)
+            response = client.scan(
+                security_group_uuid=security_group_uuid,
+                model_path=local_path,
+                model_uri=model_uri,
+                poll_timeout_secs=600,
+            )
 
         client.close()
 
@@ -214,11 +186,8 @@ def main():
     source_type = detect_source_type(args.model_path)
     security_group_uuid = resolve_security_group(args.security_group, source_type)
 
-    # Parse labels
-    labels = parse_labels(args.label) if args.label else None
-
     # Run scan
-    results = scan_model(args.model_path, security_group_uuid, labels=labels)
+    results = scan_model(args.model_path, security_group_uuid)
 
     # Save Report
     if args.output_json:
