@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'AIRS MLOps Lab',
   description: 'Secure MLOps Pipeline Workshop with AI Runtime Security',
+  base: '/prisma-airs-mlops-lab/',
 
   themeConfig: {
     nav: [
