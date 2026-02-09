@@ -7,7 +7,7 @@ Welcome to Act 2 -- **Understand the Security.**
 You have a working ML pipeline. Models train, merge, publish, and deploy. But right now there is nothing stopping a compromised model from flowing straight to production. Before you can secure the pipeline, you need to understand AIRS inside and out -- the way you would need to demo it to a customer.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 4` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 4` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -55,7 +55,7 @@ Create two custom security groups in SCM: one that blocks on every rule, one tha
 
 ## Verification
 
-Run `/verify-4` in Claude Code to confirm RBAC setup, successful scans, custom security groups, and conceptual understanding.
+Run `/lab:verify-4` in Claude Code to confirm RBAC setup, successful scans, custom security groups, and conceptual understanding.
 
 ## What's Next
 

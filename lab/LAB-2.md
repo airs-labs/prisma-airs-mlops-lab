@@ -29,7 +29,7 @@ You are about to fine-tune an open-source LLM into a cybersecurity advisor. This
 
 You would not deploy infrastructure you do not understand. The same rule applies to ML pipelines. Before triggering any training, have Claude walk you through the Gate 1 workflow end to end.
 
-Use `/explore training-pipeline` in Claude Code for guided exploration.
+Use `/lab:explore training-pipeline` in Claude Code for guided exploration.
 
 ### Challenge 2.2: Customize and Train
 
@@ -41,7 +41,7 @@ Trigger the Gate 1 workflow via GitHub Actions. Then monitor it: check the GitHu
 
 Training takes time. Use it wisely. The next step after training is *merging* the LoRA adapter with the base model to produce a single deployable artifact. This is a critical concept -- understand it now.
 
-Use `/explore merge-process` in Claude Code for guided exploration.
+Use `/lab:explore merge-process` in Claude Code for guided exploration.
 
 ### Challenge 2.4: Check Your Work
 

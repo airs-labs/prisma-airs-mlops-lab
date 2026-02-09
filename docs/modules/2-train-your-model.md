@@ -5,7 +5,7 @@
 You are about to fine-tune an open-source LLM into a cybersecurity advisor. This is the same workflow that enterprises use to customize foundation models for domain-specific tasks. You will trigger a real Vertex AI training job, monitor it, and understand every step of the process.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 2` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 2` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -50,7 +50,7 @@ Verify that training artifacts (adapter files, manifest) are in GCS at the expec
 
 ## Verification
 
-Run `/verify-2` in Claude Code to confirm a successful training run, artifacts in GCS, and manifest creation.
+Run `/lab:verify-2` in Claude Code to confirm a successful training run, artifacts in GCS, and manifest creation.
 
 ## What's Next
 

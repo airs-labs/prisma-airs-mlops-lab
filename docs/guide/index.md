@@ -69,12 +69,12 @@ Claude Code is your lab mentor. It has been configured through `CLAUDE.md` to:
 
 | Command | Purpose |
 |---------|---------|
-| `/module N` | Start or resume module N |
-| `/explore TOPIC` | Guided exploration of a topic |
-| `/verify-N` | Run verification checks for module N |
-| `/hint` | Get progressive help (concept -> approach -> specific) |
-| `/quiz` | Test your understanding |
-| `/progress` | See your completion status |
+| `/lab:module N` | Start or resume module N |
+| `/lab:explore TOPIC` | Guided exploration of a topic |
+| `/lab:verify-N` | Run verification checks for module N |
+| `/lab:hint` | Get progressive help (concept -> approach -> specific) |
+| `/lab:quiz` | Test your understanding |
+| `/lab:progress` | See your completion status |
 
 ## Begin the Lab
 

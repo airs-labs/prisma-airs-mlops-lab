@@ -29,7 +29,7 @@ A trained model sitting in cloud storage does not help anyone. In this module, y
 
 You would not push a button labeled "Deploy to Production" without understanding what happens. Before you trigger anything, build a complete mental model of the inference architecture.
 
-Use `/explore serving-architecture` in Claude Code for guided exploration.
+Use `/lab:explore serving-architecture` in Claude Code for guided exploration.
 
 ### Challenge 3.2: Run the Pipeline
 
@@ -37,7 +37,7 @@ Time to deploy. You will trigger Gate 2 (merge + publish) followed by Gate 3 (de
 
 **Important context:** On the `lab-start` branch, there are NO AIRS scans in Gate 2 and NO manifest verification in Gate 3. The pipeline currently runs without any security checks. You will add those in Module 5.
 
-Use `/explore deployment-pipeline` in Claude Code for guided exploration.
+Use `/lab:explore deployment-pipeline` in Claude Code for guided exploration.
 
 ### Challenge 3.3: Test Your App
 

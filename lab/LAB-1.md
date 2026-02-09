@@ -28,7 +28,7 @@ Before you can secure an ML pipeline, you need to understand what flows through 
 
 You are a security engineer who just learned that your organization is pulling open-source models from HuggingFace. Your job is to evaluate the risk. Start by understanding what HuggingFace is and how enterprises use it.
 
-Use `/explore hf-orientation` in Claude Code for guided exploration.
+Use `/lab:explore hf-orientation` in Claude Code for guided exploration.
 
 ### Challenge 1.2: The Format Question
 
@@ -42,13 +42,13 @@ This is the seed for Module 6 (The Threat Zoo) where you will build actual malic
 
 You are about to fine-tune a model to be a cybersecurity advisor. Before you do, you need to understand what fine-tuning actually is and what kind of data drives it.
 
-Use `/explore datasets-finetuning` in Claude Code for guided exploration.
+Use `/lab:explore datasets-finetuning` in Claude Code for guided exploration.
 
 ### Challenge 1.4: Platform Landscape
 
 When an enterprise decides to fine-tune and serve a model, they have to choose a platform. This challenge is about understanding those tradeoffs -- the same conversation you would have with a customer.
 
-Use `/explore platform-landscape` in Claude Code for guided exploration.
+Use `/lab:explore platform-landscape` in Claude Code for guided exploration.
 
 ---
 

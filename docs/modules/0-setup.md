@@ -5,7 +5,7 @@
 Before you can build or secure anything, you need a working environment. This module ensures your GCP project, GitHub CLI, AIRS credentials, and Claude Code are all configured and talking to each other. Think of this as the pre-flight checklist before takeoff.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 0` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 0` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -52,7 +52,7 @@ Read `CLAUDE.md` to understand how Claude has been configured for this lab -- it
 
 ## Verification
 
-Run `/verify-0` in Claude Code to confirm all setup checks pass and submit your progress to the leaderboard.
+Run `/lab:verify-0` in Claude Code to confirm all setup checks pass and submit your progress to the leaderboard.
 
 ## What's Next
 

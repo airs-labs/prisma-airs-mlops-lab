@@ -7,7 +7,7 @@ You have secured your pipeline. Now you need to understand what you are defendin
 This module is a hands-on threat lab. You will create intentionally malicious models, scan them with AIRS, and see exactly which rules catch which threats. Every model uses safe payloads (marker files, not real exploits), but the techniques are identical to those used in real-world attacks.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 6` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 6` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -61,7 +61,7 @@ Research actual ML supply chain attacks: baller423 pickle reverse shells, Nullif
 
 ## Verification
 
-Run `/verify-6` in Claude Code to confirm threat model creation, scanning results, format comparison, and real-world incident knowledge.
+Run `/lab:verify-6` in Claude Code to confirm threat model creation, scanning results, format comparison, and real-world incident knowledge.
 
 ## What's Next
 

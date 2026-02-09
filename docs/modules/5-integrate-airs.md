@@ -7,7 +7,7 @@ This is the "customer engagement" moment. Your pipeline works. Models train, mer
 You will add AIRS scanning to Gate 2, manifest verification to Gate 3, metadata labeling for traceability, and detailed evaluation reporting directly in GitHub Actions.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 5` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 5` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -54,7 +54,7 @@ Surface scan results in the GitHub Actions job summary so developers see exactly
 
 ## Verification
 
-Run `/verify-5` in Claude Code to confirm scanning in Gate 2, manifest verification in Gate 3, labels visible in SCM, and rich summaries in GitHub Actions.
+Run `/lab:verify-5` in Claude Code to confirm scanning in Gate 2, manifest verification in Gate 3, labels visible in SCM, and rich summaries in GitHub Actions.
 
 ## What's Next
 

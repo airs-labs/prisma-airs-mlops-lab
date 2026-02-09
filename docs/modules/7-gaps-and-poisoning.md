@@ -9,7 +9,7 @@ AIRS is excellent at what it does. It catches malicious code in pickle files, La
 In this module, you will create a poisoned model that passes every AIRS scan but gives dangerously wrong answers. You will see why scanning alone is insufficient and why defense in depth is a requirement, not a buzzword.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 7` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 7` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -65,7 +65,7 @@ The capstone exercise for the entire lab. A CISO asks: "If AIRS cannot catch dat
 
 ## Verification
 
-Run `/verify-7` in Claude Code to confirm your understanding of scanning gaps, poisoned model creation, A/B comparison results, and customer conversation readiness.
+Run `/lab:verify-7` in Claude Code to confirm your understanding of scanning gaps, poisoned model creation, A/B comparison results, and customer conversation readiness.
 
 ## Congratulations
 

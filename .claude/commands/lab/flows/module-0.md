@@ -11,10 +11,9 @@
 | Challenge 0.2: Project validation bonus | 2 | @ts-workshop |
 | Challenge 0.3: GitHub CLI | 2 | @all |
 | Challenge 0.4: AIRS secrets configured | 3 | @all |
-| Challenge 0.4: SCM API SA creation | 4 | @ts-workshop |
 | Challenge 0.5: Meet assistant | 1 | @all |
 | Quiz (2 questions) | 6 | @all |
-| **Total** | **16-26** | |
+| **Total** | **16-22** | |
 
 ---
 
@@ -181,34 +180,20 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 
 ## Challenge 0.4: Configure AIRS Access
 
-### Flow (@ts-workshop) — THE WOW MOMENT
+### Flow (@ts-workshop)
 
-This challenge demonstrates Claude's ability to work with APIs in real time. The student will see Claude use Context7 and the SCM API to create a service account — showcasing what's possible with AI-assisted operations.
+1. Check if the student has their AIRS credentials. If not, direct them to their instructor:
+   "If you don't have your AIRS credentials yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access and service account creation. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
 
-1. First, check if the student has their AIRS tenant set up. If they don't have credentials yet, direct them to their instructor:
-   "If you haven't set up your AIRS tenant yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
+2. Briefly explain what the three credentials are:
+   - **MODEL_SECURITY_CLIENT_ID**: OAuth2 client ID for the AIRS service account
+   - **MODEL_SECURITY_CLIENT_SECRET**: OAuth2 client secret
+   - **TSG_ID**: Tenant Service Group ID — identifies which AIRS tenant to scan against
 
-2. Check prework. Use AskUserQuestion:
-   "Your prework included creating a service account in SCM Apps Hub with IAM permissions. Do you have the CLIENT_ID, CLIENT_SECRET, and TSG_ID from that service account?"
+3. Use AskUserQuestion:
+   "Do you have the CLIENT_ID, CLIENT_SECRET, and TSG_ID from your AIRS service account?"
 
-3. If they have credentials from prework, proceed to step 6.
-
-4. THE WOW MOMENT — Create a new service account via SCM API:
-   a. Explain: "Let's create a new service account that has ONLY model security API permissions. This follows the principle of least privilege — the scanning pipeline should only be able to submit scans and read results."
-   b. Use Context7 to look up the SCM IAM API documentation for service account creation.
-   c. The goal: Create a service account in the student's AIRS child TSG with a custom role that has ONLY these permissions:
-      - Model security scan submission
-      - Model security scan result reading
-      - No security group management
-      - No user management
-      - No policy modification
-   d. Use the student's parent TSG service account credentials to authenticate to the SCM API.
-   e. Walk through what you're doing and why — this is a learning moment, not a magic trick.
-   f. Verify the new SA can perform a scan (or at least authenticate).
-
-5. Award bonus points for the SCM API exercise.
-
-6. Set GitHub secrets with the credentials:
+4. If they have credentials, set GitHub secrets:
    ```
    gh secret set MODEL_SECURITY_CLIENT_ID
    gh secret set MODEL_SECURITY_CLIENT_SECRET
@@ -216,18 +201,19 @@ This challenge demonstrates Claude's ability to work with APIs in real time. The
    ```
    Each command will prompt the student to paste the value.
 
-7. Verify secrets are set:
+5. Verify secrets are set:
    ```
    gh secret list
    ```
    Should show all three secrets.
 
+6. If they don't have credentials:
+   - Add blocker: `airs-credentials-missing`
+   - Strong warning: "This is a hard blocker. Without AIRS credentials, you can complete Modules 0-3 (building the pipeline) and participate in Q&A discussions for all modules. However, you won't be able to run AIRS scans yourself in Modules 4-7. See your instructor to get set up."
+
 ### Flow (@self-paced)
 
-1. Explain what the three credentials are:
-   - **MODEL_SECURITY_CLIENT_ID**: OAuth2 client ID for the AIRS service account
-   - **MODEL_SECURITY_CLIENT_SECRET**: OAuth2 client secret (the password)
-   - **TSG_ID**: Tenant Service Group ID — identifies which AIRS tenant to scan against
+1. Explain what the three credentials are (same as above).
 
 2. Where to get them:
    - From your Prisma Cloud / Strata Cloud Manager (SCM) tenant
@@ -240,7 +226,7 @@ This challenge demonstrates Claude's ability to work with APIs in real time. The
    - "I have them ready"
    - "I don't have them yet"
 
-4. If they have them → proceed to gh secret set (same as step 5 above)
+4. If they have them → proceed to gh secret set (same as @ts-workshop step 4 above)
 
 5. If they don't have them:
    - Add blocker: `airs-credentials-missing`
@@ -264,7 +250,6 @@ gh secret list
 ### Points
 
 - All three secrets configured: **3 pts**
-- @ts-workshop: SCM API SA creation exercise completed: **4 pts bonus**
 
 ---
 

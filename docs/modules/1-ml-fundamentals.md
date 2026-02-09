@@ -7,7 +7,7 @@ Before you can secure an ML pipeline, you need to understand what flows through 
 You will not write code in this module. You will use Claude as a research partner to build the foundational knowledge you need for everything that follows.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 1` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 1` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -54,7 +54,7 @@ Compare Vertex AI vs raw GCE instances for fine-tuning and serving. Understand t
 
 ## Verification
 
-Run `/verify-1` in Claude Code. This module's verification is quiz-based -- you demonstrate understanding of formats, fine-tuning concepts, platform tradeoffs, and model registry risks.
+Run `/lab:verify-1` in Claude Code. This module's verification is quiz-based -- you demonstrate understanding of formats, fine-tuning concepts, platform tradeoffs, and model registry risks.
 
 ## What's Next
 

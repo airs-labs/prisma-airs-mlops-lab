@@ -5,7 +5,7 @@
 A trained model sitting in cloud storage does not help anyone. In this module, you take your fine-tuned model from training artifacts to a live, running application. You will merge the LoRA adapter, publish the model, deploy it to a Vertex AI GPU endpoint, and deploy a thin application on Cloud Run. By the end, you will have a working cybersecurity advisor chatbot in a browser.
 
 ::: tip Interactive Lab
-The full interactive experience for this module runs in **Claude Code**. Use `/module 3` to begin the guided walkthrough with your AI mentor.
+The full interactive experience for this module runs in **Claude Code**. Use `/lab:module 3` to begin the guided walkthrough with your AI mentor.
 :::
 
 ## Objectives
@@ -49,7 +49,7 @@ The capstone challenge for Act 1. Describe the full architecture covering where 
 
 ## Verification
 
-Run `/verify-3` in Claude Code to confirm your live application, deployed endpoint, and architectural understanding.
+Run `/lab:verify-3` in Claude Code to confirm your live application, deployed endpoint, and architectural understanding.
 
 ::: danger End of Act 1
 You just deployed a model to production without any security scanning. Anyone could have tampered with the base model, poisoned the training data, or injected malicious code into the artifacts. The pipeline works, but it is not secure. Modules 4-7 will fix that.
