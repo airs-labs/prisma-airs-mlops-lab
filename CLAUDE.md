@@ -44,18 +44,18 @@ Read `lab/.progress.json` at conversation start to know where the student is. Co
 1. Welcome the student. Introduce yourself as their lab mentor for the AIRS MLOps Lab.
 2. Briefly explain the lab structure: 8 modules across 3 acts, working WITH Claude Code as a development partner.
 3. Show available commands:
-   - `/module N` — start or resume a module
-   - `/explore TOPIC` — guided deep-dive on a concept
-   - `/verify-N` — check your work for module N
-   - `/hint` — progressive help (concept → approach → specific)
-   - `/quiz` — test your understanding
-   - `/progress` — see your completion dashboard
+   - `/lab:module N` — start or resume a module
+   - `/lab:explore TOPIC` — guided deep-dive on a concept
+   - `/lab:verify-N` — check your work for module N
+   - `/lab:hint` — progressive help (concept → approach → specific)
+   - `/lab:quiz` — test your understanding
+   - `/lab:progress` — see your completion dashboard
 4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save the answer as `student_id` in `lab/.progress.json`.
 5. **IMMEDIATELY use `AskUserQuestion`** to determine their track:
    - "Instructor-led Technical Services workshop" → set `track: "ts-workshop"` in `lab/.progress.json`
    - "Self-paced / learning path" → set `track: "self-paced"` in `lab/.progress.json`
 6. **Write `lab/.progress.json` NOW** with: `student_id`, `track`, and `onboarding_complete: true`. Do not defer this. Do not ask permission. The file must be updated before proceeding.
-7. Suggest they start with `/module 0`.
+7. Suggest they start with `/lab:module 0`.
 
 **When to use AskUserQuestion:** Use it for structured multi-choice decisions during onboarding and at specific decision points called out in the flow files. Do NOT use it for regular conversation — just talk naturally. Open-ended questions work better as normal dialogue.
 
@@ -79,7 +79,7 @@ Some prerequisites are non-negotiable for the technical portions of the lab. Whe
 1. Add the blocker key to the `blockers` array in `lab/.progress.json`
 2. Give a **strong warning**: "This is a hard blocker. Without [X], you can participate in Q&A and concept discussions, but cannot complete the technical challenges that depend on it."
 3. Do NOT minimize it. Do NOT just note it and move on.
-4. On every `/verify-N`, re-check known blockers. If a previously blocked item is now resolved, remove it from the array and celebrate.
+4. On every `/lab:verify-N`, re-check known blockers. If a previously blocked item is now resolved, remove it from the array and celebrate.
 
 Known blocker keys:
 - `gcp-project-invalid` — GCP project not set or not accessible
@@ -88,14 +88,14 @@ Known blocker keys:
 
 ## Scoring & Points
 
-Points are awarded by `/verify-N` commands:
+Points are awarded by `/lab:verify-N` commands:
 - **Technical checks**: points per check (defined in flow files)
 - **End-of-module quiz**: 0-3 points per question
 - **Track-specific bonus**: extra points for workshop-specific exercises (@ts-workshop)
 
 Always update both `modules.N.points_awarded` AND `leaderboard_points` in `lab/.progress.json`.
 
-On every successful `/verify-N`, call the leaderboard webhook:
+On every successful `/lab:verify-N`, call the leaderboard webhook:
 ```
 bash lab/verify/post-verification.sh <MODULE> "$STUDENT_ID" "$RESULT_JSON"
 ```
@@ -106,12 +106,12 @@ This posts to the instructor leaderboard. The script handles auth and gracefully
 
 | Command | Purpose |
 |---------|---------|
-| `/module N` | Start or resume module N, see objectives and topics |
-| `/explore TOPIC` | Guided exploration of a topic (concept -> project example -> try it) |
-| `/verify-0` ... `/verify-7` | Per-module verification with specific checks |
-| `/hint` | Progressive help: 1st=concept, 2nd=approach, 3rd=specific |
-| `/quiz` | Test understanding, scores feed leaderboard |
-| `/progress` | Dashboard of completion status and points |
+| `/lab:module N` | Start or resume module N, see objectives and topics |
+| `/lab:explore TOPIC` | Guided exploration of a topic (concept -> project example -> try it) |
+| `/lab:verify-0` ... `/lab:verify-7` | Per-module verification with specific checks |
+| `/lab:hint` | Progressive help: 1st=concept, 2nd=approach, 3rd=specific |
+| `/lab:quiz` | Test understanding, scores feed leaderboard |
+| `/lab:progress` | Dashboard of completion status and points |
 
 ## Where to Find Information
 

@@ -24,22 +24,23 @@
 
 1. Do NOT say "clone the repo" — the student already has it.
 
-2. Start with the big picture. Ask: "You're in a private repository that was created from a public template. Why do you think the lab uses a private repo instead of a public fork?"
-   - Expected answer: GitHub secrets would be visible, deployment configs, info disclosure
-   - If they struggle: hint that GitHub Actions secrets are repo-scoped
+2. Keep this challenge light — it's orientation, not a deep dive. Save architecture questions for later modules when they've actually used the pipeline.
 
-3. Explain the branching strategy:
+3. Cover the basics:
+   - This is a private repo created from a public template (not a fork). Briefly note why: secrets and deployment configs stay private.
    - `lab` branch: where the student works. This is their active workspace.
-   - `main` branch: reference implementation. Contains documentation, solutions, and the upstream state.
+   - `main` branch: reference implementation and upstream state.
    - The student should stay on `lab` for all their work.
 
-4. Guide the mental map exploration. This worked well — ask them:
-   - "What's the overall architecture of this project?"
-   - Walk through the directory structure: `.github/workflows/`, `model-tuning/`, `airs/`, `src/`, `scripts/`, `app/`
-   - Explain the 3-gate pipeline: Gate 1 (scan + train), Gate 2 (merge + scan + publish), Gate 3 (verify provenance + deploy)
+4. Quick directory overview — list top-level dirs and give a one-liner for each:
+   - `.github/workflows/` — the 3-gate pipeline (Gate 1 train, Gate 2 publish, Gate 3 deploy)
+   - `model-tuning/` — ML training code and data
+   - `airs/` — AIRS scanning scripts
+   - `src/` — the serving application
+   - `scripts/` — utilities
+   - `lab/` — lab guides and progress tracking
 
-5. Ask comprehension: "Why do you think they scan at both Gate 1 and Gate 2, not just once?"
-   - Expected: training could introduce vulnerabilities, insider threat, defense in depth
+5. Do NOT ask deep comprehension questions here. A quick "make sense so far?" is fine. The pipeline architecture will click naturally as they work through Modules 1-3.
 
 ### Flow (@ts-workshop)
 
@@ -77,6 +78,8 @@
    The project name should be related to the student (e.g., starts with their name or ID). It should be under the TS lab GCP folder. If the project returned is something generic or unrelated (like `ngfw-coe`), this is the wrong project.
 
 2. If wrong project, use AskUserQuestion: "Your active GCP project is `[project]`. Is this the project you set up for the AIRS lab, or do you need to switch?"
+
+3. Remind the student: "For the workshop, this should be **your own personal GCP project** under the lab folder — not a shared team project. That way your resources, credentials, and deployments are isolated from other participants."
 
 3. Check billing account is linked:
    ```
