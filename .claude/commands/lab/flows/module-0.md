@@ -185,12 +185,15 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 
 This challenge demonstrates Claude's ability to work with APIs in real time. The student will see Claude use Context7 and the SCM API to create a service account — showcasing what's possible with AI-assisted operations.
 
-1. Check prework. Use AskUserQuestion:
+1. First, check if the student has their AIRS tenant set up. If they don't have credentials yet, direct them to their instructor:
+   "If you haven't set up your AIRS tenant yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
+
+2. Check prework. Use AskUserQuestion:
    "Your prework included creating a service account in SCM Apps Hub with IAM permissions. Do you have the CLIENT_ID, CLIENT_SECRET, and TSG_ID from that service account?"
 
-2. If they have credentials from prework, proceed to step 5.
+3. If they have credentials from prework, proceed to step 6.
 
-3. THE WOW MOMENT — Create a new service account via SCM API:
+4. THE WOW MOMENT — Create a new service account via SCM API:
    a. Explain: "Let's create a new service account that has ONLY model security API permissions. This follows the principle of least privilege — the scanning pipeline should only be able to submit scans and read results."
    b. Use Context7 to look up the SCM IAM API documentation for service account creation.
    c. The goal: Create a service account in the student's AIRS child TSG with a custom role that has ONLY these permissions:
@@ -203,9 +206,9 @@ This challenge demonstrates Claude's ability to work with APIs in real time. The
    e. Walk through what you're doing and why — this is a learning moment, not a magic trick.
    f. Verify the new SA can perform a scan (or at least authenticate).
 
-4. Award bonus points for the SCM API exercise.
+5. Award bonus points for the SCM API exercise.
 
-5. Set GitHub secrets with the credentials:
+6. Set GitHub secrets with the credentials:
    ```
    gh secret set MODEL_SECURITY_CLIENT_ID
    gh secret set MODEL_SECURITY_CLIENT_SECRET
@@ -213,7 +216,7 @@ This challenge demonstrates Claude's ability to work with APIs in real time. The
    ```
    Each command will prompt the student to paste the value.
 
-6. Verify secrets are set:
+7. Verify secrets are set:
    ```
    gh secret list
    ```
