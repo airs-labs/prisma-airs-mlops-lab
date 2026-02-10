@@ -43,8 +43,11 @@
 
 ### Flow (@ts-workshop)
 
-6. Add upstream remote and sync history for instructor hotfixes:
-   "Your repo was created from a template, which means it has a fresh git history that's separate from the template. We need to connect it to the template repo and reset your branches so you share the same history. This lets you pull instructor updates AND submit PRs back to the template."
+6. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
+
+   Tell the student: "Your repo was created from a template, so it has a fresh git history separate from the template. I'm going to connect it to the template repo and sync the history so you can pull instructor updates and submit PRs back."
+
+   Then run these commands yourself:
 
    Step 1 — Add the upstream remote:
    ```
@@ -64,11 +67,11 @@
 
    git checkout lab
    ```
-   Explain: "The force-push is safe here because this is a fresh repo with no real work yet. After this, your repo shares git history with the template, so `git pull upstream lab` and PRs will work cleanly."
+   After running, explain: "The force-push was safe because this is a fresh repo with no real work yet. Now your repo shares git history with the template."
 
-   Step 3 — Verify:
-   - `git remote -v` should show both `origin` (their private repo) and `upstream` (the template).
-   - `git log --oneline -5` should show the same commits as the template, not just 'Initialize lab'.
+   Step 3 — Verify and show results:
+   - Run `git remote -v` and show both `origin` (their private repo) and `upstream` (the template).
+   - Run `git log --oneline -5` and show the shared commits (not just 'Initialize lab').
 
 ### Hints
 
@@ -199,10 +202,24 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 
 ## Challenge 0.4: Configure AIRS Access
 
+### Credential Handling (IMPORTANT)
+
+**Always encourage students to use a `.env` file** rather than pasting credentials directly into the chat. The repo includes a `.env.example` template. Students should:
+1. Copy `.env.example` to `.env` (already gitignored)
+2. Fill in their credentials there
+3. The mentor reads from `.env` to set GitHub secrets — no secrets in chat history
+
+When setting GitHub secrets, source the `.env` file and pipe values:
+```
+source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R <repo>
+```
+
+**Note:** With multiple remotes (origin + upstream), `gh` requires `-R owner/repo` to target the correct repository.
+
 ### Flow (@ts-workshop)
 
 1. Check if the student has their AIRS credentials. If not, direct them to their instructor:
-   "If you don't have your AIRS credentials yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access and service account creation. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
+   "If you don't have your AIRS credentials yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access and service account creation. You can download your credentials as a CSV from SCM. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
 
 2. Briefly explain what the three credentials are:
    - **MODEL_SECURITY_CLIENT_ID**: OAuth2 client ID for the AIRS service account
@@ -212,17 +229,18 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 3. Use AskUserQuestion:
    "Do you have the CLIENT_ID, CLIENT_SECRET, and TSG_ID from your AIRS service account?"
 
-4. If they have credentials, set GitHub secrets:
-   ```
-   gh secret set MODEL_SECURITY_CLIENT_ID
-   gh secret set MODEL_SECURITY_CLIENT_SECRET
-   gh secret set TSG_ID
-   ```
-   Each command will prompt the student to paste the value.
+4. If they have credentials, guide them to put values in `.env`:
+   - "Add your credentials to the `.env` file (copy from `.env.example` if you haven't already). Don't paste them directly in chat — the `.env` file is gitignored and safer."
+   - Once `.env` is ready, source it and set GitHub secrets (bias toward action — run the commands yourself):
+     ```
+     source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R <repo>
+     source .env && echo "$MODEL_SECURITY_CLIENT_SECRET" | gh secret set MODEL_SECURITY_CLIENT_SECRET -R <repo>
+     source .env && echo "$TSG_ID" | gh secret set TSG_ID -R <repo>
+     ```
 
 5. Verify secrets are set:
    ```
-   gh secret list
+   gh secret list -R <repo>
    ```
    Should show all three secrets.
 
@@ -236,7 +254,7 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 
 2. Where to get them:
    - From your Prisma Cloud / Strata Cloud Manager (SCM) tenant
-   - SCM → Settings → Service Accounts
+   - SCM → Settings → Service Accounts → create service account → download CSV
    - Your organization's AIRS administrator can provision these
 
 3. Use AskUserQuestion:
@@ -245,7 +263,7 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
    - "I have them ready"
    - "I don't have them yet"
 
-4. If they have them → proceed to gh secret set (same as @ts-workshop step 4 above)
+4. If they have them → guide to `.env` file, then set GitHub secrets (same as @ts-workshop step 4 above)
 
 5. If they don't have them:
    - Add blocker: `airs-credentials-missing`

@@ -50,7 +50,7 @@ and where does AIRS scanning fit — or not fit yet?"
 Expected answer should mention:
 - Gate 1: scan base model, then train
 - Gate 2: merge adapter + base, scan merged model, publish
-- Gate 3: verify provenance (not re-scan), deploy
+- Gate 3: scan deployed model, verify provenance, deploy
 - AIRS scanning is defined but not yet enforcing in the current codebase (that's Module 5)
 
 POINTS: 2 on good answer (mentions all gates + AIRS status), 1 on partial
