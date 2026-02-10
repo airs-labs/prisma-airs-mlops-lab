@@ -2,7 +2,12 @@
 
 ## Points Available
 
-[to be configured in Phase 4]
+| Source | Points | Track |
+|--------|--------|-------|
+| Training output exists in GCS | 2 | @all |
+| Understanding: LoRA adapter vs merged model | 3 | @all |
+| Understanding: merge_adapter.py extra_special_tokens | 3 | @all |
+| **Total** | **8** | |
 
 ---
 

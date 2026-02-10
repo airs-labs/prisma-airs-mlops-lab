@@ -2,7 +2,13 @@
 
 ## Points Available
 
-[to be configured in Phase 4]
+| Source | Points | Track |
+|--------|--------|-------|
+| App deployed (Cloud Run URL accessible) | 2 | @all |
+| App responds (health or chat works) | 2 | @all |
+| Understanding: decoupled architecture | 3 | @all |
+| Understanding: rawPredict and model naming | 3 | @all |
+| **Total** | **10** | |
 
 ---
 

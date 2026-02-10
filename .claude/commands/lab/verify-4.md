@@ -3,27 +3,27 @@ Read lab/.progress.json for student_id, track, and blockers.
 Verify Module 4: AIRS Deep Dive
 
 Run these checks:
-1. Custom Role Created: Ask student to confirm they created a model-scanning-only custom role in SCM
+1. Deployment Profile: Ask student to confirm AI Model Security is visible in their SCM console (AI Security → AI Model Security). They should have created a deployment profile and associated it with their existing tenant.
 POINTS: 2
 
-2. Restricted SA: Ask student to show their restricted service account credentials are working (run a scan with them)
+2. Credentials Validated: Ask student to run a scan (or show a recent scan result) that proves their AIRS credentials work. A successful scan with any verdict (ALLOWED or BLOCKED) counts — the point is that auth succeeded.
 POINTS: 2
 
-3. Security Groups: Ask student to list the security groups they created in SCM — should have at least 1 custom blocking group and 1 custom warning group
+3. Default Security Groups: Ask student to name at least 2 default security groups they found in SCM and their source types (e.g., "Default Local" → LOCAL, "Default GCS" → GCS). They should know the UUIDs or how to find them.
 POINTS: 2
 
-4. SCM Reports: Ask student to confirm their CLI scans appear in SCM (scan reports visible)
+4. SCM Reports: Ask student to confirm their CLI/SDK scans appear in SCM scan reports. They should be able to navigate to a scan and describe the per-rule details visible there.
 POINTS: 2
 
 5. Understanding: Ask "What happens if you scan a GCS model using a security group configured for LOCAL source type?"
 POINTS: 3
 
-6. Understanding: Ask "When would you configure a security group rule to NOT block? Give a real customer scenario."
+6. Understanding: Ask "When would you configure a security group rule to alert instead of block? Give a real customer scenario."
 POINTS: 3
 
 Score understanding (3 pts each, max 6) + technical checks (pass/fail).
 
-Update lab/.progress.json. Call: bash lab/verify/post-verification.sh 4 "$STUDENT_ID" "$RESULT_JSON"
+Update lab/.progress.json.
 
 ## Hard Blocker Re-check
 
@@ -48,6 +48,10 @@ Calculate total points. Update lab/.progress.json:
 ## Leaderboard
 
 Build result JSON and call:
+```
 bash lab/verify/post-verification.sh 4 "$STUDENT_ID" "$RESULT_JSON"
+```
+
+The RESULT_JSON should include: status, verified, checks_passed, points_awarded, quiz_score, summary (1-sentence).
 
 Congratulate and suggest next module.

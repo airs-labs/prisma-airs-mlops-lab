@@ -22,7 +22,7 @@ IMPORTANT: This is the end of Act 1 (Build It). Before suggesting Module 4, note
 
 Also ask the student to generate a summary of what they've built so far — architecture, model choice, training decisions, deployment — formatted for group discussion.
 
-Update lab/.progress.json. Call: bash lab/verify/post-verification.sh 3 "$STUDENT_ID" "$RESULT_JSON"
+Update lab/.progress.json.
 
 ## Hard Blocker Re-check
 
@@ -47,6 +47,10 @@ Calculate total points. Update lab/.progress.json:
 ## Leaderboard
 
 Build result JSON and call:
+```
 bash lab/verify/post-verification.sh 3 "$STUDENT_ID" "$RESULT_JSON"
+```
+
+The RESULT_JSON should include: status, verified, checks_passed, points_awarded, quiz_score, summary (1-sentence).
 
 Congratulate and suggest next module.

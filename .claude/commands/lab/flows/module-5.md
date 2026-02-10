@@ -2,7 +2,15 @@
 
 ## Points Available
 
-[to be configured in Phase 4]
+| Source | Points | Track |
+|--------|--------|-------|
+| Gate 2 scan step added | 2 | @all |
+| Gate 3 manifest verification added | 2 | @all |
+| Successful pipeline run with AIRS | 2 | @all |
+| Scan labels visible in SCM | 2 | @all |
+| Evaluation summary in GH Actions | 2 | @all |
+| Understanding: scan failure flow | 3 | @all |
+| **Total** | **13** | |
 
 ---
 

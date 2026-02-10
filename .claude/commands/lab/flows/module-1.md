@@ -2,7 +2,14 @@
 
 ## Points Available
 
-[to be configured in Phase 4]
+| Source | Points | Track |
+|--------|--------|-------|
+| Quiz Q1: LoRA understanding | 3 | @all |
+| Quiz Q2: Safetensors vs pickle | 3 | @all |
+| Quiz Q3: HF model checks | 3 | @all |
+| **Total** | **9** | |
+
+This module is entirely quiz-based (concepts, not code output). All points come from the verification quiz.
 
 ---
 

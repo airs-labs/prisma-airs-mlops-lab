@@ -41,6 +41,10 @@ Calculate total points. Update lab/.progress.json:
 ## Leaderboard
 
 Build result JSON and call:
+```
 bash lab/verify/post-verification.sh 2 "$STUDENT_ID" "$RESULT_JSON"
+```
+
+The RESULT_JSON should include: status, verified, checks_passed, points_awarded, quiz_score, summary (1-sentence).
 
 Congratulate and suggest next module.

@@ -98,6 +98,10 @@ class VerificationResults(BaseModel):
     status: str = Field(..., description="complete or incomplete")
     verified: bool = Field(default=False)
     checks_passed: list[str] = Field(default_factory=list)
+    points_awarded: int | None = Field(
+        default=None,
+        description="Total points awarded by verify command (preferred over fallback)",
+    )
     quiz_score: int | None = Field(default=None)
     summary: str = Field(default="")
 
@@ -155,11 +159,11 @@ def compute_points(student: dict[str, Any]) -> int:
             if awarded is not None and isinstance(awarded, int):
                 total += awarded
             else:
-                # Fallback for old-format payloads
+                # Fallback for old-format payloads without points_awarded
                 total += MODULE_POINTS.get(mod_key, 10)
                 quiz = mod_data.get("quiz_score")
                 if quiz is not None and isinstance(quiz, int):
-                    total += min(quiz // 3, 3)
+                    total += quiz
     return total
 
 
@@ -318,6 +322,7 @@ async def receive_verification(payload: VerificationPayload):
         "status": payload.results.status,
         "verified": payload.results.verified,
         "checks_passed": payload.results.checks_passed,
+        "points_awarded": payload.results.points_awarded,
         "quiz_score": payload.results.quiz_score,
         "summary": payload.results.summary,
         "verification_hash": payload.verification_hash,

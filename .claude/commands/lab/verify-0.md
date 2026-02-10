@@ -111,6 +111,6 @@ Build result JSON and call:
 bash lab/verify/post-verification.sh 0 "$STUDENT_ID" "$RESULT_JSON"
 ```
 
-The RESULT_JSON should include: status, verified, checks_passed, quiz_score, summary (1-sentence).
+The RESULT_JSON should include: status, verified, checks_passed, points_awarded, quiz_score, summary (1-sentence).
 
 Congratulate the student and suggest `/module 1` to continue.

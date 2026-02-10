@@ -2,7 +2,14 @@
 
 ## Points Available
 
-[to be configured in Phase 4]
+| Source | Points | Track |
+|--------|--------|-------|
+| Poisoned model trained | 2 | @all |
+| Both models pass AIRS | 2 | @all |
+| A/B behavioral difference shown | 2 | @all |
+| Understanding: AIRS catches vs misses | 3 | @all |
+| Understanding: customer pitch | 3 | @all |
+| **Total** | **12** | |
 
 ---
 

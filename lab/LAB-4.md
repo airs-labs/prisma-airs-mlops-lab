@@ -6,23 +6,24 @@ Welcome to Act 2 -- **Understand the Security.**
 
 You have a working ML pipeline. Models train, merge, publish, and deploy. But right now there is nothing stopping a compromised model from flowing straight to production. Before you can secure the pipeline, you need to understand AIRS inside and out -- the way you would need to demo it to a customer.
 
-This module puts you in the seat of someone evaluating AIRS for an enterprise deployment. You will set up least-privilege access, run your first scans, explore the HuggingFace partnership, and build custom security policies in Strata Cloud Manager.
+This module puts you in the seat of someone evaluating AIRS for an enterprise deployment. You will activate AI Model Security on your existing tenant, explore the Strata Cloud Manager console, run your first scans, explore the HuggingFace partnership, and understand how security groups control scanning policy.
 
 ## Objectives
 
-- Create a restricted service account with minimum scanning permissions (RBAC)
+- Activate AI Model Security by creating a deployment profile and associating it with your existing AIRS tenant
+- Navigate Strata Cloud Manager (SCM) to explore the Model Security UX -- scans, security groups, rules
 - Install the AIRS SDK and run scans from the CLI and Python
 - Understand scan responses: eval_outcome, eval_summary, rules_passed, rules_failed
 - Explore the PANW-HuggingFace partnership and compare public vs enterprise scanning
-- Navigate Strata Cloud Manager (SCM) to find scan reports and manage security groups
-- Create custom security groups with different blocking policies
+- Understand security group policy: blocking vs alerting, source type matching, default groups
 
 ## Prerequisites
 
 - Modules 0-3 completed (working pipeline, deployed model)
-- Access to your Prisma AIRS tenant (SCM credentials)
+- An existing Prisma AIRS tenant from the AIRS API Lab (with SCM already provisioned)
 - AIRS SDK credentials: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `TSG_ID`
 - GitHub secrets configured from Module 0
+- Access to the Customer Support Portal (CSP) for deployment profile creation
 
 ## Time Estimate
 
@@ -32,37 +33,45 @@ This module puts you in the seat of someone evaluating AIRS for an enterprise de
 
 ## Challenges
 
-### Challenge 4.1: Set Up Least-Privilege Access
+### Challenge 4.1: Activate AI Model Security
 
-> `/lab:explore 01-rbac`
+> `/lab:explore activation-setup`
 
-Your security team requires that every automated system follows the principle of least privilege. The scanning pipeline should only be able to submit scans and read results -- it should never be able to create or modify security groups, manage users, or change policies.
+You already have a Prisma AIRS tenant from the API Lab. Now you need to enable the Model Security capability on that same tenant. This requires creating a new deployment profile in the Customer Support Portal (CSP) and associating it with your existing tenant.
 
-Use Claude Code and the SCM API to create a custom role that only allows model scanning operations. Create a service account with that role. You will use this restricted service account for all your scanning work in Modules 4 through 7.
+Once activated, verify that AI Model Security appears in your Strata Cloud Manager console and that your existing AIRS credentials can authenticate scanning requests.
 
-### Challenge 4.2: Your First Scans
+### Challenge 4.2: Explore the SCM Console
 
-> `/lab:explore 02-cli-and-sdk`
+> `/lab:explore scm-model-security`
+
+Before you scan anything, understand the tool your customers' security teams will use daily. Navigate the AI Model Security section of SCM. Find your default security groups, understand the rules, and locate the UUIDs you will need for scanning.
+
+This is the management plane. The security admin lives here. The CI/CD pipeline lives in the SDK. Understanding both sides is critical for customer conversations.
+
+### Challenge 4.3: Your First Scans
+
+> `/lab:explore cli-and-sdk`
 
 A customer asks you to demonstrate AIRS scanning. They want to see what happens with a legitimate model and what happens when something dangerous comes through.
 
-Install the AIRS SDK and run your first scan. Scan a known-safe model from HuggingFace or GCS. Then scan the pickle bomb from `scripts/create_threat_models.py`. Compare the results side by side.
+Install the AIRS SDK and run your first scan. Scan a known-safe model from HuggingFace or GCS. Then scan the pickle bomb from `scripts/create_threat_models.py`. Compare the results side by side. Then find those scans in SCM and see the per-rule details that the SDK does not expose.
 
-### Challenge 4.3: HuggingFace Integration
+### Challenge 4.4: HuggingFace Integration
 
-> `/lab:explore 03-hf-integration`
+> `/lab:explore hf-integration`
 
 A customer tells you, "HuggingFace already scans models. Why do I need AIRS?" You need to understand exactly what the PANW-HuggingFace partnership provides for free, and what AIRS adds on top.
 
 Find Palo Alto Networks' public scan results on HuggingFace. What models have been flagged? What information is freely available vs what AIRS adds for enterprise customers?
 
-### Challenge 4.4: Security Groups Deep Dive
+### Challenge 4.5: Security Groups & Policy
 
-> `/lab:explore 04-security-groups`
+> `/lab:explore security-groups`
 
 An enterprise customer wants different scanning policies for different environments. Development teams should get warnings so they can iterate quickly. Production deployments should be strictly blocked if anything is detected. They also want to understand exactly what each rule does.
 
-Navigate SCM. Find your scan reports from the CLI experiments. Then create two custom security groups: one that blocks on every rule, and one that only warns. Test both against the same model and compare the results.
+Explore the default security groups in SCM. Toggle rules between "block" and "alert." Test both modes against the same model and observe how the verdict changes while the detection stays the same.
 
 ---
 
@@ -70,7 +79,9 @@ Navigate SCM. Find your scan reports from the CLI experiments. Then create two c
 
 After completing this module, you should be able to confidently deliver these points:
 
-**On RBAC:** "Here is how to set up least-privilege access for your scanning pipeline. Your CI/CD runner only needs scan permissions, not admin. This follows the same IAM model you use for every other cloud service."
+**On Activation:** "AI Model Security is a deployment profile you add to your existing Prisma AIRS tenant. If you already have AIRS for API Runtime, adding Model Security is a CSP deployment profile and a tenant association -- your existing SCM instance, IAM, and service accounts carry over."
+
+**On the SCM Console:** "Security admins manage policy in SCM -- security groups, rules, enforcement modes. The CI/CD pipeline uses the SDK. They are decoupled by design: security teams set policy, engineering teams consume it through the scan API. Neither needs to touch the other's tools."
 
 **On HuggingFace:** "When a customer asks about HF scanning vs AIRS, here is the comparison: HF gives you basic checks on public models with default rules. AIRS gives you policy control, private model scanning, pipeline enforcement, and security operations integration. The question is whether you need visibility or control."
 

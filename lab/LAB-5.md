@@ -17,9 +17,9 @@ You will add AIRS scanning to Gate 2, manifest verification to Gate 3, metadata 
 
 ## Prerequisites
 
-- Module 4 completed (AIRS SDK installed, security groups created, scans working)
-- Restricted service account from Challenge 4.1
-- At least one successful scan from Challenge 4.2
+- Module 4 completed (AIRS activated, security groups explored, scans working)
+- AIRS credentials validated and default security group UUIDs identified (Challenge 4.1-4.2)
+- At least one successful scan from Challenge 4.3
 - Familiarity with the workflow files in `.github/workflows/`
 
 ## Time Estimate

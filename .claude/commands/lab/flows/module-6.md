@@ -2,7 +2,14 @@
 
 ## Points Available
 
-[to be configured in Phase 4]
+| Source | Points | Track |
+|--------|--------|-------|
+| Threat models created (2+) | 2 | @all |
+| BLOCKED scan results shown | 2 | @all |
+| Format comparison (pickle vs safetensors) | 2 | @all |
+| Understanding: __reduce__ and torch.load | 3 | @all |
+| Understanding: Approved File Format rule | 3 | @all |
+| **Total** | **12** | |
 
 ---
 

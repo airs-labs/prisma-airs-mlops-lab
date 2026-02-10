@@ -22,7 +22,7 @@ Score understanding (3 pts each, max 6) + technical checks (pass/fail).
 
 This is the final module. Generate a comprehensive summary of the student's lab journey.
 
-Update lab/.progress.json. Mark lab as complete. Call: bash lab/verify/post-verification.sh 7 "$STUDENT_ID" "$RESULT_JSON"
+Update lab/.progress.json. Mark lab as complete.
 
 ## Hard Blocker Re-check
 
@@ -47,6 +47,10 @@ Calculate total points. Update lab/.progress.json:
 ## Leaderboard
 
 Build result JSON and call:
+```
 bash lab/verify/post-verification.sh 7 "$STUDENT_ID" "$RESULT_JSON"
+```
 
-Congratulate and suggest next module.
+The RESULT_JSON should include: status, verified, checks_passed, points_awarded, quiz_score, summary (1-sentence).
+
+Congratulate the student on completing the entire lab.

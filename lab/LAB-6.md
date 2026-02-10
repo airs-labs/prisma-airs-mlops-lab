@@ -18,7 +18,7 @@ Every model you create here uses safe payloads -- marker files, not real exploit
 
 ## Prerequisites
 
-- Module 4 completed (AIRS scanning working, security groups created)
+- Module 4 completed (AIRS scanning working, security groups explored)
 - Python environment with PyTorch installed (`pip install torch`)
 - TensorFlow installed for the Keras challenge (`pip install tensorflow`)
 - Safetensors installed for format comparison (`pip install safetensors`)
