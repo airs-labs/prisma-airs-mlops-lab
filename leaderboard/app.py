@@ -435,6 +435,81 @@ async def get_feed():
     return {"events": list(event_log), "count": len(event_log)}
 
 
+@app.get("/api/export")
+async def export_state():
+    """Export full in-memory state for backup before redeploy.
+
+    Usage: curl $URL/api/export > backup.json
+    """
+    return {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "students": dict(students_db),
+        "event_log": list(event_log),
+        "first_completions": dict(first_completions),
+    }
+
+
+@app.post("/api/import")
+async def import_state(request: Request):
+    """Restore state from a previous /api/export backup.
+
+    Usage: curl -X POST $URL/api/import -H 'Content-Type: application/json' -d @backup.json
+
+    Clears existing state and replaces with imported data.
+    Reconstructs first_completions from timestamps if not provided.
+    Does NOT trigger SSE events or milestone detection.
+    """
+    data = await request.json()
+
+    # Validate structure
+    if "students" not in data:
+        raise HTTPException(status_code=400, detail="Missing 'students' key in payload")
+
+    # Clear and restore students
+    students_db.clear()
+    students_db.update(data["students"])
+
+    # Recompute points for all students (in case scoring logic changed)
+    for student in students_db.values():
+        student["total_points"] = compute_points(student)
+
+    # Restore event log
+    event_log.clear()
+    for evt in data.get("event_log", []):
+        event_log.append(evt)
+
+    # Restore or reconstruct first_completions
+    first_completions.clear()
+    if data.get("first_completions"):
+        first_completions.update(data["first_completions"])
+    else:
+        # Reconstruct from student timestamps
+        for sid, student in students_db.items():
+            for mod_key, mod_data in student.get("modules", {}).items():
+                if mod_data.get("status") == "complete" and mod_data.get("verified"):
+                    ts = mod_data.get("timestamp", "")
+                    if mod_key not in first_completions:
+                        first_completions[mod_key] = sid
+                    else:
+                        # Keep the earliest timestamp
+                        existing_sid = first_completions[mod_key]
+                        existing_ts = (
+                            students_db[existing_sid]
+                            .get("modules", {})
+                            .get(mod_key, {})
+                            .get("timestamp", "")
+                        )
+                        if ts and existing_ts and ts < existing_ts:
+                            first_completions[mod_key] = sid
+
+    return {
+        "status": "imported",
+        "students_count": len(students_db),
+        "events_count": len(event_log),
+        "first_completions": dict(first_completions),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Dashboard HTML
 # ---------------------------------------------------------------------------
