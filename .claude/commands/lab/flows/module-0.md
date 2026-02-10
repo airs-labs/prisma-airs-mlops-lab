@@ -43,13 +43,32 @@
 
 ### Flow (@ts-workshop)
 
-6. Add upstream remote for instructor hotfixes:
-   "Your instructor may push fixes during the workshop. Let's add the template repo as an upstream remote so you can pull those in."
+6. Add upstream remote and sync history for instructor hotfixes:
+   "Your repo was created from a template, which means it has a fresh git history that's separate from the template. We need to connect it to the template repo and reset your branches so you share the same history. This lets you pull instructor updates AND submit PRs back to the template."
+
+   Step 1 — Add the upstream remote:
    ```
-   git remote add upstream https://github.com/PaloAltoNetworks/prisma-airs-mlops-lab.git
+   git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
    git fetch upstream
    ```
-   Verify: `git remote -v` should show both `origin` (their private repo) and `upstream` (the template).
+
+   Step 2 — Reset both branches to share upstream history:
+   ```
+   git checkout lab
+   git reset --hard upstream/lab
+   git push --force origin lab
+
+   git checkout main
+   git reset --hard upstream/main
+   git push --force origin main
+
+   git checkout lab
+   ```
+   Explain: "The force-push is safe here because this is a fresh repo with no real work yet. After this, your repo shares git history with the template, so `git pull upstream lab` and PRs will work cleanly."
+
+   Step 3 — Verify:
+   - `git remote -v` should show both `origin` (their private repo) and `upstream` (the template).
+   - `git log --oneline -5` should show the same commits as the template, not just 'Initialize lab'.
 
 ### Hints
 

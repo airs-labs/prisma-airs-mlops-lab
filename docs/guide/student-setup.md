@@ -47,7 +47,28 @@ Complete these steps before the lab begins. By the end, you will have your own p
 
    The `main` branch contains the completed reference implementation. You can compare against it anytime with `git diff lab..main`.
 
-3. Install Python dependencies:
+3. Connect to the template repo and sync history:
+
+   GitHub templates create a fresh git history, which prevents you from pulling updates or submitting PRs. This step fixes that:
+
+   ```bash
+   git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
+   git fetch upstream
+
+   git checkout lab
+   git reset --hard upstream/lab
+   git push --force origin lab
+
+   git checkout main
+   git reset --hard upstream/main
+   git push --force origin main
+
+   git checkout lab
+   ```
+
+   > The force-push is safe because this is a fresh repo with no work yet. After this, `git pull upstream lab` will work for instructor updates, and you can submit PRs back to the template.
+
+4. Install Python dependencies:
 
    ```bash
    uv sync

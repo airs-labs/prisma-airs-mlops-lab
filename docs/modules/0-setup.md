@@ -22,11 +22,13 @@ The full interactive experience for this module runs in **Claude Code**. Use `/l
 
 ## Challenges
 
-### 0.1: Clone and Explore
+### 0.1: Repo & Branch Orientation
 
-Walk into an existing codebase -- a 3-gate MLOps pipeline that trains, publishes, and deploys a cybersecurity advisor chatbot. Use Claude to build a mental map of where things live and how they connect.
+You already have a private repo created from the template. Before touching anything, orient yourself to the codebase -- a 3-gate MLOps pipeline that trains, publishes, and deploys a cybersecurity advisor chatbot. Use Claude to build a mental map of where things live and how they connect.
 
 **Key areas to explore:** workflows (`.github/workflows/`), model training code (`model-tuning/`), AIRS scanning (`airs/`), and the serving application (`src/`).
+
+**Workshop attendees:** You'll also set up an upstream remote and sync your git history with the template so you can receive instructor updates and submit PRs.
 
 ### 0.2: Verify GCP Authentication
 

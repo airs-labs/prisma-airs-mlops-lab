@@ -42,6 +42,8 @@ You are in a private repository created from a public template. Before touching 
 - What is the `lab` branch vs the `main` branch?
 - What are the main directories and how do they connect?
 
+**Workshop attendees:** You'll also connect your repo to the template via an upstream remote and sync your git history so you can pull instructor updates and submit PRs back.
+
 ### Challenge 0.2: Verify GCP Environment
 
 Your ML pipeline deploys to Google Cloud -- Vertex AI for model training and serving, Cloud Run for the application, and GCS for artifact storage. If your GCP project, authentication, or storage buckets are misconfigured, nothing downstream will work.
