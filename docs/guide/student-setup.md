@@ -16,13 +16,15 @@ Complete these steps before the lab begins. By the end, you will have your own p
 
 3. Select **"Create a new repository"**.
 
-4. Configure your new repo:
+4. Configure your new repo (see screenshot below):
+   - **Include all branches:** Toggle **On** -- this is required so you get both the `lab` branch (your workspace) and `main` branch (reference solutions)
    - **Owner:** Select `airs-labs` (the workshop organization)
-   - **Repository name:** `prisma-airs-mlops-lab-<your-name>` (e.g., `prisma-airs-mlops-lab-jsmith`)
+   - **Repository name:** `<your-name>-prisma-airs-mlops-lab` (e.g., `syoungberg-prisma-airs-mlops-lab`)
    - **Visibility:** Select **Private**
-   - **Include all branches:** Check this box -- this is required so you get both the `lab` branch (your workspace) and `main` branch (reference solutions)
 
 5. Click **"Create repository"**.
+
+![Create repo from template](/create-repo-from-template.png)
 
 > **Why private?** GitHub Secrets are repo-scoped. Your repo will contain GCP project IDs, AIRS credentials, and deployment configs specific to your environment. A public fork would expose these.
 
@@ -33,8 +35,8 @@ Complete these steps before the lab begins. By the end, you will have your own p
 1. Clone your new private repo:
 
    ```bash
-   git clone https://github.com/airs-labs/prisma-airs-mlops-lab-<your-name>.git
-   cd prisma-airs-mlops-lab-<your-name>
+   git clone https://github.com/airs-labs/<your-name>-prisma-airs-mlops-lab.git
+   cd <your-name>-prisma-airs-mlops-lab
    ```
 
 2. Switch to the `lab` branch:
@@ -73,7 +75,7 @@ Complete these steps before the lab begins. By the end, you will have your own p
    /lab:module 0
    ```
 
-   Module 0 walks you through verifying your GCP project, GitHub CLI, and AIRS credentials. Claude will guide you through each step.
+   Module 0 walks you through verifying your GCP project, GitHub CLI, and AIRS credentials. Claude will also help you connect your repo to the template for receiving instructor updates.
 
 ---
 
@@ -83,10 +85,10 @@ Complete these steps before the lab begins. By the end, you will have your own p
 |---------|--------------|
 | `/lab:module N` | Start or resume module N |
 | `/lab:verify-N` | Run verification checks for module N |
-| `/hint` | Get a progressive hint for your current challenge |
-| `/explore TOPIC` | Deep-dive into a concept |
-| `/quiz` | Test your understanding |
-| `/progress` | See your completion dashboard |
+| `/lab:hint` | Get a progressive hint for your current challenge |
+| `/lab:explore TOPIC` | Deep-dive into a concept |
+| `/lab:quiz` | Test your understanding |
+| `/lab:progress` | See your completion dashboard |
 
 ---
 
@@ -95,7 +97,7 @@ Complete these steps before the lab begins. By the end, you will have your own p
 | Problem | Fix |
 |---------|-----|
 | "Use this template" button not visible | Make sure you are signed into GitHub and have been added to the `airs-labs` org |
-| `lab` branch doesn't exist after clone | You missed "Include all branches" during template creation -- delete the repo, recreate with the checkbox checked |
+| `lab` branch doesn't exist after clone | You missed "Include all branches" during template creation -- delete the repo, recreate with the toggle on |
 | `uv: command not found` | Install uv: `curl -LsSf https://astral.sh/uv/install.sh \| sh` and restart your terminal |
 | `claude: command not found` | Install Claude Code: `npm install -g @anthropic-ai/claude-code` |
 | Claude doesn't seem to know about the lab | Make sure you're in the repo directory and on the `lab` branch -- Claude reads `CLAUDE.md` from the repo root |
