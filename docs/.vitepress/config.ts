@@ -44,6 +44,7 @@ export default defineConfig({
           text: 'Getting Started',
           items: [
             { text: 'Overview', link: '/guide/' },
+            { text: 'Student Setup', link: '/guide/student-setup' },
           ]
         }
       ]
