@@ -94,28 +94,16 @@ Complete these steps before the lab begins. By the end, you will have your own p
 
 ## Resuming Work Between Sessions
 
-When you come back to the lab after closing your terminal or starting a new day, you need two things: your Claude Code context back, and any instructor updates pulled in.
+When you come back to the lab after closing your terminal or starting a new day:
 
-### Step 1: Resume Your Claude Code Session
+### Step 1: Pull Instructor Updates
 
-Open Claude Code in your repo directory and use the resume command:
+Before starting Claude Code, pull any changes the instructor has pushed. Open a terminal in your repo directory and paste this prompt into Claude:
 
 ```bash
 cd <your-name>-prisma-airs-mlops-lab
 claude
 ```
-
-Then type:
-
-```
-/resume
-```
-
-This recovers your previous session context — Claude will remember where you left off, what module you were on, and what you were working on.
-
-### Step 2: Pull Instructor Updates
-
-After resuming, paste this prompt to have Claude set up the upstream remote (if needed) and pull the latest changes:
 
 ```
 Check if I have an "upstream" remote pointing to airs-labs/prisma-airs-mlops-lab.
@@ -126,6 +114,38 @@ take upstream's version (--theirs).
 ```
 
 Claude will handle the git commands and resolve any conflicts automatically.
+
+### Step 2: Restart Your Lab Session
+
+If upstream changes updated `CLAUDE.md` or any lab files, Claude needs to pick up those changes. Exit and restart Claude Code so it reads the latest instructions:
+
+```
+/exit
+```
+
+```bash
+claude
+```
+
+### Step 3: Pick Up Where You Left Off
+
+Your progress is saved in `lab/.progress.json`, so Claude knows exactly where you are. Run:
+
+```
+/lab:progress
+```
+
+This shows your completion dashboard — which modules are done, your points, and any blockers. Then resume your current module:
+
+```
+/lab:module N
+```
+
+Replace `N` with whatever module you were on. Claude will read your progress file and continue from where you left off.
+
+::: tip Why not /resume?
+`/resume` recovers your previous conversation but keeps the old `CLAUDE.md` instructions. After pulling instructor updates, a fresh session ensures Claude is working with the latest lab content. Your progress isn't lost — it's all in `.progress.json`.
+:::
 
 ::: details Manual steps (if you prefer to do it yourself)
 
