@@ -127,6 +127,38 @@ take upstream's version (--theirs).
 
 Claude will handle the git commands and resolve any conflicts automatically.
 
+::: details Manual steps (if you prefer to do it yourself)
+
+**Add the upstream remote (first time only):**
+
+```bash
+git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
+```
+
+**Pull changes:**
+
+```bash
+git fetch upstream
+git merge upstream/lab --no-edit
+```
+
+**If you get a merge conflict on `lab/.progress.json` or `.github/pipeline-config.yaml`** — keep your version (these have your personal config):
+
+```bash
+git checkout --ours lab/.progress.json .github/pipeline-config.yaml
+git add lab/.progress.json .github/pipeline-config.yaml
+git commit --no-edit
+```
+
+For conflicts in other files (lab guides, code, workflows), take the instructor's version:
+
+```bash
+git checkout --theirs path/to/file
+git add path/to/file
+git commit --no-edit
+```
+:::
+
 ---
 
 ## Troubleshooting
