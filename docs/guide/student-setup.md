@@ -92,6 +92,84 @@ Complete these steps before the lab begins. By the end, you will have your own p
 
 ---
 
+## Resuming Work Between Sessions
+
+When you come back to the lab after closing your terminal or starting a new day, you need two things: your Claude Code context back, and any instructor updates pulled in.
+
+### Step 1: Resume Your Claude Code Session
+
+Open Claude Code in your repo directory and use the resume command:
+
+```bash
+cd <your-name>-prisma-airs-mlops-lab
+claude
+```
+
+Then type:
+
+```
+/resume
+```
+
+This recovers your previous session context — Claude will remember where you left off, what module you were on, and what you were working on.
+
+### Step 2: Pull Instructor Updates
+
+If the instructor has pushed fixes or new content to the template repo, you need to pull those changes into your local copy.
+
+**First time only — add the upstream remote:**
+
+If you haven't connected your repo to the template yet (this was covered in Module 0), set it up now:
+
+```bash
+git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
+```
+
+**Pull changes:**
+
+```bash
+git fetch upstream
+git merge upstream/lab --no-edit
+```
+
+### Handling Merge Conflicts
+
+When you pull upstream changes, you may get a merge conflict on files you've already modified locally. The most common one is `lab/.progress.json` — which contains your name, track, and points.
+
+**If you see a conflict on `lab/.progress.json`:**
+
+Keep **your** version. Your progress is the source of truth, not upstream's blank template:
+
+```bash
+git checkout --ours lab/.progress.json
+git add lab/.progress.json
+git commit --no-edit
+```
+
+**If you see a conflict on `.github/pipeline-config.yaml`:**
+
+Same idea — keep your version since it has your real bucket names:
+
+```bash
+git checkout --ours .github/pipeline-config.yaml
+git add .github/pipeline-config.yaml
+git commit --no-edit
+```
+
+**General rule:** If a conflict is in a file where you've added your own configuration (project IDs, bucket names, credentials references), keep yours. If it's in lab guides, code, or workflow files, take the upstream version to get the instructor's fixes:
+
+```bash
+git checkout --theirs path/to/file
+git add path/to/file
+git commit --no-edit
+```
+
+::: tip Ask Claude for help
+If you're unsure about a merge conflict, just tell Claude: "I have a merge conflict in [file], help me resolve it." Claude can read both versions and recommend which to keep.
+:::
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -101,3 +179,5 @@ Complete these steps before the lab begins. By the end, you will have your own p
 | `uv: command not found` | Install uv: `curl -LsSf https://astral.sh/uv/install.sh \| sh` and restart your terminal |
 | `claude: command not found` | Install Claude Code: `npm install -g @anthropic-ai/claude-code` |
 | Claude doesn't seem to know about the lab | Make sure you're in the repo directory and on the `lab` branch -- Claude reads `CLAUDE.md` from the repo root |
+| Merge conflict on `lab/.progress.json` | Keep your version: `git checkout --ours lab/.progress.json && git add lab/.progress.json && git commit --no-edit` |
+| `upstream` remote not found | Add it: `git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git` |
