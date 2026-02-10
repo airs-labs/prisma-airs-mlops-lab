@@ -115,58 +115,17 @@ This recovers your previous session context — Claude will remember where you l
 
 ### Step 2: Pull Instructor Updates
 
-If the instructor has pushed fixes or new content to the template repo, you need to pull those changes into your local copy.
+After resuming, paste this prompt to have Claude set up the upstream remote (if needed) and pull the latest changes:
 
-**First time only — add the upstream remote:**
-
-If you haven't connected your repo to the template yet (this was covered in Module 0), set it up now:
-
-```bash
-git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
+```
+Check if I have an "upstream" remote pointing to airs-labs/prisma-airs-mlops-lab.
+If not, add it. Then fetch upstream and merge upstream/lab into my current branch.
+If there are merge conflicts on lab/.progress.json or .github/pipeline-config.yaml,
+keep my version (--ours) since those have my personal config. For everything else,
+take upstream's version (--theirs).
 ```
 
-**Pull changes:**
-
-```bash
-git fetch upstream
-git merge upstream/lab --no-edit
-```
-
-### Handling Merge Conflicts
-
-When you pull upstream changes, you may get a merge conflict on files you've already modified locally. The most common one is `lab/.progress.json` — which contains your name, track, and points.
-
-**If you see a conflict on `lab/.progress.json`:**
-
-Keep **your** version. Your progress is the source of truth, not upstream's blank template:
-
-```bash
-git checkout --ours lab/.progress.json
-git add lab/.progress.json
-git commit --no-edit
-```
-
-**If you see a conflict on `.github/pipeline-config.yaml`:**
-
-Same idea — keep your version since it has your real bucket names:
-
-```bash
-git checkout --ours .github/pipeline-config.yaml
-git add .github/pipeline-config.yaml
-git commit --no-edit
-```
-
-**General rule:** If a conflict is in a file where you've added your own configuration (project IDs, bucket names, credentials references), keep yours. If it's in lab guides, code, or workflow files, take the upstream version to get the instructor's fixes:
-
-```bash
-git checkout --theirs path/to/file
-git add path/to/file
-git commit --no-edit
-```
-
-::: tip Ask Claude for help
-If you're unsure about a merge conflict, just tell Claude: "I have a merge conflict in [file], help me resolve it." Claude can read both versions and recommend which to keep.
-:::
+Claude will handle the git commands and resolve any conflicts automatically.
 
 ---
 
