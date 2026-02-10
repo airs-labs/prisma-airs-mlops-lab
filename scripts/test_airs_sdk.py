@@ -44,9 +44,11 @@ console = Console()
 # ─────────────────────────────────────────────────────────────────────
 # Security Group Registry
 # Maps friendly names to UUIDs. Source type MUST match scan source.
+# Replace placeholder UUIDs with YOUR tenant's values from
+# SCM → AI Model Security → Security Groups (see Module 4.2).
 # ─────────────────────────────────────────────────────────────────────
 SECURITY_GROUPS = {
-    # Custom groups (configured in SCM by Berg)
+    # Custom groups (create these in SCM or use defaults)
     "warn": {
         "uuid": UUID("00000000-0000-0000-0000-000000000004"),
         "name": "GCS - Staging Area (warn-only)",

@@ -211,19 +211,21 @@ Security Groups are the organizational unit for scan policies. Each group:
 
 You CANNOT use a HuggingFace security group to scan a local model, and vice versa.
 
-### Known Security Group UUIDs (This Project)
+### Security Group UUIDs (Template)
 
-From `scan_model.py` (updated 2026-02-05):
+The `scan_model.py` SECURITY_GROUPS dict ships with placeholder UUIDs (`00000000-...`). Each student must discover their own tenant's UUIDs in SCM → AI Model Security → Security Groups (Module 4.2).
 
-| Key | UUID | Name | Source Type | Blocking |
+Every SCM tenant comes with pre-created default security groups — one per source type:
+
+| Key | Placeholder UUID | Name | Source Type | Purpose |
 |---|---|---|---|---|
-| `local` | `00000000-0000-0000-0000-000000000001` | Default LOCAL | LOCAL | Default (some on) |
-| `gcs-default` | `00000000-0000-0000-0000-000000000002` | Default GCS | GCS | Default (some on) |
-| `hf` | `00000000-0000-0000-0000-000000000003` | Default HUGGING_FACE | HF | Default (some on) |
-| `warn` | `00000000-0000-0000-0000-000000000004` | GCS - Warning Only | GCS | ALL OFF |
-| `block` | `00000000-0000-0000-0000-000000000005` | GCS - Blocking | GCS | ALL ON |
+| `local` | `00000000-...-000001` | Default LOCAL | LOCAL | Scanning local model files |
+| `gcs-default` | `00000000-...-000002` | Default GCS | GCS | Scanning models in GCS buckets |
+| `hf` | `00000000-...-000003` | Default HUGGING_FACE | HF | Scanning HuggingFace models |
+| `warn` | `00000000-...-000004` | Custom (warn-only) | GCS | All rules set to alert, no blocking |
+| `block` | `00000000-...-000005` | Custom (blocking) | GCS | All rules set to block |
 
-Auto-detection selects the Default group matching the model's source type. Custom groups (`warn`, `block`) can be specified via `--security-group` flag.
+Students can either pass UUIDs directly via `--security-group <uuid>` or edit the dict in `scan_model.py`. Auto-detection will fail with a helpful error if placeholder UUIDs are still in place.
 
 ### Object Storage Scanning Nuance
 

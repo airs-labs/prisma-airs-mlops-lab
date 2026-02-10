@@ -36,7 +36,9 @@ class SourceType(Enum):
     AZURE = "AZURE"
 
 
-# Default security group UUIDs by source type (from your SCM tenant)
+# Default security group UUIDs by source type.
+# Replace with YOUR tenant's UUIDs from SCM → AI Model Security → Security Groups.
+# See Module 4.2 for how to find your UUIDs.
 DEFAULT_SECURITY_GROUPS: dict[SourceType, UUID] = {
     SourceType.HUGGING_FACE: UUID("00000000-0000-0000-0000-000000000003"),
     SourceType.LOCAL: UUID("00000000-0000-0000-0000-000000000001"),

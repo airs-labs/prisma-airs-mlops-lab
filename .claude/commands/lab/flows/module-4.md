@@ -159,15 +159,21 @@ Ask: "Which of these rules can you toggle between 'block' and 'alert'? What is t
 - `rules_passed` / `rules_failed` -- how many rules detected issues
 
 **What to try:**
-1. CLI scan: `model-security scan --security-group-uuid "..." --model-uri "..."`
-2. SDK scan from Python (reference `scripts/test_airs_sdk.py`)
-3. Our wrapper: `python airs/scan_model.py --model-path <path> --security-group <uuid-or-shorthand>`
-4. CLI exit code behavior: what does exit code 0 mean vs exit code 1?
 
-**Important:** Use the actual security group UUIDs discovered in Challenge 4.2. If the student has not updated `scan_model.py` SECURITY_GROUPS dict, they should pass UUIDs directly:
+Start with the project's scanner wrapper — it's the easiest path since students just found their UUIDs in 4.2:
+
 ```
 python airs/scan_model.py --model-path models/test --security-group <their-local-uuid>
 ```
+
+The `--security-group` flag accepts a raw UUID. No code changes needed — just paste the UUID from SCM.
+
+Once that works, try the other scan interfaces:
+1. CLI scan: `model-security scan --security-group-uuid "<uuid>" --model-uri "..."`
+2. SDK scan from Python (reference `scripts/test_airs_sdk.py`)
+3. CLI exit code behavior: what does exit code 0 mean vs exit code 1?
+
+**Optional optimization:** After scanning works with explicit UUIDs, the student can edit the `SECURITY_GROUPS` dict in `airs/scan_model.py` to replace placeholder UUIDs with their tenant's real values. This enables auto-detection (no `--security-group` flag needed). Discuss: "In a CI/CD pipeline, would you hardcode UUIDs in code or pass them as environment variables? Why?"
 
 **After scanning, verify in SCM:** Navigate back to AI Model Security → Scans. The scan they just ran should appear. Click into it to see per-rule details.
 

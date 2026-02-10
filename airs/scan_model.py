@@ -27,8 +27,10 @@ except ImportError:
 
 console = Console()
 
-# All security groups configured in SCM.
-# Keys are shorthand names; values are (UUID, source_type) tuples.
+# Security groups from your SCM tenant.
+# Replace these with YOUR tenant's UUIDs from SCM → AI Model Security → Security Groups.
+# Or pass UUIDs directly via --security-group flag (no code changes needed).
+# See Module 4.2 for how to find your UUIDs.
 SECURITY_GROUPS = {
     "local":       (UUID("00000000-0000-0000-0000-000000000001"), "LOCAL"),
     "gcs-default": (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),
@@ -97,12 +99,26 @@ def resolve_security_group(group_arg, source_type):
         if group_uuid is None:
             console.print(f"[bold red]No default security group for source type: {source_type}[/bold red]")
             sys.exit(1)
+        # Catch placeholder UUIDs — students need to configure their own
+        if str(group_uuid).startswith("00000000"):
+            console.print(f"[bold yellow]⚠ Security group UUID is a placeholder![/bold yellow]")
+            console.print(f"  The SECURITY_GROUPS dict in scan_model.py has not been configured.")
+            console.print(f"  Two options:")
+            console.print(f"    1. Pass your UUID directly:  --security-group <your-uuid>")
+            console.print(f"    2. Edit SECURITY_GROUPS in airs/scan_model.py with your tenant's UUIDs")
+            console.print(f"  Find your UUIDs in SCM → AI Model Security → Security Groups (Module 4.2)")
+            sys.exit(1)
         console.print(f"  Security Group: [cyan]Default {source_type}[/cyan] (auto-detected)")
         return group_uuid
 
     # Try as shorthand key first
     if group_arg in SECURITY_GROUPS:
         group_uuid, group_source = SECURITY_GROUPS[group_arg]
+        if str(group_uuid).startswith("00000000"):
+            console.print(f"[bold yellow]⚠ '{group_arg}' maps to a placeholder UUID![/bold yellow]")
+            console.print(f"  Pass your real UUID directly:  --security-group <your-uuid>")
+            console.print(f"  Or edit SECURITY_GROUPS in airs/scan_model.py with your tenant's UUIDs")
+            sys.exit(1)
         console.print(f"  Security Group: [cyan]{group_arg}[/cyan] ({group_uuid})")
         if group_source != source_type:
             console.print(
