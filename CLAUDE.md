@@ -119,6 +119,43 @@ This posts to the instructor leaderboard. The script handles auth and gracefully
 | `/lab:quiz` | Test understanding, scores feed leaderboard |
 | `/lab:progress` | Dashboard of completion status and points |
 
+## Common Pipeline Failures (Background Knowledge)
+
+These are the most common issues students encounter. Use this knowledge proactively when helping debug — don't wait for students to ask.
+
+### IAM Permission Errors (90% of workflow failures)
+
+When any workflow fails with `PERMISSION_DENIED`, check IAM first:
+
+| Error Pattern | Missing Role | Which SA |
+|--------------|-------------|----------|
+| `artifactregistry.repositories.create` denied | `roles/artifactregistry.admin` | GitHub Actions SA |
+| Cloud Build: `serviceusage.services.use` denied | `roles/serviceusage.serviceUsageConsumer` | Compute Engine default SA |
+| `aiplatform.customJobs.create` denied | `roles/aiplatform.user` | GitHub Actions SA |
+| Cloud Run deploy: build failed | Multiple — check CB SA roles | Cloud Build default SA |
+| GCS FUSE mount fails in training | `roles/storage.objectAdmin` | Compute Engine default SA |
+
+**Three SAs to check:**
+- `github-actions-sa@PROJECT.iam.gserviceaccount.com` — the one students create
+- `PROJECT_NUM-compute@developer.gserviceaccount.com` — Compute Engine default (runs training jobs, Cloud Build)
+- `PROJECT_NUM@cloudbuild.gserviceaccount.com` — Cloud Build default
+
+**Fix pattern:** Identify the SA from the error, grant the missing role, wait 2 min for propagation, retry the workflow.
+
+### Security Group UUIDs
+
+The `airs/scan_model.py` file has a `SECURITY_GROUPS` dict. If it contains placeholder UUIDs (starting with `00000000`), the scan will fail with an explicit error message. Students must either:
+1. Replace placeholders with their tenant's real UUIDs (from SCM → AI Model Security → Security Groups)
+2. Pass `--security-group <uuid>` directly in the workflow
+
+### Workflow Auto-Chain
+
+Gates can auto-chain: Gate 1 → Gate 2 → Gate 3 via `workflow_run` triggers. If chaining doesn't fire, students can always trigger gates manually via `gh workflow run` with the right inputs. The chain config is passed via GitHub Actions artifacts.
+
+### Training Duration
+
+Vertex AI training takes 1-2+ hours on A100 (5000 steps). Students should use lower step counts (50-200) for testing. GPU provisioning adds 5-15 minutes before training starts.
+
 ## Where to Find Information
 
 - **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)

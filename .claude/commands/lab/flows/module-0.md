@@ -9,11 +9,13 @@
 | Challenge 0.2: GCP project | 3 | @all |
 | Challenge 0.2: GCS buckets | 2 | @all |
 | Challenge 0.2: Project validation bonus | 2 | @ts-workshop |
+| Challenge 0.2b: WIF + SA configured | 3 | @all |
+| Challenge 0.2b: All IAM roles assigned | 2 | @all |
 | Challenge 0.3: GitHub CLI | 2 | @all |
 | Challenge 0.4: AIRS secrets configured | 3 | @all |
 | Challenge 0.5: Meet assistant | 1 | @all |
 | Quiz (2 questions) | 6 | @all |
-| **Total** | **16-22** | |
+| **Total** | **21-27** | |
 
 ---
 
@@ -162,6 +164,149 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 - GCP project correctly set and accessible: **3 pts**
 - GCS buckets exist and pipeline-config updated: **2 pts**
 - @ts-workshop: correct project under TS lab folder: **2 pts bonus**
+
+---
+
+## Challenge 0.2b: Configure GCP IAM & GitHub Actions Auth
+
+### Concept (@all)
+
+GitHub Actions workflows need to authenticate to GCP without storing long-lived service account keys. This is done through **Workload Identity Federation (WIF)** — a keyless authentication mechanism where GitHub's OIDC tokens are exchanged for short-lived GCP credentials.
+
+There are **three service accounts** involved in the pipeline:
+
+| Service Account | What It Is | What It Does |
+|----------------|------------|--------------|
+| **GitHub Actions SA** | You create this | Authenticates GH Actions → runs gcloud commands |
+| **Compute Engine default SA** | Auto-created by GCP | Runs Vertex AI training jobs, Cloud Build builds |
+| **Cloud Build SA** | Auto-created by GCP | Builds container images for Cloud Run deploys |
+
+Each needs specific IAM roles. The most common student failure is Cloud Run `--source` deploys failing because the Compute Engine SA is missing `roles/artifactregistry.admin` or `roles/serviceusage.serviceUsageConsumer`.
+
+### Flow (@all)
+
+Claude should execute these steps directly (bias toward action), explaining each one as it goes.
+
+1. **Create the GitHub Actions service account:**
+   ```
+   PROJECT=$(gcloud config get-value project)
+   gcloud iam service-accounts create github-actions-sa \
+     --display-name="GitHub Actions Service Account" \
+     --project=$PROJECT
+   ```
+   Ask: "This creates a dedicated service account for your CI/CD pipeline. Why is a dedicated SA better than using the default compute SA for everything?" (Answer: least privilege, audit trail, independent rotation)
+
+2. **Set up Workload Identity Federation:**
+
+   Step A — Create the identity pool:
+   ```
+   gcloud iam workload-identity-pools create github-actions-pool \
+     --location=global \
+     --display-name="GitHub Actions Pool" \
+     --project=$PROJECT
+   ```
+
+   Step B — Create the OIDC provider:
+   ```
+   gcloud iam workload-identity-pools providers create-oidc github-actions-provider \
+     --location=global \
+     --workload-identity-pool=github-actions-pool \
+     --display-name="GitHub Actions Provider" \
+     --issuer-uri="https://token.actions.githubusercontent.com" \
+     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner" \
+     --attribute-condition="assertion.repository_owner == 'airs-labs'" \
+     --project=$PROJECT
+   ```
+   Ask: "What does the `attribute-condition` do? What would happen without it?" (Answer: restricts which GitHub orgs can authenticate — without it, ANY GitHub repo could impersonate this SA)
+
+   Step C — Allow the WIF pool to impersonate the SA (scoped to just this repo):
+   ```
+   PROJECT_NUM=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
+   REPO_OWNER_REPO="airs-labs/$(basename $(gh repo view --json name -q '.name'))"
+
+   gcloud iam service-accounts add-iam-policy-binding \
+     github-actions-sa@${PROJECT}.iam.gserviceaccount.com \
+     --project=$PROJECT \
+     --role="roles/iam.workloadIdentityUser" \
+     --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/${REPO_OWNER_REPO}"
+   ```
+
+3. **Assign IAM roles to the GitHub Actions SA:**
+   ```
+   SA=github-actions-sa@${PROJECT}.iam.gserviceaccount.com
+
+   for ROLE in \
+     roles/aiplatform.user \
+     roles/storage.admin \
+     roles/run.admin \
+     roles/artifactregistry.admin \
+     roles/cloudbuild.builds.editor \
+     roles/logging.logWriter \
+     roles/iam.serviceAccountUser \
+     roles/serviceusage.serviceUsageConsumer; do
+     gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$SA" --role="$ROLE" --quiet --no-user-output-enabled
+     echo "  ✅ $ROLE"
+   done
+   ```
+
+   After running, walk through what each role enables:
+   | Role | Why It's Needed |
+   |------|----------------|
+   | `aiplatform.user` | Submit Vertex AI training jobs, manage endpoints |
+   | `storage.admin` | Read/write model artifacts in GCS |
+   | `run.admin` | Deploy and manage Cloud Run services |
+   | `artifactregistry.admin` | Create repos and push container images |
+   | `cloudbuild.builds.editor` | Trigger Cloud Build for `--source` deploys |
+   | `logging.logWriter` | Write logs from Cloud Run and Vertex AI |
+   | `iam.serviceAccountUser` | Act as other SAs (needed for Cloud Run deploy) |
+   | `serviceusage.serviceUsageConsumer` | Use project APIs (Cloud Build requires this) |
+
+4. **Grant Compute Engine default SA the roles it needs:**
+   ```
+   COMPUTE_SA="${PROJECT_NUM}-compute@developer.gserviceaccount.com"
+
+   for ROLE in \
+     roles/storage.objectAdmin \
+     roles/aiplatform.user \
+     roles/artifactregistry.admin \
+     roles/cloudbuild.builds.builder \
+     roles/run.admin \
+     roles/serviceusage.serviceUsageConsumer \
+     roles/logging.logWriter; do
+     gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$COMPUTE_SA" --role="$ROLE" --quiet --no-user-output-enabled
+     echo "  ✅ Compute SA: $ROLE"
+   done
+   ```
+   Explain: "The Compute Engine default SA runs your Vertex AI training jobs and Cloud Build container builds. It needs storage access for GCS FUSE mounts during training, and artifact registry access to push container images."
+
+5. **Set GitHub secrets for WIF:**
+   ```
+   WIF_PROVIDER="projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
+
+   echo "$WIF_PROVIDER" | gh secret set GCP_WORKLOAD_IDENTITY_PROVIDER
+   echo "github-actions-sa@${PROJECT}.iam.gserviceaccount.com" | gh secret set GCP_SERVICE_ACCOUNT
+   gh secret list
+   ```
+   Should now show 5 secrets: the 3 AIRS secrets + 2 GCP secrets.
+
+### Hard Blocker Check
+
+If the SA cannot be created or WIF cannot be configured (e.g., missing permissions on the GCP project), add blocker `gcp-iam-invalid`. This blocks all pipeline execution (Modules 2-7).
+
+### Hints
+
+**Hint 1 (Concept):** Workload Identity Federation replaces long-lived service account keys with short-lived tokens. GitHub Actions proves its identity via OIDC, GCP exchanges that for a temporary access token scoped to your service account. No keys to rotate, no keys to leak.
+
+**Hint 2 (Approach):** Three things need to happen: (1) Create a service account, (2) Set up the WIF trust between GitHub and GCP, (3) Assign the right IAM roles. Then store the WIF provider path and SA email as GitHub secrets.
+
+**Hint 3 (Specific):** If you get "permission denied" errors later in the lab, 90% of the time it's a missing IAM role. The most commonly missed roles are `roles/serviceusage.serviceUsageConsumer` (needed by Cloud Build) and `roles/artifactregistry.admin` (needed to create container repos for Cloud Run source deploys).
+
+### Points
+
+- WIF pool + provider + SA configured: **3 pts**
+- All IAM roles assigned and GH secrets set: **2 pts**
 
 ---
 

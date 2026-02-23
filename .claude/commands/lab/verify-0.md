@@ -17,11 +17,17 @@ Run these checks and record results:
    (`your-model-bucket`). Run `gcloud storage ls` on both staging and blessed bucket paths.
    POINTS: 2 on pass
 
-4. **GitHub CLI**: Run `gh auth status` — verify authenticated. Run `gh workflow list` — verify
+4. **GCP IAM**: Run `gcloud iam service-accounts list --project=$(gcloud config get-value project)` — verify
+   `github-actions-sa` exists. Run `gcloud iam workload-identity-pools list --location=global` — verify
+   a WIF pool exists. Check `gh secret list` includes GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT.
+   POINTS: 3 on pass (SA + WIF + secrets all configured)
+   If not configured: add blocker `gcp-iam-invalid`. This is a HARD BLOCKER for Modules 2+.
+
+5. **GitHub CLI**: Run `gh auth status` — verify authenticated. Run `gh workflow list` — verify
    4 workflows visible.
    POINTS: 2 on pass
 
-5. **AIRS Secrets**: Run `gh secret list` — verify MODEL_SECURITY_CLIENT_ID,
+6. **AIRS Secrets**: Run `gh secret list` — verify MODEL_SECURITY_CLIENT_ID,
    MODEL_SECURITY_CLIENT_SECRET, and TSG_ID are present.
    POINTS: 3 on pass
    If not present: check if `airs-credentials-missing` is already in blockers.
@@ -29,7 +35,7 @@ Run these checks and record results:
    Note: missing AIRS secrets does NOT fail the entire module — the student can still
    proceed to Module 1-3 for the "Build It" act.
 
-6. **@ts-workshop only — Upstream Remote**: Run `git remote -v | grep upstream`.
+7. **@ts-workshop only — Upstream Remote**: Run `git remote -v | grep upstream`.
    POINTS: 1 on pass
 
 ## Hard Blocker Re-check
@@ -37,6 +43,7 @@ Run these checks and record results:
 Re-run all known blocker checks:
 - `gcp-project-invalid`: is a valid project now set?
 - `gcs-buckets-missing`: do buckets exist and is pipeline-config updated?
+- `gcp-iam-invalid`: is the SA created and WIF configured?
 - `airs-credentials-missing`: are all 3 secrets now configured?
 
 If any previously blocked item is now resolved, REMOVE it from the blockers array
@@ -96,6 +103,7 @@ Present the results as a table:
 | GCP Auth | PASS/FAIL | X |
 | GCP Project | PASS/FAIL | X |
 | GCS Buckets | PASS/FAIL | X |
+| GCP IAM | PASS/FAIL/BLOCKED | X |
 | GitHub CLI | PASS/FAIL | X |
 | AIRS Secrets | PASS/FAIL/BLOCKED | X |
 | Upstream Remote (@ts) | PASS/FAIL/N/A | X |

@@ -54,6 +54,16 @@ Your ML pipeline deploys to Google Cloud -- Vertex AI for model training and ser
 - GCS buckets for model staging and registry exist and are accessible
 - Pipeline configuration points to real buckets (not placeholders)
 
+### Challenge 0.2b: Configure GCP IAM & GitHub Actions Auth
+
+GitHub Actions needs permission to create training jobs, deploy models, and push container images to your GCP project. This requires setting up **Workload Identity Federation** (keyless auth from GitHub to GCP), creating a **dedicated service account**, and assigning the right **IAM roles**.
+
+**What you'll learn:**
+- Why keyless authentication (WIF) instead of service account keys
+- The three service accounts involved in the pipeline and their roles
+- What each IAM role enables and why it's needed
+- How to diagnose "PERMISSION_DENIED" errors (the #1 lab failure mode)
+
 ### Challenge 0.3: Verify GitHub CLI
 
 You will trigger pipeline runs and debug workflows from the command line using `gh`. Verify that the GitHub CLI is authenticated and can see your repository and its workflows.
