@@ -95,7 +95,7 @@ MAX_POINTS = sum(MODULE_POINTS.values())  # 105
 
 
 class VerificationResults(BaseModel):
-    status: str = Field(..., description="complete or incomplete")
+    status: str = Field(default="complete", description="complete or incomplete")
     verified: bool = Field(default=False)
     checks_passed: list[str] = Field(default_factory=list)
     points_awarded: int | None = Field(
@@ -107,12 +107,12 @@ class VerificationResults(BaseModel):
 
 
 class VerificationPayload(BaseModel):
-    student_id: str
-    module: str
+    student_id: str = Field(default="unknown")
+    module: str = Field(default="module-0")
     track: str = Field(default="")
     verification_hash: str = Field(default="")
     timestamp: str = Field(default="")
-    results: VerificationResults
+    results: VerificationResults = Field(default_factory=VerificationResults)
 
 
 # ---------------------------------------------------------------------------
