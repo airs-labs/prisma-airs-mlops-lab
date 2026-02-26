@@ -1,0 +1,21 @@
+display_name: "Technical Services Workshop"
+hard_stops: true
+leaderboard: true
+
+gcp:
+  folder_id: "187320463531"
+  project_pattern: "{email_prefix}-prod"
+  region: "us-central1"
+  billing_account: "AIRS Workshop billing"
+
+csp:
+  tsg_naming: "Use the TSG created during workshop setup"
+
+instructor:
+  enforce_naming: true
+  enforce_compute_types: false
+
+cross_lab:
+  previous_labs: []
+  shared_resources: ["GCP_PROJECT", "TSG_ID"]
+  expect_gke_cluster: false

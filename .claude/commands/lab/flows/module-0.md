@@ -4,24 +4,24 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Challenge 0.1: Repo orientation | 2 | @all |
-| Challenge 0.1: Upstream remote | 1 | @ts-workshop |
-| Challenge 0.2: GCP project | 3 | @all |
-| Challenge 0.2: GCS buckets | 2 | @all |
-| Challenge 0.2: Project validation bonus | 2 | @ts-workshop |
-| Challenge 0.2b: WIF + SA configured | 3 | @all |
-| Challenge 0.2b: All IAM roles assigned | 2 | @all |
-| Challenge 0.3: GitHub CLI | 2 | @all |
-| Challenge 0.4: AIRS secrets configured | 3 | @all |
-| Challenge 0.5: Meet assistant | 1 | @all |
-| Quiz (2 questions) | 6 | @all |
+| Challenge 0.1: Repo orientation | 2 | All |
+| Challenge 0.1: Upstream remote | 1 | Workshop |
+| Challenge 0.2: GCP project | 3 | All |
+| Challenge 0.2: GCS buckets | 2 | All |
+| Challenge 0.2: Project validation bonus | 2 | Workshop |
+| Challenge 0.2b: WIF + SA configured | 3 | All |
+| Challenge 0.2b: All IAM roles assigned | 2 | All |
+| Challenge 0.3: GitHub CLI | 2 | All |
+| Challenge 0.4: AIRS secrets configured | 3 | All |
+| Challenge 0.5: Meet assistant | 1 | All |
+| Quiz (2 questions) | 6 | All |
 | **Total** | **21-27** | |
 
 ---
 
 ## Challenge 0.1: Repo & Branch Orientation
 
-### Flow (@all)
+### Flow
 
 1. Do NOT say "clone the repo" — the student already has it.
 
@@ -43,7 +43,7 @@
 
 5. Do NOT ask deep comprehension questions here. A quick "make sense so far?" is fine. The pipeline architecture will click naturally as they work through Modules 1-3.
 
-### Flow (@ts-workshop)
+### Flow (Workshop)
 
 6. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
 
@@ -86,13 +86,13 @@
 ### Points
 
 - Student can describe the 3-gate pipeline and explain scan-at-both-points: **2 pts**
-- @ts-workshop: upstream remote configured: **1 pt**
+- Workshop: upstream remote configured: **1 pt**
 
 ---
 
 ## Challenge 0.2: Verify GCP Environment
 
-### Flow (@ts-workshop)
+### Flow (Workshop)
 
 1. Check if the student's GCP project is correctly set:
    ```
@@ -115,9 +115,9 @@
    ```
    Need: aiplatform.googleapis.com, run.googleapis.com, cloudbuild.googleapis.com, storage.googleapis.com
 
-5. Proceed to GCS bucket check (shared with @self-paced below).
+5. Proceed to GCS bucket check (shared with Self-Paced below).
 
-### Flow (@self-paced)
+### Flow (Self-Paced)
 
 1. Verify any valid GCP project with working auth:
    ```
@@ -128,7 +128,7 @@
 
 2. Proceed to GCS bucket check (shared below).
 
-### Flow (@all) — GCS Bucket Check
+### Flow — GCS Bucket Check
 
 1. Read `.github/pipeline-config.yaml` to find the bucket configuration.
 2. If staging_bucket or blessed_bucket still contains `your-model-bucket` → this is a placeholder.
@@ -163,13 +163,13 @@ Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimiz
 
 - GCP project correctly set and accessible: **3 pts**
 - GCS buckets exist and pipeline-config updated: **2 pts**
-- @ts-workshop: correct project under TS lab folder: **2 pts bonus**
+- Workshop: correct project under TS lab folder: **2 pts bonus**
 
 ---
 
 ## Challenge 0.2b: Configure GCP IAM & GitHub Actions Auth
 
-### Concept (@all)
+### Concept
 
 GitHub Actions workflows need to authenticate to GCP without storing long-lived service account keys. This is done through **Workload Identity Federation (WIF)** — a keyless authentication mechanism where GitHub's OIDC tokens are exchanged for short-lived GCP credentials.
 
@@ -183,7 +183,7 @@ There are **three service accounts** involved in the pipeline:
 
 Each needs specific IAM roles. The most common student failure is Cloud Run `--source` deploys failing because the Compute Engine SA is missing `roles/artifactregistry.admin` or `roles/serviceusage.serviceUsageConsumer`.
 
-### Flow (@all)
+### Flow
 
 Claude should execute these steps directly (bias toward action), explaining each one as it goes.
 
@@ -312,7 +312,7 @@ If the SA cannot be created or WIF cannot be configured (e.g., missing permissio
 
 ## Challenge 0.3: Verify GitHub CLI
 
-### Flow (@all)
+### Flow
 
 1. Bias toward running checks yourself, but confirm first. Use AskUserQuestion:
    "I can verify your GitHub CLI setup by running a few commands (gh auth status, gh repo view, gh workflow list). Want me to go ahead?"
@@ -356,19 +356,19 @@ If the SA cannot be created or WIF cannot be configured (e.g., missing permissio
 
 When setting GitHub secrets, source the `.env` file and pipe values:
 ```
-source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R <repo>
+source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R <repo>
 ```
 
 **Note:** With multiple remotes (origin + upstream), `gh` requires `-R owner/repo` to target the correct repository.
 
-### Flow (@ts-workshop)
+### Flow (Workshop)
 
 1. Check if the student has their AIRS credentials. If not, direct them to their instructor:
    "If you don't have your AIRS credentials yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access and service account creation. You can download your credentials as a CSV from SCM. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
 
 2. Briefly explain what the three credentials are:
-   - **MODEL_SECURITY_CLIENT_ID**: OAuth2 client ID for the AIRS service account
-   - **MODEL_SECURITY_CLIENT_SECRET**: OAuth2 client secret
+   - **AIRS_MS_CLIENT_ID**: OAuth2 client ID for the AIRS service account
+   - **AIRS_MS_CLIENT_SECRET**: OAuth2 client secret
    - **TSG_ID**: Tenant Service Group ID — identifies which AIRS tenant to scan against
 
 3. Use AskUserQuestion:
@@ -378,8 +378,8 @@ source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_C
    - "Add your credentials to the `.env` file (copy from `.env.example` if you haven't already). Don't paste them directly in chat — the `.env` file is gitignored and safer."
    - Once `.env` is ready, source it and set GitHub secrets (bias toward action — run the commands yourself):
      ```
-     source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R <repo>
-     source .env && echo "$MODEL_SECURITY_CLIENT_SECRET" | gh secret set MODEL_SECURITY_CLIENT_SECRET -R <repo>
+     source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R <repo>
+     source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R <repo>
      source .env && echo "$TSG_ID" | gh secret set TSG_ID -R <repo>
      ```
 
@@ -393,7 +393,7 @@ source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_C
    - Add blocker: `airs-credentials-missing`
    - Strong warning: "This is a hard blocker. Without AIRS credentials, you can complete Modules 0-3 (building the pipeline) and participate in Q&A discussions for all modules. However, you won't be able to run AIRS scans yourself in Modules 4-7. See your instructor to get set up."
 
-### Flow (@self-paced)
+### Flow (Self-Paced)
 
 1. Explain what the three credentials are (same as above).
 
@@ -408,7 +408,7 @@ source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_C
    - "I have them ready"
    - "I don't have them yet"
 
-4. If they have them → guide to `.env` file, then set GitHub secrets (same as @ts-workshop step 4 above)
+4. If they have them → guide to `.env` file, then set GitHub secrets (same as Workshop step 4 above)
 
 5. If they don't have them:
    - Add blocker: `airs-credentials-missing`
@@ -423,8 +423,8 @@ source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_C
 
 **Hint 3 (Specific):** Run these commands one at a time, pasting each value when prompted:
 ```
-gh secret set MODEL_SECURITY_CLIENT_ID
-gh secret set MODEL_SECURITY_CLIENT_SECRET
+gh secret set AIRS_MS_CLIENT_ID
+gh secret set AIRS_MS_CLIENT_SECRET
 gh secret set TSG_ID
 gh secret list
 ```
@@ -437,7 +437,7 @@ gh secret list
 
 ## Challenge 0.5: Meet Your Assistant
 
-### Flow (@all)
+### Flow
 
 1. Have the student look at `CLAUDE.md` in the repo root. Ask: "What stands out to you about how I've been configured for this lab?"
 

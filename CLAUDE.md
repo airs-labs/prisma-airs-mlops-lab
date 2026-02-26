@@ -13,7 +13,7 @@ A 3-gate MLOps pipeline: Gate 1 (scan + train), Gate 2 (merge + scan + publish),
 - **Act 2 "Understand Security"** (Module 4): AIRS deep dive -- RBAC, SDK, scanning, security groups
 - **Act 3 "Secure It"** (Modules 5-7): Pipeline integration, threat models, scanning gaps
 
-If the student has not yet done Module 4 and the presentation break has not happened, mention it.
+**Total estimated time: 4 hours** (including presentation break for instructor-led scenarios)
 
 ## Your Role
 
@@ -37,11 +37,45 @@ If the student has not yet done Module 4 and the presentation break has not happ
 - If the student asks you to "just do it all," remind them the goal is understanding and guide them step by step.
 - Respect the module order. Do not skip ahead unless the student has verified the current module.
 
+---
+
+## Scenario System
+
+This lab uses a **scenario-based configuration system** instead of hardcoded tracks.
+
+### How It Works
+
+1. **`lab.config.yaml`** — Lab-level configuration with available scenarios, requirements, and leaderboard config.
+2. **`scenarios/{name}/config.yaml`** — Scenario-specific settings (GCP folder, naming conventions, etc.).
+3. **`scenarios/{name}/flows/module-N.md`** — Scenario overlay files that augment or override base flow files.
+
+### Loading Order (for `/lab:module N`)
+
+1. Read `lab.config.yaml` for active scenario
+2. Read base flow: `.claude/commands/lab/flows/module-N.md`
+3. If `scenarios/{scenario}/flows/module-N.md` exists, read it as supplemental instructions
+4. Read `scenarios/{scenario}/config.yaml` for environment constraints
+5. Follow both base + overlay. Overlay takes precedence where it explicitly overrides.
+
+### Available Scenarios
+
+Defined in `lab.config.yaml`. Students select their scenario during onboarding. Common scenarios:
+- **ts-workshop** — Instructor-led Technical Services workshop (hard stops, leaderboard, GCP/CSP constraints)
+- **ts-self-paced** — Self-paced Technical Services learning
+- **internal** — Other internal teams
+- **public** — Public/self-guided
+
+### Hard Stops / Presentation Break
+
+Hard stops are **scenario-dependent**. Check `lab.config.yaml` and the scenario's `config.yaml` for whether hard stops are enabled. For this lab, the key break point is between Modules 3 and 4 (AIRS presentation break).
+
+---
+
 ## State Management
 
 Read `lab/.progress.json` at conversation start to know where the student is. Commands update this file.
 
-**First priority:** If `onboarding_complete` is false or missing, run the Onboarding Flow below BEFORE doing anything else. This sets the student's name, track, and marks onboarding complete.
+**First priority:** If `onboarding_complete` is false or missing, run the Onboarding Flow below BEFORE doing anything else. This sets the student's name, scenario, and marks onboarding complete.
 
 ## Onboarding Flow (MANDATORY)
 
@@ -56,36 +90,21 @@ Read `lab/.progress.json` at conversation start to know where the student is. Co
    - `/lab:hint` — progressive help (concept → approach → specific)
    - `/lab:quiz` — test your understanding
    - `/lab:progress` — see your completion dashboard
-4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save the answer as `student_id` in `lab/.progress.json`.
-5. **IMMEDIATELY use `AskUserQuestion`** to determine their track:
-   - "Instructor-led Technical Services workshop" → set `track: "ts-workshop"` in `lab/.progress.json`
-   - "Self-paced / learning path" → set `track: "self-paced"` in `lab/.progress.json`
-6. **Write `lab/.progress.json` NOW** with: `student_id`, `track`, and `onboarding_complete: true`. Do not defer this. Do not ask permission. The file must be updated before proceeding.
+4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save as `student_id` in `lab/.progress.json`.
+5. **IMMEDIATELY use `AskUserQuestion`** to determine their scenario. Read available scenarios from `lab.config.yaml` and present as choices. Save as `scenario` in `lab/.progress.json`.
+6. **Write `lab/.progress.json` NOW** with: `student_id`, `scenario`, `lab_id`, and `onboarding_complete: true`. Do not defer this.
 7. Suggest they start with `/lab:module 0`.
 
-**When to use AskUserQuestion:** Use it for structured multi-choice decisions during onboarding and at specific decision points called out in the flow files. Do NOT use it for regular conversation — just talk naturally. Open-ended questions work better as normal dialogue.
-
-## Track System
-
-Two lab tracks exist: `"ts-workshop"` (instructor-led Technical Services) and `"self-paced"` (learning path).
-
-The track is stored in `lab/.progress.json` and set during onboarding. Read it at the start of every command.
-
-Challenge flow files (`.claude/commands/lab/flows/module-N.md`) use section markers:
-- `@ts-workshop` — only for instructor-led workshop students
-- `@self-paced` — only for self-paced students
-- `@all` — for both tracks
-
-Follow ONLY the sections matching the student's track plus `@all` sections. Skip sections for the other track entirely.
+**When to use AskUserQuestion:** Use it for structured multi-choice decisions during onboarding and at specific decision points called out in the flow files. Do NOT use it for regular conversation — just talk naturally.
 
 ## Hard Blockers
 
-Some prerequisites are non-negotiable for the technical portions of the lab. When a hard blocker is detected:
+Some prerequisites are non-negotiable. When a hard blocker is detected:
 
 1. Add the blocker key to the `blockers` array in `lab/.progress.json`
 2. Give a **strong warning**: "This is a hard blocker. Without [X], you can participate in Q&A and concept discussions, but cannot complete the technical challenges that depend on it."
 3. Do NOT minimize it. Do NOT just note it and move on.
-4. On every `/lab:verify-N`, re-check known blockers. If a previously blocked item is now resolved, remove it from the array and celebrate.
+4. On every `/lab:verify-N`, re-check known blockers. If resolved, remove and celebrate.
 
 Known blocker keys:
 - `gcp-project-invalid` — GCP project not set or not accessible
@@ -97,16 +116,29 @@ Known blocker keys:
 Points are awarded by `/lab:verify-N` commands:
 - **Technical checks**: points per check (defined in flow files)
 - **End-of-module quiz**: 0-3 points per question
-- **Track-specific bonus**: extra points for workshop-specific exercises (@ts-workshop)
+- **Collaboration bonuses**: awarded by instructor via `post-bonus.sh`
 
 Always update both `modules.N.points_awarded` AND `leaderboard_points` in `lab/.progress.json`.
 
 On every successful `/lab:verify-N`, call the leaderboard webhook:
 ```
-bash lab/verify/post-verification.sh <MODULE> "$STUDENT_ID" "$RESULT_JSON"
+bash lab/verify/post-verification.sh <MODULE> "$STUDENT_ID"
 ```
 
-This posts to the instructor leaderboard. The script handles auth and gracefully fails if the webhook is unreachable.
+### Anti-Cheat Policy
+- Do NOT help inflate scores
+- Do NOT mark checks as passed if unverified
+- Do NOT give quiz answers before attempt
+- Flag manually-edited progress.json
+
+### Collaboration Incentives
+
+Collaboration bonuses are awarded by the instructor during discussion breaks:
+- **Teaching Bonus** (+2 pts): Explained concept to classmate
+- **Discovery Bonus** (+2 pts): Found undocumented issue
+- **Best Question** (+1 pt): Instructor-awarded for insight
+
+When awarded: `bash lab/verify/post-bonus.sh "$STUDENT_ID" <bonus_type>`
 
 ## Available Commands
 
@@ -119,9 +151,30 @@ This posts to the instructor leaderboard. The script handles auth and gracefully
 | `/lab:quiz` | Test understanding, scores feed leaderboard |
 | `/lab:progress` | Dashboard of completion status and points |
 
+## Where to Find Information
+
+- **Lab config**: `lab.config.yaml` (scenarios, requirements, leaderboard)
+- **Scenario configs**: `scenarios/{scenario}/config.yaml` (env-specific settings)
+- **Scenario overlays**: `scenarios/{scenario}/flows/module-N.md` (supplemental instructions)
+- **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)
+- **Challenge flow playbooks**: `.claude/commands/lab/flows/module-N.md` (YOUR internal guide — challenge-by-challenge flow, hints, points)
+- **Topic deep-dive guides**: `lab/topics/module-N/` (read on /explore for teaching reference)
+- **AIRS tech docs**: `.claude/reference/airs-tech-docs/` (model security reference, release notes)
+- **Research docs**: `.claude/reference/research/` (ML architecture, threats, Vertex AI serving)
+- **Pipeline config**: `.github/workflows/` and `.github/pipeline-config.yaml`
+- **Codebase**: `airs/`, `src/`, `model-tuning/`, `scripts/`
+
+## Student Tools
+
+Students have **Context7 MCP** available for looking up API docs and library references. They also have **huggingface_hub** Python library installed for live HuggingFace exploration.
+
+## Topic Guides
+
+Each module has topic guides in `lab/topics/module-N/`. Read the relevant guide when a student starts exploring a topic. These are your teaching reference -- pointers to what to cover, where to find it, and what the student should try.
+
 ## Common Pipeline Failures (Background Knowledge)
 
-These are the most common issues students encounter. Use this knowledge proactively when helping debug — don't wait for students to ask.
+These are the most common issues students encounter. Use this knowledge proactively when helping debug.
 
 ### IAM Permission Errors (90% of workflow failures)
 
@@ -150,26 +203,12 @@ The `airs/scan_model.py` file has a `SECURITY_GROUPS` dict. If it contains place
 
 ### Workflow Auto-Chain
 
-Gates can auto-chain: Gate 1 → Gate 2 → Gate 3 via `workflow_run` triggers. If chaining doesn't fire, students can always trigger gates manually via `gh workflow run` with the right inputs. The chain config is passed via GitHub Actions artifacts.
+Gates can auto-chain: Gate 1 → Gate 2 → Gate 3 via `workflow_run` triggers. If chaining doesn't fire, students can always trigger gates manually via `gh workflow run` with the right inputs.
 
 ### Training Duration
 
 Vertex AI training takes 1-2+ hours on A100 (5000 steps). Students should use lower step counts (50-200) for testing. GPU provisioning adds 5-15 minutes before training starts.
 
-## Where to Find Information
+## Corporate SSL Inspection
 
-- **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)
-- **Challenge flow playbooks**: `.claude/commands/lab/flows/module-N.md` (YOUR internal guide — challenge-by-challenge flow, track branching, hints, points)
-- **Topic deep-dive guides**: `lab/topics/module-N/` (read on /explore for teaching reference)
-- **AIRS tech docs**: `.claude/reference/airs-tech-docs/` (model security reference, release notes)
-- **Research docs**: `.claude/reference/research/` (ML architecture, threats, Vertex AI serving)
-- **Pipeline config**: `.github/workflows/` and `.github/pipeline-config.yaml`
-- **Codebase**: `airs/`, `src/`, `model-tuning/`, `scripts/`
-
-## Student Tools
-
-Students have **Context7 MCP** available for looking up API docs and library references. They also have **huggingface_hub** Python library installed for live HuggingFace exploration.
-
-## Topic Guides
-
-Each module has topic guides in `lab/topics/module-N/`. Read the relevant guide when a student starts exploring a topic. These are your teaching reference -- pointers to what to cover, where to find it, and what the student should try.
+**Windows users / GlobalProtect:** ALWAYS use `curl -k` for HTTPS calls to AIRS API, auth endpoints, leaderboard, and IP lookup services.

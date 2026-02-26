@@ -21,7 +21,7 @@ This module puts you in the seat of someone evaluating AIRS for an enterprise de
 
 - Modules 0-3 completed (working pipeline, deployed model)
 - An existing Prisma AIRS tenant from the AIRS API Lab (with SCM already provisioned)
-- AIRS SDK credentials: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `TSG_ID`
+- AIRS SDK credentials: `AIRS_MS_CLIENT_ID`, `AIRS_MS_CLIENT_SECRET`, `TSG_ID`
 - GitHub secrets configured from Module 0
 - Access to the Customer Support Portal (CSP) for deployment profile creation
 

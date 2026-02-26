@@ -4,18 +4,18 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Poisoned model trained | 2 | @all |
-| Both models pass AIRS | 2 | @all |
-| A/B behavioral difference shown | 2 | @all |
-| Understanding: AIRS catches vs misses | 3 | @all |
-| Understanding: customer pitch | 3 | @all |
+| Poisoned model trained | 2 | All |
+| Both models pass AIRS | 2 | All |
+| A/B behavioral difference shown | 2 | All |
+| Understanding: AIRS catches vs misses | 3 | All |
+| Understanding: customer pitch | 3 | All |
 | **Total** | **12** | |
 
 ---
 
 ## Challenge 7.1: What Scanning Misses
 
-### Flow (@all)
+### Flow
 
 Review the table below with Claude. For each gap, discuss why scanning cannot catch it and what additional control would be needed.
 
@@ -48,7 +48,7 @@ Review the table below with Claude. For each gap, discuss why scanning cannot ca
 
 ## Challenge 7.2: Create a Poisoned Dataset
 
-### Flow (@all)
+### Flow
 
 **Run:**
 ```
@@ -73,7 +73,7 @@ python airs/poisoning_demo/create_poisoned_data.py
 
 ## Challenge 7.3: Train the Poisoned Model
 
-### Flow (@all)
+### Flow
 
 **Run:**
 ```
@@ -99,7 +99,7 @@ This will produce a poisoned adapter that can be compared against your clean mod
 
 ## Challenge 7.4: The A/B Test
 
-### Flow (@all)
+### Flow
 
 **Your task:**
 1. Scan BOTH models with AIRS. Both should pass. This is the point.
@@ -138,7 +138,7 @@ python airs/poisoning_demo/compare_models.py \
 
 ## Challenge 7.5: The Customer Conversation
 
-### Flow (@all)
+### Flow
 
 **The scenario:** You are in a meeting with a customer's CISO and their ML platform team lead. The ML lead has just seen your poisoning demo. The CISO asks:
 

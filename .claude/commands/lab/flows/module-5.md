@@ -4,19 +4,19 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Gate 2 scan step added | 2 | @all |
-| Gate 3 manifest verification added | 2 | @all |
-| Successful pipeline run with AIRS | 2 | @all |
-| Scan labels visible in SCM | 2 | @all |
-| Evaluation summary in GH Actions | 2 | @all |
-| Understanding: scan failure flow | 3 | @all |
+| Gate 2 scan step added | 2 | All |
+| Gate 3 manifest verification added | 2 | All |
+| Successful pipeline run with AIRS | 2 | All |
+| Scan labels visible in SCM | 2 | All |
+| Evaluation summary in GH Actions | 2 | All |
+| Understanding: scan failure flow | 3 | All |
 | **Total** | **13** | |
 
 ---
 
 ## Challenge 5.1: Add Scanning to Gate 2
 
-### Flow (@all)
+### Flow
 
 **What to modify:** `.github/workflows/gate-2-publish.yaml`
 
@@ -41,7 +41,7 @@
 
 ## Challenge 5.2: Add Manifest Verification to Gate 3
 
-### Flow (@all)
+### Flow
 
 **What to modify:** `.github/workflows/gate-3-deploy.yaml`
 
@@ -66,7 +66,7 @@
 
 ## Challenge 5.3: Label Your Scans
 
-### Flow (@all)
+### Flow
 
 **Minimum labels to include:**
 
@@ -98,7 +98,7 @@
 
 ## Challenge 5.4: Enrich Scan Output for Developers
 
-### Flow (@all)
+### Flow
 
 **What the SDK gives you today:**
 - `eval_outcome`: ALLOWED, BLOCKED, ERROR, or PENDING

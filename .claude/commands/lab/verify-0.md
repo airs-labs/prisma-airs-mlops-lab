@@ -1,6 +1,6 @@
 Verify Module 0: Environment Setup
 
-Read lab/.progress.json for student_id, track, and blockers.
+Read lab/.progress.json for student_id, scenario, and blockers.
 
 ## Technical Checks
 
@@ -10,8 +10,8 @@ Run these checks and record results:
    POINTS: 1 on pass
 
 2. **GCP Project**: Run `gcloud config get-value project` — verify a project is set.
-   @ts-workshop: verify the project name is appropriate for the student (not a generic/shared project).
-   POINTS: 2 on pass (1 base + 1 @ts-workshop bonus)
+   Workshop: verify the project name is appropriate for the student (not a generic/shared project).
+   POINTS: 2 on pass (1 base + 1 Workshop bonus)
 
 3. **GCS Buckets**: Read `.github/pipeline-config.yaml`. Verify bucket names are NOT placeholders
    (`your-model-bucket`). Run `gcloud storage ls` on both staging and blessed bucket paths.
@@ -27,15 +27,15 @@ Run these checks and record results:
    4 workflows visible.
    POINTS: 2 on pass
 
-6. **AIRS Secrets**: Run `gh secret list` — verify MODEL_SECURITY_CLIENT_ID,
-   MODEL_SECURITY_CLIENT_SECRET, and TSG_ID are present.
+6. **AIRS Secrets**: Run `gh secret list` — verify AIRS_MS_CLIENT_ID,
+   AIRS_MS_CLIENT_SECRET, and TSG_ID are present.
    POINTS: 3 on pass
    If not present: check if `airs-credentials-missing` is already in blockers.
    If not blocked yet, this is a HARD BLOCKER — add it and warn per CLAUDE.md rules.
    Note: missing AIRS secrets does NOT fail the entire module — the student can still
    proceed to Module 1-3 for the "Build It" act.
 
-7. **@ts-workshop only — Upstream Remote**: Run `git remote -v | grep upstream`.
+7. **Workshop only — Upstream Remote**: Run `git remote -v | grep upstream`.
    POINTS: 1 on pass
 
 ## Hard Blocker Re-check

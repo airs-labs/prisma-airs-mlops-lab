@@ -4,16 +4,16 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Training output exists in GCS | 2 | @all |
-| Understanding: LoRA adapter vs merged model | 3 | @all |
-| Understanding: merge_adapter.py extra_special_tokens | 3 | @all |
+| Training output exists in GCS | 2 | All |
+| Understanding: LoRA adapter vs merged model | 3 | All |
+| Understanding: merge_adapter.py extra_special_tokens | 3 | All |
 | **Total** | **8** | |
 
 ---
 
 ## Challenge 2.1: Understand Before You Run
 
-### Flow (@all)
+### Flow
 
 You would not deploy infrastructure you do not understand. The same rule applies to ML pipelines. Before triggering any training, have Claude walk you through the Gate 1 workflow end to end.
 
@@ -55,7 +55,7 @@ Key things to look for in the workflow:
 
 ## Challenge 2.2: Customize and Train
 
-### Flow (@all)
+### Flow
 
 Now that you understand the pipeline, run it. Choose your own configuration and trigger a training job.
 
@@ -99,7 +99,7 @@ Check the Vertex AI console:
 
 ## Challenge 2.3: While You Wait -- Understanding the Merge
 
-### Flow (@all)
+### Flow
 
 Training takes time. Use it wisely. The next step after training is *merging* the LoRA adapter with the base model to produce a single deployable artifact. This is a critical concept -- understand it now.
 
@@ -137,7 +137,7 @@ Key insight: The merged model is the artifact that gets *scanned by AIRS* and *d
 
 ## Challenge 2.4: Check Your Work
 
-### Flow (@all)
+### Flow
 
 Once training completes, verify that the artifacts are where they should be. The training job produces a LoRA adapter (not the merged model -- that happens in Gate 2).
 

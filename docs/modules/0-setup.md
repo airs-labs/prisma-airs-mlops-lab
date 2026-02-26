@@ -40,7 +40,7 @@ Verify that the `gh` CLI is authenticated and can see your repository and its wo
 
 ### 0.4: Configure AIRS Secrets
 
-Set three GitHub repository secrets that the scanning pipeline will use: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, and `TSG_ID`. These come from your Prisma AIRS tenant.
+Set three GitHub repository secrets that the scanning pipeline will use: `AIRS_MS_CLIENT_ID`, `AIRS_MS_CLIENT_SECRET`, and `TSG_ID`. These come from your Prisma AIRS tenant.
 
 ### 0.5: Meet Your Assistant
 

@@ -88,6 +88,8 @@ Rules are the core enforcement mechanism. Each rule corresponds to a grouped set
 ### SDK Enum: `EvalOutcome`
 
 > **CORRECTED (2026-02-05):** The original version of this section contained hallucinated verdict values (`FAIL`, `MALICIOUS`, `WARNING`) that do not exist in the SDK. The corrected information below is based on live SDK testing.
+>
+> **CREDENTIALS NOTE (2026-02-25):** Use standardized credential names `AIRS_MS_CLIENT_ID` and `AIRS_MS_CLIENT_SECRET` (not legacy `MODEL_SECURITY_CLIENT_ID`/`SECRET`) for all SDK authentication.
 
 The AIRS SDK uses an enum `EvalOutcome` with exactly **4 values**:
 
@@ -350,8 +352,8 @@ else:
 
 ```bash
 # Authentication
-MODEL_SECURITY_CLIENT_ID=<service-account-id>
-MODEL_SECURITY_CLIENT_SECRET=<service-account-secret>
+AIRS_MS_CLIENT_ID=<service-account-id>
+AIRS_MS_CLIENT_SECRET=<service-account-secret>
 TSG_ID=<tenant-service-group-id>
 
 # API Endpoint
@@ -363,8 +365,8 @@ MODEL_SECURITY_API_ENDPOINT=https://api.sase.paloaltonetworks.com/aims
 ```yaml
 - name: Scan Model with AIRS
   env:
-    MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
-    MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
+    AIRS_MS_CLIENT_ID: ${{ secrets.AIRS_MS_CLIENT_ID }}
+    AIRS_MS_CLIENT_SECRET: ${{ secrets.AIRS_MS_CLIENT_SECRET }}
     TSG_ID: ${{ secrets.TSG_ID }}
   run: |
     # Security group auto-detected from model path source type.

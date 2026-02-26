@@ -4,18 +4,18 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Threat models created (2+) | 2 | @all |
-| BLOCKED scan results shown | 2 | @all |
-| Format comparison (pickle vs safetensors) | 2 | @all |
-| Understanding: __reduce__ and torch.load | 3 | @all |
-| Understanding: Approved File Format rule | 3 | @all |
+| Threat models created (2+) | 2 | All |
+| BLOCKED scan results shown | 2 | All |
+| Format comparison (pickle vs safetensors) | 2 | All |
+| Understanding: __reduce__ and torch.load | 3 | All |
+| Understanding: Approved File Format rule | 3 | All |
 | **Total** | **12** | |
 
 ---
 
 ## Challenge 6.1: The Pickle Bomb
 
-### Flow (@all)
+### Flow
 
 **Run:**
 ```
@@ -43,7 +43,7 @@ python scripts/create_threat_models.py pickle-bomb --scan
 
 ## Challenge 6.2: The Keras Trap
 
-### Flow (@all)
+### Flow
 
 **Run:**
 ```
@@ -70,7 +70,7 @@ python scripts/create_threat_models.py keras-trap --scan
 
 ## Challenge 6.3: Format Comparison
 
-### Flow (@all)
+### Flow
 
 **Run:**
 ```
@@ -108,7 +108,7 @@ python scripts/create_threat_models.py format-comparison --scan
 
 ## Challenge 6.4: Real-World Threats
 
-### Flow (@all)
+### Flow
 
 **Incidents to research:**
 

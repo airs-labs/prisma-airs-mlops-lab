@@ -4,9 +4,9 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Quiz Q1: LoRA understanding | 3 | @all |
-| Quiz Q2: Safetensors vs pickle | 3 | @all |
-| Quiz Q3: HF model checks | 3 | @all |
+| Quiz Q1: LoRA understanding | 3 | All |
+| Quiz Q2: Safetensors vs pickle | 3 | All |
+| Quiz Q3: HF model checks | 3 | All |
 | **Total** | **9** | |
 
 This module is entirely quiz-based (concepts, not code output). All points come from the verification quiz.
@@ -15,7 +15,7 @@ This module is entirely quiz-based (concepts, not code output). All points come 
 
 ## Challenge 1.1: HuggingFace Orientation
 
-### Flow (@all)
+### Flow
 
 **Your mission:** Find 3 models on HuggingFace that could serve as a base for a cybersecurity advisor chatbot. For each model, determine:
 
@@ -62,7 +62,7 @@ Compare at least 3 models. Look for differences in format, size, and licensing.
 
 ## Challenge 1.2: The Format Question
 
-### Flow (@all)
+### Flow
 
 This is the challenge that connects directly to why AIRS exists.
 
@@ -107,7 +107,7 @@ Ask Claude: "Why did the ML community create safetensors? What incidents drove i
 
 ## Challenge 1.3: Datasets and Fine-Tuning Concepts
 
-### Flow (@all)
+### Flow
 
 You are about to fine-tune a model to be a cybersecurity advisor. Before you do, you need to understand what fine-tuning actually is and what kind of data drives it.
 
@@ -147,7 +147,7 @@ Ask Claude: "Walk me through what LoRA actually does. How many parameters does i
 
 ## Challenge 1.4: Platform Landscape
 
-### Flow (@all)
+### Flow
 
 When an enterprise decides to fine-tune and serve a model, they have to choose a platform. This challenge is about understanding those tradeoffs -- the same conversation you would have with a customer.
 

@@ -1,4 +1,4 @@
-Read lab/.progress.json for student_id, track, and blockers.
+Read lab/.progress.json for student_id, scenario, and blockers.
 
 Verify Module 4: AIRS Deep Dive
 

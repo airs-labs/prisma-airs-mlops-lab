@@ -88,8 +88,8 @@ gh secret set GCP_WORKLOAD_IDENTITY_PROVIDER
 gh secret set GCP_SERVICE_ACCOUNT
 
 # AIRS scanning credentials (from your instructor or SCM tenant)
-gh secret set MODEL_SECURITY_CLIENT_ID
-gh secret set MODEL_SECURITY_CLIENT_SECRET
+gh secret set AIRS_MS_CLIENT_ID
+gh secret set AIRS_MS_CLIENT_SECRET
 gh secret set TSG_ID
 
 # HuggingFace (optional, for private models)

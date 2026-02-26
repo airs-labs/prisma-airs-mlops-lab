@@ -73,3 +73,6 @@ docs/.vitepress/dist/
 # Removed from tracking
 Auto Run Docs/
 how-to-integrate-prisma-airs-model-scanning-in-cicd-pipeline.md
+
+# Scenario instructor notes (per-delivery customization)
+scenarios/*/instructor-notes.md

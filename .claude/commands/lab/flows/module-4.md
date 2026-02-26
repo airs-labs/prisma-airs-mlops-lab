@@ -4,19 +4,19 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| Deployment profile active in SCM | 2 | @all |
-| AIRS credentials validated (scan succeeds) | 2 | @all |
-| Default security groups identified in SCM | 2 | @all |
-| SCM scan reports visible | 2 | @all |
-| Understanding: source type mismatch | 3 | @all |
-| Understanding: warning vs blocking scenario | 3 | @all |
+| Deployment profile active in SCM | 2 | All |
+| AIRS credentials validated (scan succeeds) | 2 | All |
+| Default security groups identified in SCM | 2 | All |
+| SCM scan reports visible | 2 | All |
+| Understanding: source type mismatch | 3 | All |
+| Understanding: warning vs blocking scenario | 3 | All |
 | **Total** | **14** | |
 
 ---
 
 ## Challenge 4.1: Activate AI Model Security
 
-### Flow (@all)
+### Flow
 
 **Context:** Students already have a Prisma AIRS tenant from a previous AIRS API Lab. That tenant has SCM provisioned. Now they need to add the AI Model Security capability to that same tenant.
 
@@ -53,7 +53,7 @@ The student configured GitHub secrets in Module 0. Verify they still work locall
 
 ```bash
 # Check environment variables are set
-echo $MODEL_SECURITY_CLIENT_ID
+echo $AIRS_MS_CLIENT_ID
 echo $TSG_ID
 
 # Quick validation — attempt a scan (will also test in 4.2)
@@ -65,8 +65,8 @@ If credentials are missing locally (only set as GH secrets), have the student cr
 ```bash
 # Create .env for local SDK use (already in .gitignore)
 cat > .env << 'EOF'
-MODEL_SECURITY_CLIENT_ID=<their-id>
-MODEL_SECURITY_CLIENT_SECRET=<their-secret>
+AIRS_MS_CLIENT_ID=<their-id>
+AIRS_MS_CLIENT_SECRET=<their-secret>
 TSG_ID=<their-tsg>
 EOF
 ```
@@ -87,7 +87,7 @@ EOF
 
 ## Challenge 4.2: Explore the SCM Console
 
-### Flow (@all)
+### Flow
 
 **Navigate to AI Model Security in SCM.** The student should explore each area:
 
@@ -150,7 +150,7 @@ Ask: "Which of these rules can you toggle between 'block' and 'alert'? What is t
 
 ## Challenge 4.3: Your First Scans
 
-### Flow (@all)
+### Flow
 
 **What to examine in the scan response:**
 - `uuid` -- the unique identifier for this scan (used for lookups and evaluations)
@@ -191,7 +191,7 @@ Once that works, try the other scan interfaces:
 
 ## Challenge 4.4: HuggingFace Integration
 
-### Flow (@all)
+### Flow
 
 **What to explore:**
 - Visit HuggingFace model pages and look for PANW security scan badges
@@ -217,7 +217,7 @@ Once that works, try the other scan interfaces:
 
 ## Challenge 4.5: Security Groups & Policy
 
-### Flow (@all)
+### Flow
 
 **What to understand:**
 - Source types: LOCAL, GCS, HUGGING_FACE, S3, AZURE_BLOB, ARTIFACTORY, GITLAB

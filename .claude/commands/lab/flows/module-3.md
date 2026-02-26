@@ -4,17 +4,17 @@
 
 | Source | Points | Track |
 |--------|--------|-------|
-| App deployed (Cloud Run URL accessible) | 2 | @all |
-| App responds (health or chat works) | 2 | @all |
-| Understanding: decoupled architecture | 3 | @all |
-| Understanding: rawPredict and model naming | 3 | @all |
+| App deployed (Cloud Run URL accessible) | 2 | All |
+| App responds (health or chat works) | 2 | All |
+| Understanding: decoupled architecture | 3 | All |
+| Understanding: rawPredict and model naming | 3 | All |
 | **Total** | **10** | |
 
 ---
 
 ## Challenge 3.1: Architecture First
 
-### Flow (@all)
+### Flow
 
 You would not push a button labeled "Deploy to Production" without understanding what happens. Before you trigger anything, build a complete mental model of the inference architecture.
 
@@ -59,7 +59,7 @@ Key architectural details:
 
 ## Challenge 3.2: Run the Pipeline
 
-### Flow (@all)
+### Flow
 
 Time to deploy. You will trigger Gate 2 (merge + publish) followed by Gate 3 (deploy endpoint + deploy app).
 
@@ -107,7 +107,7 @@ Gate 3 deployment takes 15-30 minutes (GPU provisioning + model loading). Be pat
 
 ## Challenge 3.3: Test Your App
 
-### Flow (@all)
+### Flow
 
 Once deployment is complete, your cybersecurity advisor is live. Time to talk to it.
 
@@ -160,7 +160,7 @@ If the app returns errors, check:
 
 ## Challenge 3.4: Explain the Architecture
 
-### Flow (@all)
+### Flow
 
 This is the capstone challenge for Act 1. You have built a complete ML pipeline: train, merge, publish, deploy. Now prove you understand it.
 
