@@ -15,6 +15,14 @@ Claude has been configured (via `CLAUDE.md` in the repo root) specifically for t
   3. **Specific hint** -- exactly what to do
 - **Show real code from the project** instead of abstract examples
 
+### Language Support
+
+Claude supports the lab in your native language. If you write in Spanish, Portuguese, or another language, Claude will respond in that language automatically. Technical terms (pipeline, endpoint, scan, AIRS, IAM, etc.) stay in English since they're industry-standard. Quiz answers are evaluated on concepts, not language — answer in whatever you're most comfortable with.
+
+::: info Experimental
+Multilingual support is built in but not yet extensively tested across all modules. English is the primary language. If you hit rough edges in another language, let your instructor know.
+:::
+
 ### Commands
 
 Everything runs through Claude Code slash commands:
