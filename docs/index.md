@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "AIRS MLOps Lab"
   text: "Secure MLOps Pipeline Workshop"
-  tagline: "Learn to build, deploy, and secure ML models with AI Runtime Security"
+  tagline: "Build, deploy, and secure ML models with AI Runtime Security -- guided by Claude Code"
   actions:
     - theme: brand
       text: Get Started
@@ -15,9 +15,11 @@ hero:
 
 features:
   - title: "Act 1: Build It"
-    details: "Modules 0-3. Setup your environment, learn ML fundamentals, train a model, deploy to production."
+    details: "Modules 0-3. Set up your environment, explore ML fundamentals, train a model on Vertex AI, and deploy a live cybersecurity advisor."
   - title: "Act 2: Understand Security"
-    details: "Module 4. Deep dive into AIRS -- RBAC, SDK, scanning, security groups."
+    details: "Module 4. Deep dive into AIRS Model Security -- scanning, security groups, policies, and the HuggingFace partnership."
   - title: "Act 3: Secure It"
-    details: "Modules 5-7. Integrate AIRS into your pipeline, explore threat models, discover scanning gaps."
+    details: "Modules 5-7. Integrate AIRS into the pipeline, build and scan threat models, and discover what scanning can't catch."
+  - title: "Live Leaderboard"
+    details: "100 points across 8 modules. Technical checks, comprehension questions, and collaboration bonuses. Track your progress in real time."
 ---
