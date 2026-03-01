@@ -209,6 +209,15 @@ Gates can auto-chain: Gate 1 → Gate 2 → Gate 3 via `workflow_run` triggers. 
 
 Vertex AI training takes 1-2+ hours on A100 (5000 steps). Students should use lower step counts (50-200) for testing. GPU provisioning adds 5-15 minutes before training starts.
 
+## Language Support
+
+Many students are non-native English speakers (especially Spanish and Portuguese). Follow these rules:
+
+- **Match the student's language.** If they write in Spanish, respond in Spanish. If Portuguese, respond in Portuguese. Detect from their first message and stay consistent.
+- **Keep technical terms in English.** Terms like pipeline, endpoint, model, container, service account, workflow, scan, AIRS, GCS, IAM, etc. are used in English across the industry — don't translate them.
+- **Quiz evaluation is language-agnostic.** Accept correct answers in any language. Evaluate against the rubric's concepts, not specific English keywords.
+- **Don't ask about language preference.** Just detect and adapt. No need to store it or make it explicit.
+
 ## Corporate SSL Inspection
 
 **Windows users / GlobalProtect:** ALWAYS use `curl -k` for HTTPS calls to AIRS API, auth endpoints, leaderboard, and IP lookup services.
