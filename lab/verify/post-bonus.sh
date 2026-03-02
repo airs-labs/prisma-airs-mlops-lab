@@ -93,28 +93,18 @@ PAYLOAD=$(cat <<EOF
 EOF
 )
 
-# Build auth headers — prefer API key, fall back to identity token
-AUTH_HEADER=""
-if [ -n "$API_KEY" ]; then
-    AUTH_HEADER="-H \"X-API-Key: $API_KEY\""
-elif command -v gcloud &>/dev/null; then
-    ID_TOKEN=$(gcloud auth print-identity-token 2>/dev/null || true)
-    if [ -n "$ID_TOKEN" ]; then
-        AUTH_HEADER="-H \"Authorization: Bearer $ID_TOKEN\""
-    fi
+# Bonus endpoint requires API key (instructor-only)
+if [ -z "$API_KEY" ]; then
+    echo "Error: LEADERBOARD_API_KEY must be set in .env to award bonuses."
+    echo "This endpoint is instructor-only."
+    exit 1
 fi
 
-# POST to bonus endpoint
-if [ -n "$AUTH_HEADER" ]; then
-    RESPONSE=$(eval curl -sk -w '"\n%{http_code}"' -X POST '"$BONUS_ENDPOINT"' \
-        -H '"Content-Type: application/json"' \
-        $AUTH_HEADER \
-        -d "'$PAYLOAD'" 2>/dev/null)
-else
-    RESPONSE=$(curl -sk -w "\n%{http_code}" -X POST "$BONUS_ENDPOINT" \
-        -H "Content-Type: application/json" \
-        -d "$PAYLOAD" 2>/dev/null)
-fi
+# POST to bonus endpoint (authenticated)
+RESPONSE=$(curl -sk -w "\n%{http_code}" -X POST "$BONUS_ENDPOINT" \
+    -H "Content-Type: application/json" \
+    -H "X-API-Key: $API_KEY" \
+    -d "$PAYLOAD" 2>/dev/null)
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | sed '$d')

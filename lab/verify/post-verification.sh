@@ -126,28 +126,10 @@ echo "  Module:  $MODULE"
 echo "====================================="
 echo ""
 
-# Build auth headers — prefer API key (Cloudflare), fall back to identity token (Cloud Run)
-AUTH_HEADER=""
-if [ -n "$API_KEY" ]; then
-    AUTH_HEADER="-H \"X-API-Key: $API_KEY\""
-elif command -v gcloud &>/dev/null; then
-    ID_TOKEN=$(gcloud auth print-identity-token 2>/dev/null || true)
-    if [ -n "$ID_TOKEN" ]; then
-        AUTH_HEADER="-H \"Authorization: Bearer $ID_TOKEN\""
-    fi
-fi
-
-# POST to leaderboard
-if [ -n "$AUTH_HEADER" ]; then
-    RESPONSE=$(eval curl -sk -w '"\n%{http_code}"' -X POST '"$WEBHOOK_URL"' \
-        -H '"Content-Type: application/json"' \
-        $AUTH_HEADER \
-        -d "'$PAYLOAD'" 2>/dev/null)
-else
-    RESPONSE=$(curl -sk -w "\n%{http_code}" -X POST "$WEBHOOK_URL" \
-        -H "Content-Type: application/json" \
-        -d "$PAYLOAD" 2>/dev/null)
-fi
+# POST to leaderboard (no auth required for verify endpoint)
+RESPONSE=$(curl -sk -w "\n%{http_code}" -X POST "$WEBHOOK_URL" \
+    -H "Content-Type: application/json" \
+    -d "$PAYLOAD" 2>/dev/null)
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | sed '$d')
