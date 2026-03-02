@@ -1,11 +1,15 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 
+// Cross-site navigation — shared across all AIRS Workshop sites
+const WORKSHOP_URL = 'https://airs-workshop-content.pages.dev'
+const MLOPS_URL = 'https://airs-mlops-lab.pages.dev'
+
 export default withMermaid(
   defineConfig({
     title: 'AIRS MLOps Lab',
     description: 'Secure MLOps Pipeline Workshop with AI Runtime Security',
-    base: '/prisma-airs-mlops-lab/',
+    base: '/',
 
     locales: {
       root: {
@@ -24,7 +28,14 @@ export default withMermaid(
             { text: 'Guía', link: '/es/guide/' },
             { text: 'Cómo Funciona', link: '/es/how-it-works' },
             { text: 'Módulos', link: '/es/modules' },
-            { text: 'GitHub', link: 'https://github.com/airs-labs/prisma-airs-mlops-lab' }
+            {
+              text: 'AIRS Labs',
+              items: [
+                { text: 'Workshop Hub', link: `${WORKSHOP_URL}/es/schedule/` },
+                { text: 'MLOps Lab', link: '/es/' },
+                { text: 'Red Team Lab', link: `${WORKSHOP_URL}/es/redteam-lab/` },
+              ]
+            }
           ],
           sidebar: [
             {
@@ -61,7 +72,14 @@ export default withMermaid(
             { text: 'Guia', link: '/pt/guide/' },
             { text: 'Como Funciona', link: '/pt/how-it-works' },
             { text: 'Módulos', link: '/pt/modules' },
-            { text: 'GitHub', link: 'https://github.com/airs-labs/prisma-airs-mlops-lab' }
+            {
+              text: 'AIRS Labs',
+              items: [
+                { text: 'Workshop Hub', link: `${WORKSHOP_URL}/pt/schedule/` },
+                { text: 'MLOps Lab', link: '/pt/' },
+                { text: 'Red Team Lab', link: `${WORKSHOP_URL}/pt/redteam-lab/` },
+              ]
+            }
           ],
           sidebar: [
             {
@@ -94,7 +112,14 @@ export default withMermaid(
         { text: 'Guide', link: '/guide/' },
         { text: 'How It Works', link: '/how-it-works' },
         { text: 'Modules', link: '/modules' },
-        { text: 'GitHub', link: 'https://github.com/airs-labs/prisma-airs-mlops-lab' }
+        {
+          text: 'AIRS Labs',
+          items: [
+            { text: 'Workshop Hub', link: `${WORKSHOP_URL}/schedule/` },
+            { text: 'MLOps Lab', link: '/' },
+            { text: 'Red Team Lab', link: `${WORKSHOP_URL}/redteam-lab/` },
+          ]
+        }
       ],
 
       sidebar: [
