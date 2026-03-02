@@ -8,7 +8,7 @@ lab:
 scenario: ""
 
 leaderboard:
-  url: "https://leaderboard.airs-labs.net"
+  url: "https://airs-leaderboard.seanyoungberg.workers.dev"
   lab_id: "mlops"
 
 scenarios:
