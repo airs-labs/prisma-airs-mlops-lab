@@ -106,6 +106,12 @@ gcloud ai custom-jobs list --region=us-central1 --project=$(gcloud config get-va
 
 Only proceed to Challenge 2.3 once you've confirmed the job is at least `PENDING` on Vertex AI.
 
+**Send the student to check both UIs themselves:**
+- **GitHub Actions:** `https://github.com/{their-repo}/actions` — have them click into the run to see the job steps and logs
+- **Vertex AI Console:** `https://console.cloud.google.com/vertex-ai/training/custom-jobs?project={project-id}` — have them find their training job and observe the state
+
+This builds familiarity with both monitoring surfaces. They'll use both throughout the lab.
+
 ### Hints
 
 **Hint 1 (Concept):** `workflow_dispatch` means you can trigger the workflow manually with custom inputs. You can do this from the GitHub web UI (Actions tab) or from the CLI using `gh workflow run`. The training job runs on Vertex AI, not on the GitHub Actions runner -- the runner just submits the job and (optionally) waits.
