@@ -74,6 +74,38 @@ Now that you understand the pipeline, run it. Choose your own configuration and 
 
 Trigger the Gate 1 workflow via GitHub Actions. Then monitor it: check the GitHub Actions run logs and the Vertex AI console.
 
+### Baseline Check (IMPORTANT — do this before moving to 2.3)
+
+After triggering the workflow, **wait ~60-90 seconds** and verify the GitHub Actions job gets past the initial setup steps before moving the student to Challenge 2.3. Check with:
+
+```bash
+gh run list --workflow="Gate 1: Train Model" --limit 1
+# Then get the run ID and check job status:
+gh run view <RUN_ID> --json status,jobs
+```
+
+**What to look for:**
+- The `Train on Vertex AI` job should reach "Launch Vertex AI Training Job" step (takes ~30-60s)
+- If it fails in the first minute, it's a config issue — debug before moving on
+
+**Common early failures:**
+- `PERMISSION_DENIED` on GCS operations → IAM roles missing on GitHub Actions SA (Challenge 0.2b)
+- `PERMISSION_DENIED` on Vertex AI → `roles/aiplatform.user` missing
+- Workflow env vars still placeholders → check `STAGING_BUCKET` and `PROJECT_ID` in the workflow file
+- Scan step fails (if `skip_scan` wasn't set) → PyPI auth or security group UUIDs not configured
+
+**If it fails:** Debug the issue with the student — this is learning. Common IAM failures are documented in CLAUDE.md under "Common Pipeline Failures."
+
+**If the GH Actions job succeeds** (submits the Vertex AI job): The training itself runs on GCP, not GitHub. The GH Actions run will complete quickly (~60s) while the actual training continues on Vertex AI for 15-30+ minutes. Check Vertex AI job state:
+
+```bash
+gcloud ai custom-jobs list --region=us-central1 --project=$(gcloud config get-value project) --sort-by=~createTime --limit=1 --format="table(displayName,state,createTime)"
+```
+
+**Expected Vertex AI states:** `JOB_STATE_PENDING` (GPU provisioning, 5-15 min) → `JOB_STATE_RUNNING` (training) → `JOB_STATE_SUCCEEDED`
+
+Only proceed to Challenge 2.3 once you've confirmed the job is at least `PENDING` on Vertex AI.
+
 ### Hints
 
 **Hint 1 (Concept):** `workflow_dispatch` means you can trigger the workflow manually with custom inputs. You can do this from the GitHub web UI (Actions tab) or from the CLI using `gh workflow run`. The training job runs on Vertex AI, not on the GitHub Actions runner -- the runner just submits the job and (optionally) waits.
