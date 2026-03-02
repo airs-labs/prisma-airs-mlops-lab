@@ -135,7 +135,7 @@ Points come from three sources, awarded at two different times:
 - **Quiz questions**: 0-3 points per question with retry flow (defined in verify files — single source of truth)
 
 **Anytime (instructor-only):**
-- **Collaboration bonuses**: Awarded by instructor via `post-bonus.sh`
+- **Collaboration bonuses**: Awarded by instructor via leaderboard tools (not in this repo)
 
 Total module points = engagement + technical + quiz. Always update:
 - `modules.N.engagement_points` — engagement total from flow
@@ -162,7 +162,7 @@ Collaboration bonuses are awarded by the instructor during discussion breaks:
 - **Discovery Bonus** (+2 pts): Found undocumented issue
 - **Best Question** (+1 pt): Instructor-awarded for insight
 
-When awarded: `bash lab/verify/post-bonus.sh "$STUDENT_ID" <bonus_type>`
+Bonuses are awarded by the instructor via the leaderboard's `post-bonus.sh` script (not in this repo).
 
 ## Available Commands
 
