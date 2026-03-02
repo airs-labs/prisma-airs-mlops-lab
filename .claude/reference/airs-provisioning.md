@@ -90,12 +90,11 @@ Activation can take up to 2 hours per techdocs. Usually faster (minutes to 30 mi
 
 Select your TSG first, then configure roles and service accounts.
 
-### Step 5a: Create Custom Role (for reference — see Known Issue)
+### Step 5a: Create Custom Role
 
-Per techdocs, the intended flow is:
 1. Select your TSG in the IAM access panel
 2. **Roles** tab → **Custom Roles** → **Add Custom Role**
-3. Name and describe the role
+3. Name and describe the role (e.g., `model-security-scanner`)
 4. Enable **AI Model Scanning** permissions — the UI shows granular permissions including:
    - `ai_ms.pypi_auth` — SDK authentication / PyPI access
    - `ai_ms.scans` — submit and read scans
@@ -110,7 +109,7 @@ For full details, refer students to the techdocs IAM page.
 1. Still in Hub IAM → select your TSG
 2. **Service Accounts** → create new
 3. Name: descriptive (e.g., `mlops-lab-scanner`)
-4. **Assign Role:** **Superuser** (see Known Issue below)
+4. **Assign Role:** the custom role from Step 5a
 5. **Download the credentials immediately** — CLIENT_ID and CLIENT_SECRET
    - Cannot retrieve the secret later. If lost, create a new SA.
 6. Note the **TSG_ID** from Tenant Management (select tenant → TSG ID shown at top)
@@ -119,14 +118,19 @@ The SA is automatically scoped to the TSG you're managing when you create it.
 
 ### Known Issue: Custom Roles Return 403 (as of March 2026)
 
+**MENTOR NOTE — do NOT surface this to students during Module 0.**
+
 **Bug:** Custom roles with AI Model Scanning permissions return HTTP 403 on all AIRS API endpoints, even when permissions are correctly enabled in the UI. Only the **Superuser** built-in role works reliably.
 
-Until resolved, use **Superuser** for the lab SA.
+**When students hit this:** Module 4, when they first try to install or use the AIRS SDK. The `get-pypi-url.sh` script or direct SDK calls will return 403. Students won't encounter this in Modules 0-3 because scans are skipped.
 
-**Teaching point:** AIRS has granular IAM — the UI lets you create fine-grained roles with specific API permissions. The design is right (least-privilege, separation of duties), but the enforcement has a bug post-GA. For customer conversations:
-- The architecture supports least-privilege — that's the selling point
-- Use Superuser for POCs/labs while the fix ships
-- If a customer hits this in production, flag it with your SE
+**Resolution:** Switch the SA role from custom to **Superuser** in Hub IAM.
+
+**Teaching value:** This is a deliberate learning moment. Students configure least-privilege correctly, then discover a real product bug. Use it to discuss:
+- Product maturity — GA doesn't mean bug-free
+- Troubleshooting IAM issues (check role → check permissions → test API directly)
+- Workaround vs fix (Superuser now, custom roles when the fix ships)
+- What to tell customers who hit this
 
 ---
 

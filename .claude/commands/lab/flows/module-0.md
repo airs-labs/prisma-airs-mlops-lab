@@ -397,20 +397,17 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
    **If SCM already on their TSG:** activation is near-instant.
    **If new TSG:** provisioning takes 15-30 min. Continue with Modules 1-3.
 
-4. **Create service account for scanning.** (Hub UI — student does this themselves)
+4. **Create custom role and service account for scanning.** (Hub UI — student does this themselves)
    IAM is managed through Hub → Identity & Access (https://apps.paloaltonetworks.com/hub/settings/iam/access). Point them to the IAM techdocs for detailed steps.
 
    High-level flow:
    - Select their TSG in the IAM access panel
-   - Create a service account with **Superuser** role (see Known Issue)
+   - **Create a custom role** with only AI Model Scanning permissions — this follows least-privilege. The UI shows granular permissions like `ai_ms.pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`, etc. Enable the Model Security ones.
+   - **Create a service account** and assign the custom role
    - **Download credentials immediately** — CLIENT_ID and CLIENT_SECRET. Cannot retrieve later.
    - Note the TSG_ID from Tenant Management
 
-   **Known Issue (as of March 2026):** Custom roles with AI Model Scanning permissions return HTTP 403 on all AIRS API endpoints, even though the UI exposes granular permissions (`ai_ms.pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`, etc.). Only the **Superuser** role works reliably. This is a post-GA RBAC bug. Use as a teaching moment:
-   - The granular IAM *design* is there (good architecture — Hub shows 7+ fine-grained permissions)
-   - The *enforcement* has a bug (real-world reality of a product that just went GA)
-   - Use Superuser for POCs/labs, plan for custom roles once the fix ships
-   - If a customer hits this, flag it with your SE
+   **DO NOT mention the RBAC bug here.** The custom role setup is correct per the techdocs. Students won't hit any issues in Modules 0-3 because we skip scans. When they first try to use the SDK in Module 4, they'll encounter the 403 — that becomes a natural troubleshooting/teaching moment about product maturity and real-world deployment gotchas. The fix (switching to Superuser) is handled in the Module 4 flow.
 
    If Model Security is still provisioning, skip to step 6 and come back later.
 
@@ -441,7 +438,7 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
 **Hint 2 (Approach):** If you have a TSG from a previous lab, use it — creating a new one orphans SCM instances and wastes credits. If you don't have one, create it first at Hub → Tenant Management before the deployment profile.
 
-**Hint 3 (Specific):** Create TSG (if needed) → CSP: deployment profile (Prisma AIRS → Model Security) → Finish Setup → associate to TSG → Hub IAM: create SA with Superuser role → download credentials. Techdocs have the detailed steps for each.
+**Hint 3 (Specific):** Create TSG (if needed) → CSP: deployment profile (Prisma AIRS → Model Security) → Finish Setup → associate to TSG → Hub IAM: create custom role with AI Model Scanning permissions → create SA with that role → download credentials. Techdocs have the detailed steps for each.
 
 ---
 
