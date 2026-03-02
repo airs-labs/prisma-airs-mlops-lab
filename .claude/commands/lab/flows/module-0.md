@@ -391,12 +391,12 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
    **Important context for students:** "This TSG is your AIRS home base. You'll use it across all the AIRS labs — model security, red team, runtime. Think of it as your tenant for the entire learning path."
 
-4. **Create service account for Model Security scanning.** (Hub UI — student does this themselves)
-   IAM for AIRS is managed through Hub, not SCM. Mention that AIRS has granular IAM options through custom roles — but there's a known bug (see below).
+4. **Create service account for Model Security scanning.** (SCM UI — student does this themselves)
+   IAM for AIRS is managed through Strata Cloud Manager → Common Services → Identity & Access. Mention that AIRS has granular IAM options through custom roles — but there's a known bug (see below).
 
    Once Model Security is activated (may need to wait if new TSG):
 
-   - Hub → Common Services → Identity & Access → Access Management
+   - Strata Cloud Manager → Common Services → Identity & Access → Access Management
    - Select their tenant → Service Accounts → Create new
    - Name: e.g., `mlops-lab-scanner`
    - **Assign Role: Superuser** (see Known Issue below)

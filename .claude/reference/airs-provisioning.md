@@ -63,15 +63,21 @@ Two ways to verify:
 
 **Note:** Activation can take up to 2 hours per techdocs. Usually faster (minutes to 30 min). If still pending, the student can proceed with conceptual content.
 
-## Step 4: Create Custom Role & Service Account for Scanning
+## Step 4: Create Service Account for Scanning
 
-IAM for AIRS is managed through **Hub → Common Services → Identity & Access**, NOT through SCM Settings. AIRS has granular IAM — highlight this to students as a selling point for enterprise customers.
+**Techdocs:** https://docs.paloaltonetworks.com/ai-runtime-security/ai-model-security/model-security-to-secure-your-ai-models/get-started-with-ai-model-security/configure-identity-and-access-management
+
+IAM for AIRS is managed through **Strata Cloud Manager → Common Services → Identity & Access**. AIRS has granular IAM options — highlight this to students as a selling point for enterprise customers.
+
+**Prerequisites** (per techdocs):
+- Active Deployment Profile (from Step 1)
+- At least one TSG (from Step 2)
 
 ### Step 4a: Create Service Account
 
-1. Navigate to **Hub → Common Services → Identity & Access → Access Management**
+1. Navigate to **Strata Cloud Manager → Common Services → Identity & Access → Access Management**
 2. Select the tenant (e.g., `syoungberg-api`)
-3. Select the tenant → **Service Accounts** section
+3. Go to **Service Accounts** section
 4. Create a new service account:
    - **Name:** Descriptive (e.g., `mlops-lab-scanner`)
    - **Assign Role:** **Superuser** (see Known Issue below)
@@ -83,11 +89,15 @@ The SA is automatically scoped to the TSG you're managing when you create it.
 
 ### Known Issue: Custom Roles Return 403 (as of March 2026)
 
-**Bug:** Custom roles with Model Security permissions (`ai_ms_pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`) return HTTP 403 "Access denied" on all AIRS API endpoints, even when the correct permissions are enabled. Only the **Superuser** built-in role works reliably.
+**Bug:** Custom roles with Model Security permissions return HTTP 403 "Access denied" on all AIRS API endpoints, even when the correct permissions are enabled. Only the **Superuser** built-in role works reliably.
 
-This is a known RBAC issue that was supposed to be fixed with the Model Security GA release. Until it's resolved, use **Superuser** for the lab SA.
+Per the techdocs, the correct setup for custom roles involves two steps:
+1. **Role permissions:** Roles → Custom Roles → Enable AI Model Security → Save
+2. **API permissions:** API → Add permissions → assign `ai_ms_pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`
 
-**Teaching point for students:** This is a real-world gotcha. AIRS has granular IAM options through Hub — in theory, you'd create different roles for different personas (CI/CD scanner, security admin, viewer). The granularity exists in the UI, but the enforcement has a bug. When talking to customers about AIRS RBAC:
+Both steps are documented but custom roles still return 403 in practice. This may be a propagation issue or an enforcement bug post-GA. Until resolved, use **Superuser** for the lab SA.
+
+**Teaching point for students:** This is a real-world gotcha. AIRS has granular IAM — in theory, you'd create different roles for different personas (CI/CD scanner, security admin, viewer). The granularity exists in the UI, but the enforcement has a bug. When talking to customers about AIRS RBAC:
 - The *design* supports least-privilege — that's the right architecture
 - The *implementation* is still maturing post-GA — flag this with your SE if a customer hits it
 - Use Superuser for POCs/labs, plan for custom roles in production once the fix ships
