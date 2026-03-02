@@ -120,10 +120,16 @@ Flow per question:
 | GitHub CLI | PASS/FAIL | /2 |
 | AIRS Secrets | PASS/FAIL/BLOCKED | /3 |
 | Upstream Remote | PASS/FAIL | /1 |
-| Engagement (from flow) | — | /3 |
+| Engagement (from flow) | — | /4 |
 | Quiz Q1 | /3 | |
 | Quiz Q2 | /3 | |
-| **Total** | | **/24** |
+| **Total** | | **/25** |
+
+**Engagement reconciliation:** Read `modules.0.engagement_points` from progress.json.
+If the value is 0 or missing but the module was completed, ask the student:
+"During the module we discussed topics like dedicated service accounts, WIF security,
+and credit consumption. How many of those discussions do you recall participating in?"
+Use their response + your conversation history to set the correct engagement total.
 
 Update lab/.progress.json:
 ```

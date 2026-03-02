@@ -19,62 +19,39 @@
 
 ---
 
-## Challenge 4.1: Activate AI Model Security
+## Challenge 4.1: Verify Model Security Activation
 
 ### Flow
 
-**Context:** Students already have a Prisma AIRS tenant from a previous AIRS API Lab. That tenant has SCM provisioned. Now they need to add the AI Model Security capability to that same tenant.
+**Context:** Students created the Model Security deployment profile and kicked off provisioning back in Module 0 (Challenge 0.4). This challenge verifies it's active and credentials work.
 
-**Step 1: Create a Deployment Profile in the Customer Support Portal (CSP)**
+> CONTEXT: Read `.claude/reference/airs-provisioning.md` for verification steps.
 
-Walk the student through this process. They need to:
+**Step 1: Verify in SCM**
 
-1. Log in to CSP (https://support.paloaltonetworks.com)
-2. Navigate to **Products** → **Software/Cloud NGFW Credits**
-3. Locate their credit pool and click **Create Deployment Profile**
-4. Under **Select firewall type**, expand **Prisma AIRS** and select **Model Scanning (preview)**
-5. Configure the deployment (regions, scan allocation)
-6. Click **Create Deployment Profile**
+Navigate to SCM → **Insights** → **Prisma AIRS** → **Model Security** (or **AI Security** → **AI Model Security**). The student should see the Model Security dashboard.
 
-**Step 2: Associate to Their Existing Tenant**
+If NOT yet active:
+- Check Hub → Common Services → Tenant Management → Deployment Profiles → status
+- If still provisioning, have the student continue with 4.2's conceptual content and come back
+- If activation failed, troubleshoot (common: wrong TSG, region mismatch)
 
-This is critical — they should NOT create a new tenant. They need to associate the deployment profile with the SAME tenant (TSG) they used for the AIRS API Lab.
-
-1. In CSP, find the new deployment profile and click **Finish Setup** → redirects to Hub
-2. Select the existing CSP account
-3. Select their existing tenant (NOT "create new tenant")
-4. Select the deployment profile to associate
-5. Agree to terms and click **Activate**
-
-**Important:** Deployment profile activation can take up to 2 hours. If it is not yet active, note this and have the student continue with conceptual exploration. Come back to verify later.
-
-**Step 3: Verify in SCM**
-
-Once activated, navigate to SCM → **Insights** → **Prisma AIRS** → **Model Security** (or **AI Security** → **AI Model Security**). The student should see the Model Security dashboard.
-
-**Step 4: Re-validate AIRS Credentials**
+**Step 2: Re-validate AIRS Credentials**
 
 The student configured GitHub secrets in Module 0. Verify they still work locally:
 
 ```bash
+# Check environment variables are set (source .env if needed)
+source .env 2>/dev/null
 echo $AIRS_MS_CLIENT_ID
 echo $TSG_ID
-python airs/scan_model.py --model-path models/test --warn-only
 ```
 
-If credentials are missing locally (only set as GH secrets), have the student create a `.env` file for local testing.
+If credentials are missing locally (only set as GH secrets), have the student source their `.env` file or recreate it from their CSV download.
 
 > **ENGAGE**: "The credentials you're using — do they have admin access or just scanning access? In a real enterprise, what permissions should a CI/CD scanning pipeline have?"
 > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
 > (Answer: Scanning-only SA — can submit scans and read results, not manage security groups or users. Least privilege principle.)
-
-### Hints
-
-**Hint 1 (Concept):** AI Model Security is a separate capability from the AIRS API Runtime you used before. It requires its own deployment profile — think of it like enabling a new feature module on your existing platform tenant.
-
-**Hint 2 (Approach):** The key decision is step 2 — associating to an EXISTING tenant, not creating a new one. If the student creates a new tenant, they will lose access to their existing SCM configuration.
-
-**Hint 3 (Specific):** If activation is pending, the student can still explore SCM and work on conceptual understanding. The Model Security UX will appear once activation completes.
 
 ---
 

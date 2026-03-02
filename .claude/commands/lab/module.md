@@ -51,9 +51,16 @@ Start or resume Module $ARGUMENTS of the lab.
     - Ask the Socratic question naturally as part of the conversation.
     - Award 1 pt for meaningful engagement (effort-based, not correctness-based).
     - If the student can't answer, teach — don't penalize. Still award the point if they engage.
-    - Track engagement points in `modules.N.engagement_points` in progress.json.
+    - **Write IMMEDIATELY:** After each ENGAGE interaction, update `modules.N.engagement_points`
+      in progress.json right away. Do not batch — write after each one so points survive
+      context compression or session restarts.
 
-13. **Hard stop enforcement:** Check `lab.config.yaml` and scenario config for `hard_stops`.
+13. **Handle CONTEXT markers:** When you encounter `> CONTEXT:` in the flow file,
+    read the referenced file for background knowledge. Use this information to
+    inform your teaching but do not dump it on the student — weave it naturally
+    into the conversation as needed.
+
+14. **Hard stop enforcement:** Check `lab.config.yaml` and scenario config for `hard_stops`.
     If hard stops are enabled for the active scenario AND this module has one:
     - Stop the student from proceeding to the next module.
     - Display: "HARD STOP — Module [N] Complete. Please wait for the instructor to lead the group discussion before continuing to Module [N+1]."

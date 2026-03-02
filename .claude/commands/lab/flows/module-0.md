@@ -9,6 +9,7 @@
 |--------|--------|------|
 | Engage: SA vs default (0.2b) | 1 | During flow |
 | Engage: WIF attribute-condition (0.2b) | 1 | During flow |
+| Engage: Credit consumption (0.4) | 1 | During flow |
 | Engage: AI assistant use case (0.5) | 1 | During flow |
 | Technical: GCP Auth | 1 | During verify |
 | Technical: GCP Project + naming | 3 | During verify |
@@ -19,7 +20,7 @@
 | Technical: Upstream Remote | 1 | During verify |
 | Quiz Q1 | 3 | During verify |
 | Quiz Q2 | 3 | During verify |
-| **Total** | **24** | |
+| **Total** | **25** | |
 
 ---
 
@@ -37,7 +38,16 @@
    - `main` branch: reference implementation and upstream state.
    - The student should stay on `lab` for all their work.
 
-4. Quick directory overview — list top-level dirs and give a one-liner for each:
+4. Brief CI/CD primer before showing the directory structure. Many students may not be familiar with GitHub Actions or CI/CD pipelines. Keep it short and concrete — no abstract theory.
+
+   Cover in 1-2 paragraphs:
+   - **CI/CD pipeline**: Automated steps that run when you push code or merge a PR. Instead of manually building, testing, and deploying, the pipeline does it for you — consistently, every time.
+   - **GitHub Actions**: GitHub's built-in CI/CD system. Workflows are defined as YAML files in `.github/workflows/`. Each workflow has triggers (e.g., "run when code is pushed to `lab`") and steps (e.g., "run tests", "build container", "deploy to Cloud Run").
+   - **Gates**: This lab's pipeline has 3 gates — think of them as checkpoints. Code must pass each gate before moving to the next stage. Gate 1 trains the model, Gate 2 publishes it, Gate 3 deploys it. Security scans happen at each gate.
+
+   Tie it back: "You don't need to be a CI/CD expert for this lab. Just know that when you push code, these workflows run automatically and do the heavy lifting. We'll look at each gate in detail as we hit Modules 1-3."
+
+5. Quick directory overview — list top-level dirs and give a one-liner for each:
    - `.github/workflows/` — the 3-gate pipeline (Gate 1 train, Gate 2 publish, Gate 3 deploy)
    - `model-tuning/` — ML training code and data
    - `airs/` — AIRS scanning scripts
@@ -45,9 +55,9 @@
    - `scripts/` — utilities
    - `lab/` — lab guides and progress tracking
 
-5. Do NOT ask deep comprehension questions here. A quick "make sense so far?" is fine. The pipeline architecture will click naturally as they work through Modules 1-3.
+6. Do NOT ask deep comprehension questions here. A quick "make sense so far?" is fine. The pipeline architecture will click naturally as they work through Modules 1-3.
 
-6. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
+7. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
 
    Tell the student: "Your repo was created from a template, so it has a fresh git history separate from the template. I'm going to connect it to the template repo and sync the history so you can pull instructor updates and submit PRs back."
 
@@ -264,7 +274,7 @@ Claude should execute these steps directly (bias toward action), explaining each
    echo "github-actions-sa@${PROJECT}.iam.gserviceaccount.com" | gh secret set GCP_SERVICE_ACCOUNT
    gh secret list
    ```
-   Should now show 5 secrets: the 3 AIRS secrets + 2 GCP secrets.
+   Verify GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT are now listed. Combined with AIRS secrets from Challenge 0.4, all expected secrets should be present.
 
 ### Hard Blocker Check
 
@@ -295,7 +305,10 @@ If the SA cannot be created or WIF cannot be configured (e.g., missing permissio
 
 ---
 
-## Challenge 0.4: Configure AIRS Access
+## Challenge 0.4: Configure AIRS Model Security
+
+> CONTEXT: Read `.claude/reference/workshop-context.md` for prereq background.
+> CONTEXT: Read `.claude/reference/airs-provisioning.md` for provisioning steps.
 
 ### Credential Handling (IMPORTANT)
 
@@ -312,44 +325,78 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
 ### Flow
 
-1. Check if the student has their AIRS credentials. If not, direct them to their instructor:
-   "If you don't have your AIRS credentials yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access and service account creation. You can download your credentials as a CSV from SCM. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
+**This challenge provisions AIRS Model Security early so SCM can activate while students work through Modules 1-3.** The deep exploration of Model Security features happens in Module 4.
 
-2. Briefly explain what the three credentials are:
-   - **AIRS_MS_CLIENT_ID**: OAuth2 client ID for the AIRS service account
-   - **AIRS_MS_CLIENT_SECRET**: OAuth2 client secret
-   - **TSG_ID**: Tenant Service Group ID — identifies which AIRS tenant to scan against
+1. **Check existing TSG from prereq lab.**
+   Ask: "In the n8n Runtime Security lab, you created a TSG and deployment profile. Do you have that TSG name handy?"
+   - If they have it → proceed to step 2
+   - If they used their own CSP/TSG → same flow, just different CSP account
+   - If they have no TSG at all → they will create a new one in step 3 (flag provisioning delay)
 
-3. Use AskUserQuestion:
-   "Do you have the CLIENT_ID, CLIENT_SECRET, and TSG_ID from your AIRS service account?"
+2. **Create Model Security deployment profile in CSP.** (SCM UI — student does this themselves, guide with navigation paths)
+   Walk through:
+   - Log in to CSP → Products → Software/Cloud NGFW Credits → Create Deployment Profile
+   - Select: Prisma AIRS → Model Security
+   - Click **Calculate Estimated Cost** to see credit impact
+   - Create the profile
 
-4. If they have credentials, guide them to put values in `.env`:
-   - "Add your credentials to the `.env` file (copy from `.env.example` if you haven't already). Don't paste them directly in chat — the `.env` file is gitignored and safer."
-   - Once `.env` is ready, source it and set GitHub secrets (bias toward action — run the commands yourself):
-     ```
-     REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
-     source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
-     source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R "$REPO"
-     source .env && echo "$TSG_ID" | gh secret set TSG_ID -R "$REPO"
-     ```
+   > **ENGAGE**: "The cost estimate shows Model Security consumes 1500 credits flat — it just went GA last week. Why would credit consumption matter when you're talking to a customer about deploying AIRS?"
+   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+   > (Answer: budget planning, multi-product stacking, credit pool sizing, comparing to alternatives)
 
-5. Verify secrets are set:
+   Surface this context naturally: Model Security and Red Team both went GA late February 2026. Credit consumption is significantly higher than during preview/beta. Students should know this for customer conversations.
+
+3. **Associate deployment profile to existing TSG.** (SCM UI — student does this themselves)
+   This is the critical step — guide them to associate to their EXISTING tenant, NOT create a new one.
+   - In CSP → find the new profile → click **Finish Setup** → redirects to Hub
+   - Select CSP account → select their **existing tenant** from the n8n lab
+   - Region: United States - Americas
+   - Select the Model Security deployment profile → Agree → Activate
+
+   **If they already have SCM on their TSG** (from n8n lab): activation is near-instant. Celebrate — "Since your TSG already has SCM provisioned, Model Security should activate quickly."
+
+   **If they need a new TSG:** Flag clearly: "New TSG means SCM provisioning, which takes 15-30 minutes. That's fine — you can keep working through Modules 1-3 while it provisions. We'll verify it's ready before Module 4."
+
+   **Important context for students:** "This TSG is your AIRS home base. You'll use it across all the AIRS labs — model security, red team, runtime. Think of it as your tenant for the entire learning path."
+
+4. **Create service account for Model Security scanning.** (SCM UI — student does this themselves)
+   Once SCM is accessible (may need to wait if new TSG):
+   - SCM → Settings → Service Accounts → New
+   - Name: something descriptive (e.g., `mlops-lab-scanner`)
+   - Role: Model Security (scanning permissions only)
+   - **Download the CSV immediately** — contains CLIENT_ID and CLIENT_SECRET. You cannot retrieve the secret later.
+   - Note the TSG_ID from tenant details
+
+   If SCM is still provisioning, skip to step 6 and come back for this step later.
+
+5. **Set credentials via .env and GitHub secrets.**
+   Guide the student to add values to `.env` (copy from `.env.example` if needed). Then set GitHub secrets:
+   ```
+   REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
+   source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
+   source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R "$REPO"
+   source .env && echo "$TSG_ID" | gh secret set TSG_ID -R "$REPO"
+   ```
+
+   Verify:
    ```
    gh secret list -R "$REPO"
    ```
-   Should show all three secrets.
 
-6. If they don't have credentials:
+6. **If credentials cannot be configured yet** (SCM still provisioning, no TSG, instructor not available):
    - Add blocker: `airs-credentials-missing`
-   - Strong warning: "This is a hard blocker. Without AIRS credentials, you can complete Modules 0-3 (building the pipeline) and participate in Q&A discussions for all modules. However, you won't be able to run AIRS scans yourself in Modules 4-7. See your instructor to get set up."
+   - Strong warning: "This is a hard blocker for Modules 4-7. Without AIRS credentials, you can complete Modules 0-3 (building the pipeline) and participate in Q&A discussions. However, you won't be able to run AIRS scans yourself. We'll check back before Module 4."
+   - Do NOT minimize this. Do NOT just note it and move on.
+
+7. **Provisioning note.** Tell the student: "Model Security is activating in the background. You can continue with Modules 1-3 — ML fundamentals, training, and deployment. We'll verify Model Security is ready when we hit Module 4."
 
 ### Hints
 
-**Hint 1 (Concept):** GitHub repository secrets are encrypted variables that only GitHub Actions workflows can read at runtime. Nobody can view the actual values after they're set. The AIRS SDK uses OAuth2 client credentials to authenticate scan requests.
+**Hint 1 (Concept):** AI Model Security is a separate capability from the AIRS Runtime API you used in the n8n lab. It requires its own deployment profile — think of it like enabling a new feature module on your existing platform tenant. The deployment profile is how licensing and feature activation work across all Prisma AIRS products.
 
-**Hint 2 (Approach):** Use `gh secret set` for each of the three values. The `.env` file keeps secrets out of chat history. Use `gh secret list` to verify they're set (names only, values are hidden).
+**Hint 2 (Approach):** The key decision is associating to your EXISTING tenant, not creating a new one. If you create a new tenant, you'll have orphaned SCM instances and wasted credits. Find your TSG name from the n8n lab first.
 
-**Hint 3 (Specific):** Copy `.env.example` to `.env`, fill in your values, then run the gh secret set commands with `-R` flag pointing to your repo.
+**Hint 3 (Specific):** In CSP: Products → Software/Cloud NGFW Credits → Create Deployment Profile → Prisma AIRS → Model Security. Then Finish Setup → Hub → select your existing tenant. In SCM: Settings → Service Accounts → New → download CSV.
 
 ---
 

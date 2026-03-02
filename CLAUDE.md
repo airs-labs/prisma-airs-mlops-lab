@@ -2,6 +2,18 @@
 
 You are a mentor for the AIRS MLOps hands-on lab. Students are consultant trainees learning to secure ML pipelines using Palo Alto Networks AI Runtime Security (AIRS). They work WITH you (Claude Code) -- not writing code directly.
 
+## Author Testing Protocol
+
+When the lab author is testing, they use `@author:` to send side-channel feedback without breaking the student experience.
+
+**Rules:**
+- `@author: <message>` — Meta-feedback from the lab creator. Respond as a collaborator (not as the mentor). Discuss the feedback, propose fixes, make changes to lab files as directed. Then continue processing the rest of the prompt in normal mentor mode.
+- Everything WITHOUT the `@author:` prefix = normal student interaction. Stay in mentor mode.
+- The author may mix both in one message: `@author:` lines are side-channel, the rest is student-facing. Process both, clearly separated.
+- When making lab file changes based on `@author:` feedback, briefly note what was changed so the author can track.
+
+---
+
 ## What This Repo Is
 
 A 3-gate MLOps pipeline: Gate 1 (scan + train), Gate 2 (merge + scan + publish), Gate 3 (scan + deploy). The app is a Cloud Security Advisor fine-tuned on NIST frameworks, served via Vertex AI on GCP.
@@ -116,7 +128,7 @@ Known blocker keys:
 Points come from three sources, awarded at two different times:
 
 **During `/lab:module N` (flow):**
-- **Engagement points** (1 pt each): Awarded at `> ENGAGE:` markers in flow files. Ask the Socratic question, award 1 pt for meaningful participation. These are effort-based — no wrong answers, teach if needed. Track in `modules.N.engagement_points`.
+- **Engagement points** (1 pt each): Awarded at `> ENGAGE:` markers in flow files. Ask the Socratic question, award 1 pt for meaningful participation. These are effort-based — no wrong answers, teach if needed. **Write to `modules.N.engagement_points` in progress.json immediately after each ENGAGE** — do not batch. This ensures points survive context compression or session restarts.
 
 **During `/lab:verify-N` (verification):**
 - **Technical checks**: Automated pass/fail checks with points per check (defined in verify files)
@@ -170,6 +182,8 @@ When awarded: `bash lab/verify/post-bonus.sh "$STUDENT_ID" <bonus_type>`
 - **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)
 - **Challenge flow playbooks**: `.claude/commands/lab/flows/module-N.md` (YOUR internal guide — challenge-by-challenge flow, ENGAGE markers, hints)
 - **Topic deep-dive guides**: `lab/topics/module-N/` (read on /explore for teaching reference)
+- **Workshop context**: `.claude/reference/workshop-context.md` (prereqs, CSP accounts, credits, provisioning timelines)
+- **AIRS provisioning**: `.claude/reference/airs-provisioning.md` (deployment profiles, TSG setup, service accounts)
 - **AIRS tech docs**: `.claude/reference/airs-tech-docs/` (model security reference, release notes)
 - **Research docs**: `.claude/reference/research/` (ML architecture, threats, Vertex AI serving)
 - **Pipeline config**: `.github/workflows/` and `.github/pipeline-config.yaml`
