@@ -7,6 +7,7 @@
 
 | Source | Points | When |
 |--------|--------|------|
+| Engage: Pipeline gate pattern (0.1) | 1 | During flow |
 | Engage: SA vs default (0.2b) | 1 | During flow |
 | Engage: WIF attribute-condition (0.2b) | 1 | During flow |
 | Engage: Credit consumption (0.4) | 1 | During flow |
@@ -20,7 +21,7 @@
 | Technical: Upstream Remote | 1 | During verify |
 | Quiz Q1 | 3 | During verify |
 | Quiz Q2 | 3 | During verify |
-| **Total** | **25** | |
+| **Total** | **26** | |
 
 ---
 
@@ -28,26 +29,53 @@
 
 ### Flow
 
+This challenge has 3 interactive beats. Do NOT rush through them — pause for the student at each beat and wait for a response before continuing. The goal is exploration and basic understanding, not a lecture.
+
+**Beat 1: The Big Picture (README + Pipeline Diagram)**
+
 1. Do NOT say "clone the repo" — the student already has it.
 
-2. Keep this challenge light — it's orientation, not a deep dive. Save architecture questions for later modules when they've actually used the pipeline.
-
-3. Cover the basics:
+2. Start with branches — keep it brief:
    - This is a private repo created from a public template (not a fork). Briefly note why: secrets and deployment configs stay private.
    - `lab` branch: where the student works. This is their active workspace.
    - `main` branch: reference implementation and upstream state.
    - The student should stay on `lab` for all their work.
 
-4. Brief CI/CD primer before showing the directory structure. Many students may not be familiar with GitHub Actions or CI/CD pipelines. Keep it short and concrete — no abstract theory.
+3. Brief CI/CD primer. Many students may not be familiar with GitHub Actions or CI/CD pipelines. Keep it short and concrete — no abstract theory.
 
    Cover in 1-2 paragraphs:
    - **CI/CD pipeline**: Automated steps that run when you push code or merge a PR. Instead of manually building, testing, and deploying, the pipeline does it for you — consistently, every time.
    - **GitHub Actions**: GitHub's built-in CI/CD system. Workflows are defined as YAML files in `.github/workflows/`. Each workflow has triggers (e.g., "run when code is pushed to `lab`") and steps (e.g., "run tests", "build container", "deploy to Cloud Run").
-   - **Gates**: This lab's pipeline has 3 gates — think of them as checkpoints. Code must pass each gate before moving to the next stage. Gate 1 trains the model, Gate 2 publishes it, Gate 3 deploys it. Security scans happen at each gate.
+   - **Gates**: This lab's pipeline has 3 gates — think of them as checkpoints. Code must pass each gate before moving to the next stage. Security scans happen at each gate.
 
-   Tie it back: "You don't need to be a CI/CD expert for this lab. Just know that when you push code, these workflows run automatically and do the heavy lifting. We'll look at each gate in detail as we hit Modules 1-3."
+4. Show the pipeline diagram from the README (the ASCII art from the "What You'll Build" section). Display it directly — don't make the student go find it.
 
-5. Quick directory overview — list top-level dirs and give a one-liner for each:
+5. **PAUSE and ask:** "Looking at this diagram — what do you think happens to a model as it moves from Gate 1 to Gate 3? What's the pattern you see?"
+
+   Wait for the student to respond. This is a low-stakes observation question — any reasonable reading of the diagram is fine. If they're off-base, gently redirect. The key insight: each gate adds a security checkpoint, and the model transforms at each stage (base → trained → merged → deployed).
+
+**Beat 2: Explore GitHub Actions UI**
+
+6. Send the student to explore the GitHub Actions UI in their browser. Give them the direct URL:
+   `https://github.com/{their-repo}/actions`
+
+   Tell them: "Go to your repo's Actions tab in the browser. Look at the **left sidebar** — that's where the individual workflows are listed by name. The main panel shows run history, which will have some failed runs from the initial repo setup — that's expected and you can ignore those for now. Focus on the workflow names in the sidebar. What workflows do you see, and which ones match the gates from the diagram?"
+
+7. **WAIT for the student to come back.** Do NOT proceed until they report what they saw. This is the interactive beat — they need to make the connection themselves between the YAML files and the pipeline diagram.
+
+   Expected: They should see Gate 1 (Train), Gate 2 (Publish), Gate 3 (Deploy), and Deploy App. If they also notice deploy-docs.yaml, that's just the docs site — not part of the ML pipeline.
+
+   If they can't find it or are confused, help with navigation: repo page → "Actions" tab at the top. Direct them to the left sidebar for the clean workflow list — the main panel's failed runs from initial setup are noise.
+
+   > ENGAGE: "You've seen the diagram and the real workflows. In a security pipeline like this, why do you think there are multiple gates instead of just one big 'scan everything at the end' step?"
+   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+   > (Answer: defense in depth — catch issues early, different stages have different risks, a problem in training is cheaper to fix than one found at deployment. Also: different scan types apply at different stages — you can't scan a deployed model the same way you scan a raw checkpoint.)
+
+8. Once they engage, briefly confirm and connect: "Those workflow files in `.github/workflows/` are what GitHub reads to know what to do when you push code or merge a PR. Each gate runs automatically."
+
+**Beat 3: Directory Tour**
+
+9. Quick directory overview — list top-level dirs and give a one-liner for each. Frame it as "now let's see where the code lives that those workflows actually run":
    - `.github/workflows/` — the 3-gate pipeline (Gate 1 train, Gate 2 publish, Gate 3 deploy)
    - `model-tuning/` — ML training code and data
    - `airs/` — AIRS scanning scripts
@@ -55,43 +83,47 @@
    - `scripts/` — utilities
    - `lab/` — lab guides and progress tracking
 
-6. Do NOT ask deep comprehension questions here. A quick "make sense so far?" is fine. The pipeline architecture will click naturally as they work through Modules 1-3.
+10. Quick check: "Can you map the directories back to the gates? For example, which directory do you think Gate 1 uses when it trains the model?"
 
-7. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
+    This is light — don't make it a quiz. If they say `model-tuning/` → great, confirm. If they're unsure, just tell them. The point is connecting structure to function, not testing recall.
 
-   Tell the student: "Your repo was created from a template, so it has a fresh git history separate from the template. I'm going to connect it to the template repo and sync the history so you can pull instructor updates and submit PRs back."
+**Close-out: Upstream Remote Sync**
 
-   Then run these commands yourself:
+11. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
 
-   Step 1 — Add the upstream remote:
-   ```
-   git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
-   git fetch upstream
-   ```
+    Tell the student: "Your repo was created from a template, so it has a fresh git history separate from the template. I'm going to connect it to the template repo and sync the history so you can pull instructor updates and submit PRs back."
 
-   Step 2 — Reset both branches to share upstream history:
-   ```
-   git checkout lab
-   git reset --hard upstream/lab
-   git push --force origin lab
+    Then run these commands yourself:
 
-   git checkout main
-   git reset --hard upstream/main
-   git push --force origin main
+    Step 1 — Add the upstream remote:
+    ```
+    git remote add upstream https://github.com/airs-labs/prisma-airs-mlops-lab.git
+    git fetch upstream
+    ```
 
-   git checkout lab
-   ```
-   After running, explain: "The force-push was safe because this is a fresh repo with no real work yet. Now your repo shares git history with the template."
+    Step 2 — Reset both branches to share upstream history:
+    ```
+    git checkout lab
+    git reset --hard upstream/lab
+    git push --force origin lab
 
-   Step 3 — Verify and show results:
-   - Run `git remote -v` and show both `origin` (their private repo) and `upstream` (the template).
-   - Run `git log --oneline -5` and show the shared commits (not just 'Initialize lab').
+    git checkout main
+    git reset --hard upstream/main
+    git push --force origin main
+
+    git checkout lab
+    ```
+    After running, explain: "The force-push was safe because this is a fresh repo with no real work yet. Now your repo shares git history with the template."
+
+    Step 3 — Verify and show results:
+    - Run `git remote -v` and show both `origin` (their private repo) and `upstream` (the template).
+    - Run `git log --oneline -5` and show the shared commits (not just 'Initialize lab').
 
 ### Hints
 
 **Hint 1 (Concept):** The repo has four main areas: workflows (`.github/workflows/`), model training code (`model-tuning/`), AIRS scanning (`airs/`), and the serving application (`src/`). The `scripts/` directory has utility tools.
 
-**Hint 2 (Approach):** Start by asking me to list the top-level directories and explain each one. Then drill into `.github/workflows/` to see the pipeline definitions. The workflow files are the backbone of the pipeline.
+**Hint 2 (Approach):** Start by looking at the README for the pipeline diagram. Then go to the Actions tab in your GitHub repo to see the real workflows. Try to map the workflows to the gates in the diagram.
 
 **Hint 3 (Specific):** The three gates are defined in `gate-1-train.yaml`, `gate-2-publish.yaml`, and `gate-3-deploy.yaml`. Each gate has security checkpoints — but in the current state, not all of them are enforcing yet. That's what you'll fix in Modules 5-7.
 
@@ -359,15 +391,30 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
    **Important context for students:** "This TSG is your AIRS home base. You'll use it across all the AIRS labs — model security, red team, runtime. Think of it as your tenant for the entire learning path."
 
-4. **Create service account for Model Security scanning.** (SCM UI — student does this themselves)
-   Once SCM is accessible (may need to wait if new TSG):
-   - SCM → Settings → Service Accounts → New
-   - Name: something descriptive (e.g., `mlops-lab-scanner`)
-   - Role: Model Security (scanning permissions only)
-   - **Download the CSV immediately** — contains CLIENT_ID and CLIENT_SECRET. You cannot retrieve the secret later.
-   - Note the TSG_ID from tenant details
+4. **Create custom role and service account for Model Security scanning.** (Hub UI — student does this themselves)
+   IAM for AIRS is managed through Hub, not SCM. Emphasize that AIRS has granular IAM options — this is a selling point for enterprise customers.
 
-   If SCM is still provisioning, skip to step 6 and come back for this step later.
+   Once Model Security is activated (may need to wait if new TSG):
+
+   **Step A — Create a custom role first:**
+   - Hub → Common Services → Identity & Access → Access Management
+   - Select their tenant → Roles tab → Custom Roles → Create new
+   - Name: e.g., `model-security-scanner`
+   - Locate **AI Model Security** in the service list and enable it
+   - Enable all Model Security permissions for the lab: `ai_ms_pypi_auth` (SDK auth), `ai_ms.scans` (scan operations), `ai_ms.security_groups` (security group management)
+   - Save the role
+
+   **Step B — Create a service account with that role:**
+   - Still in Hub → Identity & Access → Access Management
+   - Select their tenant → Service Accounts → Create new
+   - Name: e.g., `mlops-lab-scanner`
+   - Assign the custom role from Step A
+   - **Download the credentials immediately** — contains CLIENT_ID and CLIENT_SECRET. You cannot retrieve the secret later.
+   - Note the TSG_ID from tenant details (Common Services → Tenant Management → select tenant)
+
+   The SA is automatically scoped to the TSG they're managing.
+
+   If Model Security is still provisioning, skip to step 6 and come back for this step later.
 
 5. **Set credentials via .env and GitHub secrets.**
    Guide the student to add values to `.env` (copy from `.env.example` if needed). Then set GitHub secrets:
@@ -396,7 +443,7 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
 **Hint 2 (Approach):** The key decision is associating to your EXISTING tenant, not creating a new one. If you create a new tenant, you'll have orphaned SCM instances and wasted credits. Find your TSG name from the n8n lab first.
 
-**Hint 3 (Specific):** In CSP: Products → Software/Cloud NGFW Credits → Create Deployment Profile → Prisma AIRS → Model Security. Then Finish Setup → Hub → select your existing tenant. In SCM: Settings → Service Accounts → New → download CSV.
+**Hint 3 (Specific):** In CSP: Products → Software/Cloud NGFW Credits → Create Deployment Profile → Prisma AIRS → Model Security. Then Finish Setup → Hub → select your existing tenant. For credentials: Hub → Common Services → Identity & Access → Access Management → select tenant → create Custom Role (enable AI Model Security permissions) → create Service Account with that role → download credentials immediately.
 
 ---
 

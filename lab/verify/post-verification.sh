@@ -26,7 +26,7 @@ fi
 # Read lab_id and leaderboard URL from lab.config.yaml
 LAB_ID=""
 if [ -f "lab.config.yaml" ]; then
-    LAB_ID=$(python3 -c "
+    LAB_ID=$(uv run python3 -c "
 import yaml, sys
 try:
     with open('lab.config.yaml') as f:
@@ -36,7 +36,7 @@ except: pass
 " 2>/dev/null || true)
     # Also try to get leaderboard URL from config if not in env
     if [ -z "${LEADERBOARD_URL:-}" ]; then
-        LEADERBOARD_URL=$(python3 -c "
+        LEADERBOARD_URL=$(uv run python3 -c "
 import yaml
 with open('lab.config.yaml') as f:
     cfg = yaml.safe_load(f)
@@ -63,7 +63,7 @@ if [ ! -f "$PROGRESS_FILE" ]; then
 fi
 
 # Build result payload from progress.json (source of truth)
-RESULT_JSON=$(python3 -c "
+RESULT_JSON=$(uv run python3 -c "
 import json, sys
 try:
     d = json.load(open('$PROGRESS_FILE'))
@@ -108,7 +108,7 @@ fi
 HASH=$(echo -n "${STUDENT_ID}:${LAB_ID}:module-${MODULE}:$(date -u +%Y%m%dT%H%M%S)" | shasum -a 256 | cut -d' ' -f1)
 
 # Add evidence hash to payload
-PAYLOAD=$(echo "$RESULT_JSON" | python3 -c "
+PAYLOAD=$(echo "$RESULT_JSON" | uv run python3 -c "
 import json, sys
 d = json.load(sys.stdin)
 d['evidence_hash'] = 'sha256:$HASH'

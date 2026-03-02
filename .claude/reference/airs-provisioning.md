@@ -63,30 +63,55 @@ Two ways to verify:
 
 **Note:** Activation can take up to 2 hours per techdocs. Usually faster (minutes to 30 min). If still pending, the student can proceed with conceptual content.
 
-## Step 4: Create Service Account for Scanning
+## Step 4: Create Custom Role & Service Account for Scanning
 
-After Model Security is activated in SCM:
+IAM for AIRS is managed through **Hub → Common Services → Identity & Access**, NOT through SCM Settings. AIRS has granular IAM — highlight this to students as a selling point for enterprise customers.
 
-1. Navigate to SCM → **Settings** → **Service Accounts**
-2. Click **New Service Account** (or **Add**)
-3. Configure:
+### Step 4a: Create a Custom Role
+
+1. Navigate to **Hub → Common Services → Identity & Access → Access Management**
+2. Select the tenant (e.g., `syoungberg-api`)
+3. Go to the **Roles** tab → **Custom Roles**
+4. Click to create a new role
+   - **Name:** e.g., `model-security-scanner`
+   - **Description:** e.g., `Scanning role for MLOps pipeline`
+5. Locate **AI Model Security** in the service list and enable it
+6. For the lab, enable all Model Security permissions:
+   - `ai_ms_pypi_auth` — required for SDK authentication
+   - `ai_ms.scans` — required to submit and read scans
+   - `ai_ms.security_groups` — required for managing security groups
+7. Save the role
+
+**Teaching point:** AIRS has really granular IAM options through Hub. In a real deployment, you'd create different roles for different personas — a CI/CD scanner role (scans only), a security admin role (security groups + policy), a viewer role (read-only dashboards). This maps to enterprise RBAC patterns.
+
+### Step 4b: Create Service Account
+
+The custom role must exist BEFORE creating the SA — you assign the role during SA creation.
+
+1. Still in **Hub → Common Services → Identity & Access → Access Management**
+2. Select the tenant → **Service Accounts** section
+3. Create a new service account:
    - **Name:** Descriptive (e.g., `mlops-lab-scanner`)
-   - **Role:** Model Security (scanning permissions)
-   - This gives scan-submit + result-read access. NOT admin access.
-4. **Download the CSV** — contains CLIENT_ID and CLIENT_SECRET
-   - **Do this immediately.** You cannot retrieve the secret later.
+   - **Assign Role:** Select the custom role created in Step 4a
+4. **Download the credentials immediately** — contains CLIENT_ID and CLIENT_SECRET
+   - **You cannot retrieve the secret later.** If lost, you must create a new SA.
 5. Note the **TSG_ID** from the tenant details (Common Services → Tenant Management → select tenant → TSG ID shown at top)
+
+The SA is automatically scoped to the TSG you're managing when you create it.
 
 ### Least Privilege Note
 
-The scanning service account should have minimal permissions:
-- Submit scans ✅
-- Read scan results ✅
-- Manage security groups ❌
-- Manage users ❌
-- Admin access ❌
+The scanning service account should have the permissions needed for the lab:
+- SDK authentication (`ai_ms_pypi_auth`) ✅
+- Submit and read scans (`ai_ms.scans`) ✅
+- Manage security groups (`ai_ms.security_groups`) ✅
 
-This is the principle students should carry to customer conversations: CI/CD pipelines get scan-only credentials. Security teams manage policy in SCM with admin credentials. Separation of duties.
+In a production deployment, you'd separate these further:
+- CI/CD pipeline SA: scan-only (`ai_ms_pypi_auth` + `ai_ms.scans`)
+- Security team: full admin (all permissions)
+- Auditors: read-only
+
+This is the principle students should carry to customer conversations: Hub IAM gives you the granularity to enforce separation of duties.
 
 ## Relationship: Deployment Profiles ↔ TSGs ↔ SCM
 
