@@ -1,13 +1,18 @@
 # Module 2 Flow: Train Your Model
 
+> INTERNAL PLAYBOOK — never shown to students.
+> Engagement points tracked during module. All other scoring happens during /lab:verify-2.
+
 ## Points Available
 
-| Source | Points | Track |
-|--------|--------|-------|
-| Training output exists in GCS | 2 | All |
-| Understanding: LoRA adapter vs merged model | 3 | All |
-| Understanding: merge_adapter.py extra_special_tokens | 3 | All |
-| **Total** | **8** | |
+| Source | Points | When |
+|--------|--------|------|
+| Engage: warn-only reasoning (2.1) | 1 | During flow |
+| Engage: LoRA merge rationale (2.3) | 1 | During flow |
+| Technical: Training output in GCS | 2 | During verify |
+| Quiz Q1: LoRA vs merged model | 3 | During verify |
+| Quiz Q2: extra_special_tokens | 3 | During verify |
+| **Total** | **10** | |
 
 ---
 
@@ -30,6 +35,10 @@ Study `gate-1-train.yaml` and `train_advisor.py`. You should be able to answer:
 
 Do not proceed to the next challenge until you can explain the pipeline to someone else.
 
+> **ENGAGE**: "The scan step in Gate 1 uses --warn-only. Why do you think it doesn't block at this stage?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+> (Answer: At the start of the lab, scanning is observational — you want to see what would be flagged without stopping the pipeline. Blocking enforcement comes in Module 5.)
+
 ### Hints
 
 **Hint 1 (Concept):** Gate 1 has two phases: a security scan of the base model (optional), and a Vertex AI CustomJob that runs the training script on a GPU. The training script uses the PEFT library for LoRA fine-tuning -- it freezes the base model weights and trains a small adapter on top.
@@ -48,8 +57,6 @@ Key things to look for in the workflow:
 - Training uses `pytorch-gpu.2-4.py310:latest` container with GCS FUSE
 - The `--no-4bit` flag avoids bitsandbytes compatibility issues
 - Output goes to `gs://your-model-bucket/raw-models/{output_name}/{run_id}/`
-
-### Points: 0
 
 ---
 
@@ -93,8 +100,6 @@ gh run watch  # Interactive watcher
 Check the Vertex AI console:
 `https://console.cloud.google.com/vertex-ai/training/custom-jobs`
 
-### Points: 0
-
 ---
 
 ## Challenge 2.3: While You Wait -- Understanding the Merge
@@ -113,6 +118,10 @@ Read `model-tuning/merge_adapter.py` and answer:
 - Why does the merge script fix `extra_special_tokens` in the tokenizer config?
 - Why does the merge run on CPU? (No GPU needed)
 
+> **ENGAGE**: "Why can't you deploy a LoRA adapter directly? What problem does merging solve?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+> (Answer: A LoRA adapter is a delta on top of frozen base weights — it's not a standalone model. You need both the base + adapter to produce outputs. Merging combines them into one artifact for deployment.)
+
 ### Hints
 
 **Hint 1 (Concept):** A LoRA adapter is a set of small weight matrices that modify the base model's behavior. It is not a standalone model -- it is a *delta* on top of the base. To deploy, you merge the adapter weights into the base model weights, producing a single unified model. This is a math operation (matrix addition), not training, so no GPU is needed.
@@ -130,8 +139,6 @@ Read `model-tuning/merge_adapter.py` and answer:
 ```
 
 Key insight: The merged model is the artifact that gets *scanned by AIRS* and *deployed to Vertex AI*. If you only scanned the adapter, you would miss the full picture. If you only scanned the base model, you would miss any modifications from training.
-
-### Points: 0
 
 ---
 
@@ -166,5 +173,3 @@ gcloud storage cat gs://your-model-bucket/raw-models/my-security-advisor/<run-id
 ```
 
 The manifest should show: model name, base model, dataset, training config, and any Gate 1 scan results.
-
-### Points: 0

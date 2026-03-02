@@ -12,7 +12,7 @@ Start or resume Module $ARGUMENTS of the lab.
 
 2. **Read progress:** Read `lab/.progress.json` to check current state.
    - If `onboarding_complete` is false (or missing), run the Onboarding Flow from CLAUDE.md before proceeding.
-   - Read the student's `scenario` (e.g., "ts-workshop", "public").
+   - Read the student's `scenario`.
 
 3. **Read student guide:** Read `lab/LAB-$ARGUMENTS.md` for the student-facing module overview.
 
@@ -21,8 +21,7 @@ Start or resume Module $ARGUMENTS of the lab.
    Follow it challenge-by-challenge.
 
 5. **Read scenario overlay (if exists):** Check if `scenarios/{scenario}/flows/module-$ARGUMENTS.md` exists.
-   - If it does, read it as **supplemental instructions**. It may add steps, add validation,
-     replace specific challenges, or provide scenario-specific context.
+   - If it does, read it as **supplemental instructions**.
    - Follow BOTH the base flow AND the scenario overlay. The overlay takes precedence
      where it explicitly says to replace or override something.
    - If no overlay exists for this module, proceed with base flow only.
@@ -33,22 +32,28 @@ Start or resume Module $ARGUMENTS of the lab.
 
 7. **Check blockers:** If any blockers exist in `progress.json`, warn the student and help resolve.
 
-8. **Run pre-module validation:** Execute the checks from the flow file and `lab.config.yaml` requirements.
-   - **Every module**: `gcloud config get-value project` must return a valid project ID.
-   - Additional checks per module level (defined in flow files).
-
-9. **Present objectives:** Show the student:
+8. **Present objectives:** Show the student:
    - Module title and objectives (from `LAB-N.md`)
    - Where they are in the overall lab
    - Any active blockers affecting this module
    - Estimated time
 
-10. **Resume or start:** If module is in_progress, resume at `current_challenge`.
-    Otherwise start from the first challenge.
+9. **Resume or start:** If module is in_progress, resume at `current_challenge`.
+   Otherwise start from the first challenge.
 
-11. **Update progress:** Set `current_module` and module status in `lab/.progress.json`.
+10. **Update progress:** Set `current_module` and module status in `lab/.progress.json`.
 
-12. **Hard stop enforcement:** Check `lab.config.yaml` and scenario config for `hard_stops`.
+11. **Track challenge progress:** As you move through challenges, update `current_challenge`
+    in `lab/.progress.json` (e.g., "0.1", "0.2", "0.2b"). This enables `/lab:hint` to
+    find the right hints and enables resume on session restart.
+
+12. **Handle ENGAGE markers:** When you encounter `> ENGAGE:` in the flow file:
+    - Ask the Socratic question naturally as part of the conversation.
+    - Award 1 pt for meaningful engagement (effort-based, not correctness-based).
+    - If the student can't answer, teach — don't penalize. Still award the point if they engage.
+    - Track engagement points in `modules.N.engagement_points` in progress.json.
+
+13. **Hard stop enforcement:** Check `lab.config.yaml` and scenario config for `hard_stops`.
     If hard stops are enabled for the active scenario AND this module has one:
     - Stop the student from proceeding to the next module.
     - Display: "HARD STOP — Module [N] Complete. Please wait for the instructor to lead the group discussion before continuing to Module [N+1]."

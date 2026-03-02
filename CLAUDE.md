@@ -88,7 +88,6 @@ Read `lab/.progress.json` at conversation start to know where the student is. Co
    - `/lab:explore TOPIC` — guided deep-dive on a concept
    - `/lab:verify-N` — check your work for module N
    - `/lab:hint` — progressive help (concept → approach → specific)
-   - `/lab:quiz` — test your understanding
    - `/lab:progress` — see your completion dashboard
 4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save as `student_id` in `lab/.progress.json`.
 5. **IMMEDIATELY use `AskUserQuestion`** to determine their scenario. Read available scenarios from `lab.config.yaml` and present as choices. Save as `scenario` in `lab/.progress.json`.
@@ -109,16 +108,29 @@ Some prerequisites are non-negotiable. When a hard blocker is detected:
 Known blocker keys:
 - `gcp-project-invalid` — GCP project not set or not accessible
 - `gcs-buckets-missing` — GCS buckets for staging/registry don't exist or pipeline-config has placeholders
+- `gcp-iam-invalid` — Service account or Workload Identity Federation not configured (blocks pipeline execution Modules 2+)
 - `airs-credentials-missing` — AIRS scanning credentials not configured as GitHub secrets
 
 ## Scoring & Points
 
-Points are awarded by `/lab:verify-N` commands:
-- **Technical checks**: points per check (defined in flow files)
-- **End-of-module quiz**: 0-3 points per question
-- **Collaboration bonuses**: awarded by instructor via `post-bonus.sh`
+Points come from three sources, awarded at two different times:
 
-Always update both `modules.N.points_awarded` AND `leaderboard_points` in `lab/.progress.json`.
+**During `/lab:module N` (flow):**
+- **Engagement points** (1 pt each): Awarded at `> ENGAGE:` markers in flow files. Ask the Socratic question, award 1 pt for meaningful participation. These are effort-based — no wrong answers, teach if needed. Track in `modules.N.engagement_points`.
+
+**During `/lab:verify-N` (verification):**
+- **Technical checks**: Automated pass/fail checks with points per check (defined in verify files)
+- **Quiz questions**: 0-3 points per question with retry flow (defined in verify files — single source of truth)
+
+**Anytime (instructor-only):**
+- **Collaboration bonuses**: Awarded by instructor via `post-bonus.sh`
+
+Total module points = engagement + technical + quiz. Always update:
+- `modules.N.engagement_points` — engagement total from flow
+- `modules.N.points_awarded` — total of ALL points for the module
+- `modules.N.challenges_completed` — list of completed challenge IDs (e.g., ["0.1", "0.2"])
+- `modules.N.quiz_scores` — dict of per-question scores (e.g., {"q1": 3, "q2": 2})
+- `leaderboard_points` — cumulative total across all modules
 
 On every successful `/lab:verify-N`, call the leaderboard webhook:
 ```
@@ -146,9 +158,8 @@ When awarded: `bash lab/verify/post-bonus.sh "$STUDENT_ID" <bonus_type>`
 |---------|---------|
 | `/lab:module N` | Start or resume module N, see objectives and topics |
 | `/lab:explore TOPIC` | Guided exploration of a topic (concept -> project example -> try it) |
-| `/lab:verify-0` ... `/lab:verify-7` | Per-module verification with specific checks |
+| `/lab:verify-0` ... `/lab:verify-7` | Per-module verification: technical checks + quiz + scoring |
 | `/lab:hint` | Progressive help: 1st=concept, 2nd=approach, 3rd=specific |
-| `/lab:quiz` | Test understanding, scores feed leaderboard |
 | `/lab:progress` | Dashboard of completion status and points |
 
 ## Where to Find Information
@@ -157,7 +168,7 @@ When awarded: `bash lab/verify/post-bonus.sh "$STUDENT_ID" <bonus_type>`
 - **Scenario configs**: `scenarios/{scenario}/config.yaml` (env-specific settings)
 - **Scenario overlays**: `scenarios/{scenario}/flows/module-N.md` (supplemental instructions)
 - **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)
-- **Challenge flow playbooks**: `.claude/commands/lab/flows/module-N.md` (YOUR internal guide — challenge-by-challenge flow, hints, points)
+- **Challenge flow playbooks**: `.claude/commands/lab/flows/module-N.md` (YOUR internal guide — challenge-by-challenge flow, ENGAGE markers, hints)
 - **Topic deep-dive guides**: `lab/topics/module-N/` (read on /explore for teaching reference)
 - **AIRS tech docs**: `.claude/reference/airs-tech-docs/` (model security reference, release notes)
 - **Research docs**: `.claude/reference/research/` (ML architecture, threats, Vertex AI serving)

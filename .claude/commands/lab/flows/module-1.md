@@ -1,15 +1,20 @@
 # Module 1 Flow: ML Fundamentals & HuggingFace
 
+> INTERNAL PLAYBOOK — never shown to students.
+> Engagement points tracked during module. All other scoring happens during /lab:verify-1.
+
 ## Points Available
 
-| Source | Points | Track |
-|--------|--------|-------|
-| Quiz Q1: LoRA understanding | 3 | All |
-| Quiz Q2: Safetensors vs pickle | 3 | All |
-| Quiz Q3: HF model checks | 3 | All |
-| **Total** | **9** | |
+| Source | Points | When |
+|--------|--------|------|
+| Engage: Model trustworthiness (1.1) | 1 | During flow |
+| Engage: Pickle dominance (1.2) | 1 | During flow |
+| Quiz Q1: LoRA understanding | 3 | During verify |
+| Quiz Q2: Safetensors vs pickle | 3 | During verify |
+| Quiz Q3: HF model checks | 3 | During verify |
+| **Total** | **11** | |
 
-This module is entirely quiz-based (concepts, not code output). All points come from the verification quiz.
+This module is concept-focused (exploration, not code output). All scored questions are in the quiz during verification.
 
 ---
 
@@ -28,6 +33,9 @@ This module is entirely quiz-based (concepts, not code output). All points come 
 You are building the evaluation framework that an enterprise security team would use when vetting model downloads.
 
 Use `/explore hf-orientation` in Claude Code for guided exploration.
+
+> **ENGAGE**: "What signals would you look for to evaluate if a model on HuggingFace is trustworthy enough for enterprise use?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
 
 ### Hints
 
@@ -56,8 +64,6 @@ for f in files:
 
 Compare at least 3 models. Look for differences in format, size, and licensing.
 
-### Points: 0
-
 ---
 
 ## Challenge 1.2: The Format Question
@@ -76,7 +82,8 @@ Questions to answer with Claude's help:
 
 This is the seed for Module 6 (The Threat Zoo) where you will build actual malicious pickle models and watch AIRS catch them.
 
-Use your exploration with Claude to investigate these questions thoroughly.
+> **ENGAGE**: "If safetensors is safer by design, why does pickle still dominate in the ML ecosystem?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
 
 ### Hints
 
@@ -100,8 +107,6 @@ for f in files:
 ```
 
 Ask Claude: "Why did the ML community create safetensors? What incidents drove its adoption?" The answer connects to real supply chain attacks you will study in Module 6.
-
-### Points: 0
 
 ---
 
@@ -141,8 +146,6 @@ print(f"Tags: {ds_info.tags}")
 
 Ask Claude: "Walk me through what LoRA actually does. How many parameters does it add to a 3B model? Why is that cheaper than training the full 3B?" Then ask: "What are the security implications of training data? Could someone poison a dataset?"
 
-### Points: 0
-
 ---
 
 ## Challenge 1.4: Platform Landscape
@@ -179,5 +182,3 @@ Consider:
 | Security posture | ? | ? |
 
 Then ask: "Why did this lab choose Vertex AI endpoints with vLLM instead of putting the model directly in the Cloud Run container?" The answer is about separating compute-heavy inference from lightweight application logic.
-
-### Points: 0

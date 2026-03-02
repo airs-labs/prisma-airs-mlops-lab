@@ -1,21 +1,25 @@
 # Module 0 Flow: Environment Setup
 
+> INTERNAL PLAYBOOK — never shown to students.
+> Engagement points tracked during module. All other scoring happens during /lab:verify-0.
+
 ## Points Available
 
-| Source | Points | Track |
-|--------|--------|-------|
-| Challenge 0.1: Repo orientation | 2 | All |
-| Challenge 0.1: Upstream remote | 1 | Workshop |
-| Challenge 0.2: GCP project | 3 | All |
-| Challenge 0.2: GCS buckets | 2 | All |
-| Challenge 0.2: Project validation bonus | 2 | Workshop |
-| Challenge 0.2b: WIF + SA configured | 3 | All |
-| Challenge 0.2b: All IAM roles assigned | 2 | All |
-| Challenge 0.3: GitHub CLI | 2 | All |
-| Challenge 0.4: AIRS secrets configured | 3 | All |
-| Challenge 0.5: Meet assistant | 1 | All |
-| Quiz (2 questions) | 6 | All |
-| **Total** | **21-27** | |
+| Source | Points | When |
+|--------|--------|------|
+| Engage: SA vs default (0.2b) | 1 | During flow |
+| Engage: WIF attribute-condition (0.2b) | 1 | During flow |
+| Engage: AI assistant use case (0.5) | 1 | During flow |
+| Technical: GCP Auth | 1 | During verify |
+| Technical: GCP Project + naming | 3 | During verify |
+| Technical: GCS Buckets | 2 | During verify |
+| Technical: GCP IAM | 3 | During verify |
+| Technical: GitHub CLI | 2 | During verify |
+| Technical: AIRS Secrets | 3 | During verify |
+| Technical: Upstream Remote | 1 | During verify |
+| Quiz Q1 | 3 | During verify |
+| Quiz Q2 | 3 | During verify |
+| **Total** | **24** | |
 
 ---
 
@@ -42,8 +46,6 @@
    - `lab/` — lab guides and progress tracking
 
 5. Do NOT ask deep comprehension questions here. A quick "make sense so far?" is fine. The pipeline architecture will click naturally as they work through Modules 1-3.
-
-### Flow (Workshop)
 
 6. Add upstream remote and sync history for instructor hotfixes. Briefly explain what you're about to do, then execute it directly (bias toward action).
 
@@ -83,16 +85,11 @@
 
 **Hint 3 (Specific):** The three gates are defined in `gate-1-train.yaml`, `gate-2-publish.yaml`, and `gate-3-deploy.yaml`. Each gate has security checkpoints — but in the current state, not all of them are enforcing yet. That's what you'll fix in Modules 5-7.
 
-### Points
-
-- Student can describe the 3-gate pipeline and explain scan-at-both-points: **2 pts**
-- Workshop: upstream remote configured: **1 pt**
-
 ---
 
 ## Challenge 0.2: Verify GCP Environment
 
-### Flow (Workshop)
+### Flow
 
 1. Check if the student's GCP project is correctly set:
    ```
@@ -104,41 +101,27 @@
 
 3. Remind the student: "For the workshop, this should be **your own personal GCP project** under the lab folder — not a shared team project. That way your resources, credentials, and deployments are isolated from other participants."
 
-3. Check billing account is linked:
+4. Check billing account is linked:
    ```
    gcloud billing projects describe $(gcloud config get-value project) --format="value(billingAccountName)"
    ```
 
-4. Check key API scopes are enabled:
+5. Check key API scopes are enabled:
    ```
    gcloud services list --enabled --format="value(config.name)" | grep -E "(aiplatform|run.googleapis|cloudbuild|storage)"
    ```
    Need: aiplatform.googleapis.com, run.googleapis.com, cloudbuild.googleapis.com, storage.googleapis.com
 
-5. Proceed to GCS bucket check (shared with Self-Paced below).
+6. Read `.github/pipeline-config.yaml` to find the bucket configuration.
 
-### Flow (Self-Paced)
-
-1. Verify any valid GCP project with working auth:
-   ```
-   gcloud auth list
-   gcloud config get-value project
-   ```
-   Confirm they have an active account and a project set.
-
-2. Proceed to GCS bucket check (shared below).
-
-### Flow — GCS Bucket Check
-
-1. Read `.github/pipeline-config.yaml` to find the bucket configuration.
-2. If staging_bucket or blessed_bucket still contains `your-model-bucket` → this is a placeholder.
+7. If staging_bucket or blessed_bucket still contains `your-model-bucket` → this is a placeholder.
    - Tell the student: "The pipeline config still has placeholder bucket names. These need to be real GCS buckets."
    - Guide them to either:
      a. Create new buckets: `gcloud storage buckets create gs://[student-name]-airs-lab-staging --location=us-central1`
      b. Use existing buckets if they have them
    - Update `.github/pipeline-config.yaml` with the real bucket names.
 
-3. Verify the buckets are accessible:
+8. Verify the buckets are accessible:
    ```
    gcloud storage ls gs://[bucket-name]/
    ```
@@ -150,20 +133,6 @@
 - If pipeline-config.yaml still has placeholders after this challenge → add blocker `gcs-buckets-missing`
 
 Give a strong warning per the Hard Blockers section in CLAUDE.md. Do NOT minimize this.
-
-### Hints
-
-**Hint 1 (Concept):** GCP authentication has two layers: your local CLI auth (for running commands from your terminal) and Application Default Credentials / Workload Identity (for GitHub Actions to authenticate to GCP). This challenge focuses on the local CLI layer.
-
-**Hint 2 (Approach):** Use `gcloud` commands to check your auth status, active project, and verify you can list objects in the staging bucket. The pipeline config file tells you what bucket names to expect.
-
-**Hint 3 (Specific):** Run `gcloud auth list`, `gcloud config get-value project`, then check `.github/pipeline-config.yaml` for bucket names and run `gcloud storage ls` on them.
-
-### Points
-
-- GCP project correctly set and accessible: **3 pts**
-- GCS buckets exist and pipeline-config updated: **2 pts**
-- Workshop: correct project under TS lab folder: **2 pts bonus**
 
 ---
 
@@ -194,7 +163,10 @@ Claude should execute these steps directly (bias toward action), explaining each
      --display-name="GitHub Actions Service Account" \
      --project=$PROJECT
    ```
-   Ask: "This creates a dedicated service account for your CI/CD pipeline. Why is a dedicated SA better than using the default compute SA for everything?" (Answer: least privilege, audit trail, independent rotation)
+
+   > **ENGAGE**: "This creates a dedicated service account for your CI/CD pipeline. Why is a dedicated SA better than using the default compute SA for everything?"
+   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+   > (Answer: least privilege, audit trail, independent rotation)
 
 2. **Set up Workload Identity Federation:**
 
@@ -217,18 +189,21 @@ Claude should execute these steps directly (bias toward action), explaining each
      --attribute-condition="assertion.repository_owner == 'airs-labs'" \
      --project=$PROJECT
    ```
-   Ask: "What does the `attribute-condition` do? What would happen without it?" (Answer: restricts which GitHub orgs can authenticate — without it, ANY GitHub repo could impersonate this SA)
+
+   > **ENGAGE**: "What does the `attribute-condition` do? What would happen without it?"
+   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+   > (Answer: restricts which GitHub orgs can authenticate — without it, ANY GitHub repo could impersonate this SA)
 
    Step C — Allow the WIF pool to impersonate the SA (scoped to just this repo):
    ```
    PROJECT_NUM=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
-   REPO_OWNER_REPO="airs-labs/$(basename $(gh repo view --json name -q '.name'))"
+   REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
 
    gcloud iam service-accounts add-iam-policy-binding \
      github-actions-sa@${PROJECT}.iam.gserviceaccount.com \
      --project=$PROJECT \
      --role="roles/iam.workloadIdentityUser" \
-     --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/${REPO_OWNER_REPO}"
+     --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/github-actions-pool/attribute.repository/${REPO}"
    ```
 
 3. **Assign IAM roles to the GitHub Actions SA:**
@@ -246,7 +221,7 @@ Claude should execute these steps directly (bias toward action), explaining each
      roles/serviceusage.serviceUsageConsumer; do
      gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SA" --role="$ROLE" --quiet --no-user-output-enabled
-     echo "  ✅ $ROLE"
+     echo "  $ROLE"
    done
    ```
 
@@ -276,7 +251,7 @@ Claude should execute these steps directly (bias toward action), explaining each
      roles/logging.logWriter; do
      gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$COMPUTE_SA" --role="$ROLE" --quiet --no-user-output-enabled
-     echo "  ✅ Compute SA: $ROLE"
+     echo "  Compute SA: $ROLE"
    done
    ```
    Explain: "The Compute Engine default SA runs your Vertex AI training jobs and Cloud Build container builds. It needs storage access for GCS FUSE mounts during training, and artifact registry access to push container images."
@@ -294,19 +269,6 @@ Claude should execute these steps directly (bias toward action), explaining each
 ### Hard Blocker Check
 
 If the SA cannot be created or WIF cannot be configured (e.g., missing permissions on the GCP project), add blocker `gcp-iam-invalid`. This blocks all pipeline execution (Modules 2-7).
-
-### Hints
-
-**Hint 1 (Concept):** Workload Identity Federation replaces long-lived service account keys with short-lived tokens. GitHub Actions proves its identity via OIDC, GCP exchanges that for a temporary access token scoped to your service account. No keys to rotate, no keys to leak.
-
-**Hint 2 (Approach):** Three things need to happen: (1) Create a service account, (2) Set up the WIF trust between GitHub and GCP, (3) Assign the right IAM roles. Then store the WIF provider path and SA email as GitHub secrets.
-
-**Hint 3 (Specific):** If you get "permission denied" errors later in the lab, 90% of the time it's a missing IAM role. The most commonly missed roles are `roles/serviceusage.serviceUsageConsumer` (needed by Cloud Build) and `roles/artifactregistry.admin` (needed to create container repos for Cloud Run source deploys).
-
-### Points
-
-- WIF pool + provider + SA configured: **3 pts**
-- All IAM roles assigned and GH secrets set: **2 pts**
 
 ---
 
@@ -331,18 +293,6 @@ If the SA cannot be created or WIF cannot be configured (e.g., missing permissio
 
 4. Brief explanation: "The `gh` CLI is how you'll trigger pipeline runs, check workflow status, and read logs — all without leaving your terminal."
 
-### Hints
-
-**Hint 1 (Concept):** The `gh` CLI is how you interact with GitHub Actions without leaving your terminal. You need it to trigger workflows, check run status, and read logs.
-
-**Hint 2 (Approach):** Check your auth status, then verify you can see the repository and its workflows.
-
-**Hint 3 (Specific):** Run `gh auth status`, `gh repo view`, `gh workflow list`. You should see four workflows.
-
-### Points
-
-- GH CLI authenticated, repo visible, workflows listed: **2 pts**
-
 ---
 
 ## Challenge 0.4: Configure AIRS Access
@@ -354,14 +304,13 @@ If the SA cannot be created or WIF cannot be configured (e.g., missing permissio
 2. Fill in their credentials there
 3. The mentor reads from `.env` to set GitHub secrets — no secrets in chat history
 
-When setting GitHub secrets, source the `.env` file and pipe values:
+When setting GitHub secrets, source the `.env` file and pipe values. Derive the repo name for the `-R` flag:
 ```
-source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R <repo>
+REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
+source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
 ```
 
-**Note:** With multiple remotes (origin + upstream), `gh` requires `-R owner/repo` to target the correct repository.
-
-### Flow (Workshop)
+### Flow
 
 1. Check if the student has their AIRS credentials. If not, direct them to their instructor:
    "If you don't have your AIRS credentials yet, see your instructor to get your **authcode** and **TSG** provisioned. They'll walk you through SCM Apps Hub access and service account creation. You can download your credentials as a CSV from SCM. Come back here once you have your CLIENT_ID, CLIENT_SECRET, and TSG_ID."
@@ -378,14 +327,15 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R <r
    - "Add your credentials to the `.env` file (copy from `.env.example` if you haven't already). Don't paste them directly in chat — the `.env` file is gitignored and safer."
    - Once `.env` is ready, source it and set GitHub secrets (bias toward action — run the commands yourself):
      ```
-     source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R <repo>
-     source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R <repo>
-     source .env && echo "$TSG_ID" | gh secret set TSG_ID -R <repo>
+     REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
+     source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
+     source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R "$REPO"
+     source .env && echo "$TSG_ID" | gh secret set TSG_ID -R "$REPO"
      ```
 
 5. Verify secrets are set:
    ```
-   gh secret list -R <repo>
+   gh secret list -R "$REPO"
    ```
    Should show all three secrets.
 
@@ -393,45 +343,13 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R <r
    - Add blocker: `airs-credentials-missing`
    - Strong warning: "This is a hard blocker. Without AIRS credentials, you can complete Modules 0-3 (building the pipeline) and participate in Q&A discussions for all modules. However, you won't be able to run AIRS scans yourself in Modules 4-7. See your instructor to get set up."
 
-### Flow (Self-Paced)
-
-1. Explain what the three credentials are (same as above).
-
-2. Where to get them:
-   - From your Prisma Cloud / Strata Cloud Manager (SCM) tenant
-   - SCM → Settings → Service Accounts → create service account → download CSV
-   - Your organization's AIRS administrator can provision these
-
-3. Use AskUserQuestion:
-   "Do you already have your AIRS credentials (CLIENT_ID, CLIENT_SECRET, TSG_ID), or do you still need to set them up?"
-   Options:
-   - "I have them ready"
-   - "I don't have them yet"
-
-4. If they have them → guide to `.env` file, then set GitHub secrets (same as Workshop step 4 above)
-
-5. If they don't have them:
-   - Add blocker: `airs-credentials-missing`
-   - Strong warning: "Without AIRS credentials, you can complete Modules 0-3 (building the pipeline) and participate in Q&A discussions for all modules. However, you won't be able to run AIRS scans yourself in Modules 4-7. If you get credentials later, we can come back and configure them."
-   - Do NOT just casually note it and move on. This is a hard blocker for the security scanning portions of the lab.
-
 ### Hints
 
 **Hint 1 (Concept):** GitHub repository secrets are encrypted variables that only GitHub Actions workflows can read at runtime. Nobody can view the actual values after they're set. The AIRS SDK uses OAuth2 client credentials to authenticate scan requests.
 
-**Hint 2 (Approach):** Use `gh secret set` for each of the three values. The command will prompt you to paste the value interactively. Use `gh secret list` to verify they're set (names only, values are hidden).
+**Hint 2 (Approach):** Use `gh secret set` for each of the three values. The `.env` file keeps secrets out of chat history. Use `gh secret list` to verify they're set (names only, values are hidden).
 
-**Hint 3 (Specific):** Run these commands one at a time, pasting each value when prompted:
-```
-gh secret set AIRS_MS_CLIENT_ID
-gh secret set AIRS_MS_CLIENT_SECRET
-gh secret set TSG_ID
-gh secret list
-```
-
-### Points
-
-- All three secrets configured: **3 pts**
+**Hint 3 (Specific):** Copy `.env.example` to `.env`, fill in your values, then run the gh secret set commands with `-R` flag pointing to your repo.
 
 ---
 
@@ -447,51 +365,8 @@ gh secret list
    - Available commands and what each does
    - Progressive hint system
 
-3. Ask a comprehension question: "Can you think of a use case at your own work where a customized AI assistant like this would be useful?"
-   - This is open-ended, no wrong answer. The point is connecting CLAUDE.md to real enterprise patterns.
+3. > **ENGAGE**: "Can you think of a use case at your own work where a customized AI assistant like this would be useful?"
+   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+   > This is open-ended — the point is connecting CLAUDE.md to real enterprise patterns.
 
 4. Test the interaction: have them ask you a real question about AIRS or the pipeline to see the mentor style in action.
-
-### Hints
-
-**Hint 1 (Concept):** CLAUDE.md is a configuration file that shapes how Claude Code behaves in this specific project. It's not code — it's natural language rules.
-
-**Hint 2 (Approach):** Open CLAUDE.md and read the "Your Role", "Pacing Rules", and "Available Commands" sections.
-
-**Hint 3 (Specific):** Ask me: "Read CLAUDE.md and tell me what rules you follow in this lab."
-
-### Points
-
-- Student demonstrates understanding of CLAUDE.md and the mentor model: **1 pt**
-
----
-
-## End-of-Module Quiz
-
-Present during `/verify-0`. Two questions, one at a time.
-
-### Question 1 (Concept)
-
-"Why does the lab use a private repo created from the template, instead of a public fork?"
-
-**Expected answer:** GitHub secrets would be exposed in a public repo. The repo contains deployment configurations, bucket names, and workflow definitions that could enable info disclosure. Private repos keep secrets scoped and deployment details hidden.
-
-**Scoring:**
-- 3 pts: mentions secrets exposure AND deployment config / info disclosure
-- 2 pts: mentions one of the above
-- 1 pt: vague answer about "security" without specifics
-- 0 pts: cannot answer
-
-### Question 2 (Applied)
-
-"If `.github/pipeline-config.yaml` still has `your-model-bucket` as the staging bucket, what will break and when?"
-
-**Expected answer:** Gate 1 training output has nowhere to go (GCS write fails). Gate 2 merge can't find artifacts. The pipeline fails at the first GCS operation — it won't be a subtle error, it will be an immediate failure when any workflow tries to read or write model artifacts.
-
-**Scoring:**
-- 3 pts: identifies specific failure point (GCS operations in workflows) and explains the cascade
-- 2 pts: knows it will break but vague on where/when
-- 1 pt: needed a hint to answer
-- 0 pts: cannot answer
-
-**Max quiz score: 6 points**

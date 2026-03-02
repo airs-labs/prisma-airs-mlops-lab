@@ -21,4 +21,6 @@ Use the resources pointed to in the topic guide:
 
 Update lab/.progress.json to add this topic to the current module's topics_explored list.
 
+If the topic is ahead of the student's current module, note this but still allow concept-level exploration.
+
 Remember: Progressive guidance. Never give the answer directly. Concept -> approach -> specific.

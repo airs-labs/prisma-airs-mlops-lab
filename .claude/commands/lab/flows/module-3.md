@@ -1,14 +1,20 @@
 # Module 3 Flow: Deploy & Serve
 
+> INTERNAL PLAYBOOK — never shown to students.
+> Engagement points tracked during module. All other scoring happens during /lab:verify-3.
+
 ## Points Available
 
-| Source | Points | Track |
-|--------|--------|-------|
-| App deployed (Cloud Run URL accessible) | 2 | All |
-| App responds (health or chat works) | 2 | All |
-| Understanding: decoupled architecture | 3 | All |
-| Understanding: rawPredict and model naming | 3 | All |
-| **Total** | **10** | |
+| Source | Points | When |
+|--------|--------|------|
+| Engage: Decoupled architecture (3.1) | 1 | During flow |
+| Engage: Security gap (3.4) | 1 | During flow |
+| Technical: App deployed | 2 | During verify |
+| Technical: App responds | 2 | During verify |
+| Quiz Q1: Decoupled architecture | 3 | During verify |
+| Quiz Q2: rawPredict and model naming | 3 | During verify |
+| Quiz Q3: 3-gate pipeline | 3 | During verify |
+| **Total** | **15** | |
 
 ---
 
@@ -29,6 +35,10 @@ Answer these questions:
 - Why does the app use `/v1/completions` instead of `/v1/chat/completions`?
 
 Draw (or describe to Claude) the full request flow: User browser --> Cloud Run app --> Vertex AI rawPredict --> vLLM container --> GPU inference --> response back.
+
+> **ENGAGE**: "Why is the model NOT in the Cloud Run container? What are the scaling implications of decoupling inference from the application?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+> (Answer: Model needs GPU, app doesn't. Separating them allows independent scaling, updating, and security scanning.)
 
 ### Hints
 
@@ -52,8 +62,6 @@ Key architectural details:
 - Auth uses `google.auth.default()` for access tokens (not identity tokens)
 - Vertex AI's vLLM launcher overrides the served model name to "openapi" -- you must match this in requests
 - The Vertex AI vLLM build only exposes `/v1/completions`, not `/v1/chat/completions` -- so the app constructs the chat template manually in the prompt
-
-### Points: 0
 
 ---
 
@@ -100,8 +108,6 @@ gh run watch
 ```
 
 Gate 3 deployment takes 15-30 minutes (GPU provisioning + model loading). Be patient.
-
-### Points: 0
 
 ---
 
@@ -154,8 +160,6 @@ If the app returns errors, check:
 2. Does the Cloud Run service account have `roles/aiplatform.user`?
 3. Check Cloud Run logs: `gcloud run services logs read cloud-security-advisor --region=us-central1`
 
-### Points: 0
-
 ---
 
 ## Challenge 3.4: Explain the Architecture
@@ -179,6 +183,10 @@ Describe (to Claude, to a partner, or in notes) the full architecture. Cover:
 
 5. **What security scans happened between training and deployment?** -- None. (Yet.)
 
+> **ENGAGE**: "What security scans happened between training and deployment? (Trick question.)"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+> (Answer: None yet. That's the entire point of Modules 5-7.)
+
 ### Hints
 
 **Hint 1 (Concept):** The key architectural insight is *separation of concerns*. The model (expensive GPU compute) is decoupled from the application (cheap CPU compute). This means you can update the app without redeploying the model, scale them independently, and -- critically -- insert security scan gates between pipeline stages.
@@ -191,6 +199,14 @@ Describe (to Claude, to a partner, or in notes) the full architecture. Cover:
 "Quiz me on the architecture. Ask me 5 questions about where the model lives, how requests flow, what artifacts exist at each gate, and what security checks are missing."
 ```
 
-The critical gap to articulate: You just deployed a model to production without any security scanning. Anyone could have tampered with the base model, poisoned the training data, or injected malicious code into the artifacts. The pipeline works, but it is not secure. That is what Modules 4-7 will fix.
+The critical gap to articulate: You just deployed a model to production without any security scanning. Anyone could have tampered with the base model, poisoned the training data, or injected malicious code into the artifacts. The pipeline works, but it is not secure. That is what Modules 5-7 will fix.
 
-### Points: 0
+---
+
+## End of Act 1
+
+This is the end of Act 1 ("Build It"). The student has built a complete ML pipeline: train, merge, publish, deploy.
+
+If hard stops are enabled (ts-workshop scenario): Display "HARD STOP — Module 3 Complete. There is typically an instructor-led AIRS presentation between Acts 1 and 2. Check with your instructor before starting Module 4."
+
+Ask the student to prepare a brief summary of what they built — architecture, model choice, training decisions — for the group discussion.

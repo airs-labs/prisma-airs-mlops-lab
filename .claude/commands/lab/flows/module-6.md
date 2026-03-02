@@ -1,15 +1,20 @@
 # Module 6 Flow: The Threat Zoo
 
+> INTERNAL PLAYBOOK — never shown to students.
+> Engagement points tracked during module. All other scoring happens during /lab:verify-6.
+
 ## Points Available
 
-| Source | Points | Track |
-|--------|--------|-------|
-| Threat models created (2+) | 2 | All |
-| BLOCKED scan results shown | 2 | All |
-| Format comparison (pickle vs safetensors) | 2 | All |
-| Understanding: __reduce__ and torch.load | 3 | All |
-| Understanding: Approved File Format rule | 3 | All |
-| **Total** | **12** | |
+| Source | Points | When |
+|--------|--------|------|
+| Engage: AIRS detection method (6.1) | 1 | During flow |
+| Engage: Enterprise format policy (6.3) | 1 | During flow |
+| Technical: Threat models created | 2 | During verify |
+| Technical: BLOCKED results shown | 2 | During verify |
+| Technical: Format comparison | 2 | During verify |
+| Quiz Q1: __reduce__ and torch.load | 3 | During verify |
+| Quiz Q2: Approved File Format rule | 3 | During verify |
+| **Total** | **14** | |
 
 ---
 
@@ -29,15 +34,17 @@ python scripts/create_threat_models.py pickle-bomb --scan
 4. Why does Python's `__reduce__` protocol enable this attack?
 5. If you removed the `os.system` call and used a more subtle payload, would AIRS still catch it?
 
+> **ENGAGE**: "AIRS caught the pickle bomb through static analysis of serialized bytecode — it never executed the model. Why is that important?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+> (Answer: Static analysis means you can scan untrusted models safely. If you had to execute to detect, the attack would already have succeeded.)
+
 ### Hints
 
-**Hint 1 (Concept):** Python's pickle serializer calls `__reduce__()` during deserialization. Whatever callable `__reduce__` returns gets executed. This means `torch.load()` on an untrusted .pkl file is equivalent to running `python untrusted_script.py`. The pickle protocol was designed for convenience, not security.
+**Hint 1 (Concept):** Python's pickle serializer calls `__reduce__()` during deserialization. Whatever callable it returns gets executed. `torch.load()` on an untrusted .pkl file is equivalent to running `python untrusted_script.py`.
 
-**Hint 2 (Approach):** AIRS inspects the pickle bytecode for dangerous operations like `os.system`, `subprocess.call`, `eval`, `exec`, and other code execution primitives. The detection is static analysis of the serialized data -- AIRS does not execute the model to find the exploit. Look for the "Runtime Code Execution" rule in your scan results.
+**Hint 2 (Approach):** AIRS inspects pickle bytecode for dangerous operations like `os.system`, `subprocess.call`, `eval`, `exec`. Detection is static analysis of serialized data — AIRS does not execute the model.
 
-**Hint 3 (Specific):** The pickle bomb demonstrates the most direct attack: embed a shell command. But pickle deserialization can do anything Python can do -- download files, exfiltrate credentials, install backdoors, modify other models. AIRS catches known dangerous patterns, but determined adversaries can obfuscate. This is why format migration to safetensors matters.
-
-### Points: 0
+**Hint 3 (Specific):** Pickle deserialization can do anything Python can do — download files, exfiltrate credentials, install backdoors. AIRS catches known dangerous patterns, but determined adversaries can obfuscate. This is why format migration to safetensors matters.
 
 ---
 
@@ -58,13 +65,11 @@ python scripts/create_threat_models.py keras-trap --scan
 
 ### Hints
 
-**Hint 1 (Concept):** Keras Lambda layers allow embedding arbitrary Python functions in the model architecture. When the model is saved in .h5 format, the function source code is serialized. On load, it is deserialized and executed. This is a design feature of Keras -- but it creates a code execution surface.
+**Hint 1 (Concept):** Keras Lambda layers embed arbitrary Python functions in the model architecture. In .h5 format, the function source is serialized and executed on load.
 
-**Hint 2 (Approach):** Keras 2.13+ added `safe_mode=True` by default for the newer .keras v3 format. But older .h5 files remain vulnerable, and many published models still use .h5. The SFConvertbot incident (2024) showed that even model format conversion services can be weaponized to inject Lambda layers during conversion.
+**Hint 2 (Approach):** Keras 2.13+ added `safe_mode=True` for .keras v3. But older .h5 files remain vulnerable. The SFConvertbot incident showed model conversion services can inject Lambda layers.
 
-**Hint 3 (Specific):** AIRS uses different rules for pickle and Keras attacks. Pickle attacks are caught by "Runtime Code Execution" (dangerous ops in pickle bytecode). Keras attacks are caught by "Load-Time Code Execution" (Lambda layers in .h5 files). Same scanner, different detection engines, comprehensive coverage.
-
-### Points: 0
+**Hint 3 (Specific):** AIRS uses different rules: "Runtime Code Execution" for pickle, "Load-Time Code Execution" for Keras. Same scanner, different detection engines, comprehensive coverage.
 
 ---
 
@@ -77,12 +82,11 @@ python scripts/create_threat_models.py keras-trap --scan
 python scripts/create_threat_models.py format-comparison --scan
 ```
 
-**After scanning, answer these questions:**
-1. How do the scan results differ between pickle and safetensors?
-2. Why can safetensors never contain executable code?
-3. What is the "Stored In Approved File Format" AIRS rule?
-4. If the pickle version is a clean model (no exploit), does AIRS still flag it?
-5. What enterprise policy would you recommend based on this comparison?
+**After scanning, compare pickle vs safetensors results.**
+
+> **ENGAGE**: "What enterprise format policy would you recommend based on what you've seen? How would you enforce it?"
+> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+> (Answer: Require safetensors for all production deployments. Use "Stored In Approved File Format" rule set to block. Eliminates entire attack surface.)
 
 **The format risk spectrum:**
 
@@ -96,13 +100,11 @@ python scripts/create_threat_models.py format-comparison --scan
 
 ### Hints
 
-**Hint 1 (Concept):** Safetensors stores only tensor data (raw numbers) plus a small JSON header with metadata. There is no mechanism for code execution -- no pickle bytecode, no Lambda layers, no operator definitions. It is structurally incapable of containing exploits. This is why HuggingFace created it.
+**Hint 1 (Concept):** Safetensors stores only tensor data plus a JSON header. No code execution mechanism. Structurally incapable of containing exploits.
 
-**Hint 2 (Approach):** Even a "clean" pickle file (no exploit embedded) uses a format that allows code execution. The risk is not in this specific file -- it is in the format's capability. An attacker could replace a clean pickle file with a malicious one, and torch.load() would execute it without warning. Safetensors eliminates this entire class of vulnerability.
+**Hint 2 (Approach):** Even a "clean" pickle file uses a format that allows code execution. The risk is the format's capability, not this specific file.
 
-**Hint 3 (Specific):** The simplest and most impactful policy an enterprise can enforce: require safetensors for all production deployments. Use a security group with the "Stored In Approved File Format" rule set to block. This eliminates an entire attack surface without changing any model functionality -- the weights are the same, only the container format changes.
-
-### Points: 0
+**Hint 3 (Specific):** Simplest enterprise policy: require safetensors for production. "Stored In Approved File Format" rule set to block. Eliminates entire attack surface.
 
 ---
 
@@ -114,23 +116,17 @@ python scripts/create_threat_models.py format-comparison --scan
 
 | Incident | Year | Technique | Impact |
 |----------|------|-----------|--------|
-| baller423/goober2 | 2024 | Pickle reverse shell | Remote code execution on any machine that loaded the model |
-| NullifAI | 2025 | 7z archive bypass of scanning tools | 8+ months undetected on HuggingFace |
-| SFConvertbot | 2024 | Model conversion service hijacking | Could compromise any repository using the conversion bot |
-| Unit 42 NeMo | 2025 | Hydra instantiate() RCE in NVIDIA NeMo | CVE-2025-23304, affecting 700+ models |
+| baller423/goober2 | 2024 | Pickle reverse shell | RCE on any machine loading the model |
+| NullifAI | 2025 | 7z archive bypass | 8+ months undetected on HuggingFace |
+| SFConvertbot | 2024 | Conversion service hijacking | Could compromise any repo using the bot |
+| Unit 42 NeMo | 2025 | Hydra instantiate() RCE | CVE-2025-23304, 700+ models affected |
 
-**What to investigate:**
-1. Use web search or reference `docs/research/ml-model-security-threats-2026.md` for details
-2. For each incident: what was the attack vector? How was it discovered? How long was it active?
-3. Which incidents would AIRS have caught at scan time?
-4. Which incidents required something beyond file scanning to detect?
+**For each:** What was the attack vector? How long was it active? Would AIRS have caught it?
 
 ### Hints
 
-**Hint 1 (Concept):** baller423 uploaded models to HuggingFace with embedded pickle reverse shell payloads. JFrog security researchers discovered them in early 2024. The payload was a standard pickle __reduce__ exploit -- the same technique you used in Challenge 6.1. AIRS catches this directly.
+**Hint 1 (Concept):** baller423 used standard pickle __reduce__ — same technique as Challenge 6.1. AIRS catches this directly.
 
-**Hint 2 (Approach):** The NullifAI campaign used a broken/obfuscated pickle format inside 7z archives to bypass PickleScan (the open-source scanner HuggingFace uses). The models were on HuggingFace for 8+ months before detection. This demonstrates why a single scanning tool is insufficient -- defense in depth matters. AIRS uses a different scanning engine than PickleScan.
+**Hint 2 (Approach):** NullifAI used obfuscated pickle inside 7z archives to bypass PickleScan. AIRS uses a different scanning engine.
 
-**Hint 3 (Specific):** Unit 42 researchers discovered that NVIDIA NeMo's use of Hydra `instantiate()` for configuration files allowed arbitrary code execution via crafted YAML configs alongside safetensors model files. This is significant because the model files themselves were safe -- the attack was in the config files. CVE-2025-23304. This is why scanning must cover the entire model artifact, not just the weight files.
-
-### Points: 0
+**Hint 3 (Specific):** NeMo attack used Hydra `instantiate()` in config files alongside safetensors model files. Model files were safe — attack was in configs. Scanning must cover entire model artifact, not just weights.

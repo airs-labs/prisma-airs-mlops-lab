@@ -12,74 +12,74 @@
     "0": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "1": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "2": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "3": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "4": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "5": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "6": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     },
     "7": {
       "status": "not_started",
       "challenges_completed": [],
+      "engagement_points": 0,
       "points_awarded": 0,
       "quiz_scores": {},
       "verified": false,
-      "verified_at": null,
-      "topics_explored": []
+      "verified_at": null
     }
   },
   "leaderboard_points": 0,

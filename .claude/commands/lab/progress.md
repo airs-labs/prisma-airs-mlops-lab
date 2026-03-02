@@ -1,39 +1,57 @@
 Show the student's lab progress dashboard.
 
-Read lab/.progress.json and display:
+Read `lab/.progress.json`. If `onboarding_complete` is false:
+- "You haven't started the lab yet. Run `/lab:module 0` to begin."
 
-## Lab Progress Dashboard
+Display:
 
-**Student:** [student_id or "Not set"]
-**Track:** [track — "Technical Services Workshop" or "Self-paced" or "Not set"]
-**Current Module:** [N] of 7
-**Leaderboard Points:** [X]
+```
+AIRS MLOps Lab — Progress Dashboard
+==========================================
+Student: [student_id]
+Scenario: [scenario display name]
+Current:  Module [N] — [title]
 
-### Active Blockers
-[If blockers array is non-empty, show each with explanation:]
-- gcp-project-invalid → "GCP project not configured — limits technical challenges"
-- gcs-buckets-missing → "GCS buckets not set up — pipeline can't store artifacts"
-- airs-credentials-missing → "AIRS credentials not configured — can't run scans (Modules 4-7)"
+Module Status
+==========================================
+Act 1: Build It
+  Module 0: Environment Setup .......... [status] [pts] pts
+  Module 1: ML Fundamentals ............ [status] [pts] pts
+  Module 2: Train Your Model ........... [status] [pts] pts
+  Module 3: Deploy & Serve ............. [status] [pts] pts
+    >> HARD STOP: Presentation Break [completed/pending]
 
-[If no blockers: "No blockers — all systems go!"]
+Act 2: Understand Security
+  Module 4: AIRS Deep Dive ............. [status] [pts] pts
 
-### Module Status
-| Module | Title | Status | Verified | Points | Quiz |
-|--------|-------|--------|----------|--------|------|
-| 0 | Environment Setup | complete/in-progress/not-started | yes/no | X | X/6 |
-| 1 | ML Fundamentals | complete/in-progress/not-started | yes/no | X | X/9 |
-| 2 | Train Your Model | complete/in-progress/not-started | yes/no | X | X/6 |
-| 3 | Deploy & Serve | complete/in-progress/not-started | yes/no | X | X/6 |
-| --- | *Presentation Break* | --- | --- | --- | --- |
-| 4 | AIRS Deep Dive | complete/in-progress/not-started | yes/no | X | X/6 |
-| 5 | Pipeline Integration | complete/in-progress/not-started | yes/no | X | X/3 |
-| 6 | Threat Zoo | complete/in-progress/not-started | yes/no | X | X/6 |
-| 7 | Gaps & Poisoning | complete/in-progress/not-started | yes/no | X | X/6 |
+Act 3: Secure It
+  Module 5: Pipeline Integration ....... [status] [pts] pts
+  Module 6: Threat Zoo ................. [status] [pts] pts
+  Module 7: Gaps & Poisoning ........... [status] [pts] pts
 
-### Topics Explored
-[List topics explored per module]
+Scoring
+==========================================
+  Engagement Points:    [X] pts
+  Technical Points:     [X] pts
+  Quiz Points:          [X] pts
+  Collaboration Bonus:  [X] pts
+  ------------------------------------------
+  Total:                [X] pts
 
-### Next Steps
-[Based on current progress, suggest what to do next]
+Active Blockers
+==========================================
+[If blockers: list each with explanation]
+  - gcp-project-invalid → GCP project not configured
+  - gcs-buckets-missing → GCS buckets not set up
+  - gcp-iam-invalid → IAM / WIF not configured
+  - airs-credentials-missing → AIRS credentials not configured
+[If no blockers: "None — all systems go!"]
 
-Offer: "Run /module [N] to start your next module, or /verify-[N] to verify completed work."
+Next Steps
+==========================================
+[Context-appropriate guidance based on current module and blockers]
+```
+
+Status values: `not_started` | `in_progress` | `complete` | `verified` | `blocked`
+
+Offer: "Run `/lab:module N` to start your next module, or `/lab:verify-N` to verify completed work."
