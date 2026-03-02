@@ -357,18 +357,27 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
 ### Flow
 
-**This challenge provisions AIRS Model Security early so SCM can activate while students work through Modules 1-3.** The deep exploration of Model Security features happens in Module 4.
+**This challenge provisions AIRS Model Security early so SCM can activate while students work through Modules 1-3.** The deep exploration of Model Security features happens in Module 4. Point students to techdocs for detailed steps — guide them through the process directionally without over-specifying UI clicks.
 
-1. **Check existing TSG from prereq lab.**
-   Ask: "In the n8n Runtime Security lab, you created a TSG and deployment profile. Do you have that TSG name handy?"
-   - If they have it → proceed to step 2
-   - If they used their own CSP/TSG → same flow, just different CSP account
-   - If they have no TSG at all → they will create a new one in step 3 (flag provisioning delay)
+> CONTEXT: Read `.claude/reference/airs-provisioning.md` for full provisioning reference.
 
-2. **Create Model Security deployment profile in CSP.** (SCM UI — student does this themselves, guide with navigation paths)
-   Walk through:
-   - Log in to CSP → Products → Software/Cloud NGFW Credits → Create Deployment Profile
-   - Select: Prisma AIRS → Model Security
+1. **Check for existing TSG.**
+   Ask: "Do you have an existing TSG from a previous AIRS lab (like the n8n Runtime Security lab)? If so, what's the name?"
+   - If they have one → skip to step 2 (deployment profile)
+   - If they used their own CSP/TSG → same flow, just different account context
+   - If they have no TSG at all → **create one first** (see below)
+
+   **Creating a new TSG (if needed):** Guide them to Hub → Common Services → Tenant Management (https://apps.paloaltonetworks.com/hub/settings/tenants).
+   - Workshop scenario: create under the parent TSG (e.g., "AIRS Workshop (Technical Services)")
+   - Self-paced: can create under their own CSP account
+   - **Flag provisioning delay:** "New TSG means SCM provisioning, which takes 15-30 minutes. That's fine — you can keep working through Modules 1-3 while it provisions."
+
+   **Context for students:** "This TSG is your AIRS home base. You'll use it across all the AIRS labs — model security, red team, runtime."
+
+2. **Create Model Security deployment profile in CSP.** (CSP UI — student does this themselves)
+   Walk through directionally:
+   - Log in to CSP (support.paloaltonetworks.com) → Products → Software/Cloud NGFW Credits
+   - Create Deployment Profile → Prisma AIRS → Model Security
    - Click **Calculate Estimated Cost** to see credit impact
    - Create the profile
 
@@ -376,47 +385,39 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
    > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
    > (Answer: budget planning, multi-product stacking, credit pool sizing, comparing to alternatives)
 
-   Surface this context naturally: Model Security and Red Team both went GA late February 2026. Credit consumption is significantly higher than during preview/beta. Students should know this for customer conversations.
+   Surface this context naturally: Model Security and Red Team both went GA late February 2026. Credit consumption is significantly higher than during preview/beta.
 
-3. **Associate deployment profile to existing TSG.** (SCM UI — student does this themselves)
-   This is the critical step — guide them to associate to their EXISTING tenant, NOT create a new one.
-   - In CSP → find the new profile → click **Finish Setup** → redirects to Hub
-   - Select CSP account → select their **existing tenant** from the n8n lab
-   - Region: United States - Americas
+3. **Associate deployment profile to TSG.** (CSP/Hub UI — student does this themselves)
+   This is the critical step — guide them to associate to their **existing** tenant, NOT create a new one.
+   - In CSP, find the new profile → click **Finish Setup** → redirects to Hub
+   - Select CSP account → select their tenant
+   - Region: United States - Americas (only region supported)
    - Select the Model Security deployment profile → Agree → Activate
 
-   **If they already have SCM on their TSG** (from n8n lab): activation is near-instant. Celebrate — "Since your TSG already has SCM provisioned, Model Security should activate quickly."
+   **If SCM already on their TSG:** activation is near-instant.
+   **If new TSG:** provisioning takes 15-30 min. Continue with Modules 1-3.
 
-   **If they need a new TSG:** Flag clearly: "New TSG means SCM provisioning, which takes 15-30 minutes. That's fine — you can keep working through Modules 1-3 while it provisions. We'll verify it's ready before Module 4."
+4. **Create service account for scanning.** (Hub UI — student does this themselves)
+   IAM is managed through Hub → Identity & Access (https://apps.paloaltonetworks.com/hub/settings/iam/access). Point them to the IAM techdocs for detailed steps.
 
-   **Important context for students:** "This TSG is your AIRS home base. You'll use it across all the AIRS labs — model security, red team, runtime. Think of it as your tenant for the entire learning path."
+   High-level flow:
+   - Select their TSG in the IAM access panel
+   - Create a service account with **Superuser** role (see Known Issue)
+   - **Download credentials immediately** — CLIENT_ID and CLIENT_SECRET. Cannot retrieve later.
+   - Note the TSG_ID from Tenant Management
 
-4. **Create service account for Model Security scanning.** (SCM UI — student does this themselves)
-   IAM for AIRS is managed through Strata Cloud Manager → Common Services → Identity & Access. Mention that AIRS has granular IAM options through custom roles — but there's a known bug (see below).
-
-   Once Model Security is activated (may need to wait if new TSG):
-
-   - Strata Cloud Manager → Common Services → Identity & Access → Access Management
-   - Select their tenant → Service Accounts → Create new
-   - Name: e.g., `mlops-lab-scanner`
-   - **Assign Role: Superuser** (see Known Issue below)
-   - **Download the credentials immediately** — contains CLIENT_ID and CLIENT_SECRET. You cannot retrieve the secret later.
-   - Note the TSG_ID from tenant details (Common Services → Tenant Management → select tenant)
-
-   The SA is automatically scoped to the TSG they're managing.
-
-   **Known Issue (as of March 2026):** Custom roles with Model Security permissions (`ai_ms_pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`) return HTTP 403 on all AIRS API endpoints, even when permissions are correctly enabled. Only the **Superuser** role works. This is a post-GA RBAC bug. Use this as a teaching moment:
-   - The granular IAM *design* is there (good architecture)
-   - The *enforcement* has a bug (real-world reality)
+   **Known Issue (as of March 2026):** Custom roles with AI Model Scanning permissions return HTTP 403 on all AIRS API endpoints, even though the UI exposes granular permissions (`ai_ms.pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`, etc.). Only the **Superuser** role works reliably. This is a post-GA RBAC bug. Use as a teaching moment:
+   - The granular IAM *design* is there (good architecture — Hub shows 7+ fine-grained permissions)
+   - The *enforcement* has a bug (real-world reality of a product that just went GA)
    - Use Superuser for POCs/labs, plan for custom roles once the fix ships
    - If a customer hits this, flag it with your SE
 
-   If Model Security is still provisioning, skip to step 6 and come back for this step later.
+   If Model Security is still provisioning, skip to step 6 and come back later.
 
 5. **Set credentials via .env and GitHub secrets.**
    Guide the student to add values to `.env` (copy from `.env.example` if needed). Then set GitHub secrets:
    ```
-   REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
+   REPO=$(git remote get-url origin | sed 's|.*github.com/||;s|\.git$||')
    source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
    source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R "$REPO"
    source .env && echo "$TSG_ID" | gh secret set TSG_ID -R "$REPO"
@@ -436,11 +437,11 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
 ### Hints
 
-**Hint 1 (Concept):** AI Model Security is a separate capability from the AIRS Runtime API you used in the n8n lab. It requires its own deployment profile — think of it like enabling a new feature module on your existing platform tenant. The deployment profile is how licensing and feature activation work across all Prisma AIRS products.
+**Hint 1 (Concept):** AI Model Security is a separate capability that requires its own deployment profile — think of it like enabling a new feature module on your existing platform tenant. The deployment profile is how licensing and feature activation work across all Prisma AIRS products.
 
-**Hint 2 (Approach):** The key decision is associating to your EXISTING tenant, not creating a new one. If you create a new tenant, you'll have orphaned SCM instances and wasted credits. Find your TSG name from the n8n lab first.
+**Hint 2 (Approach):** If you have a TSG from a previous lab, use it — creating a new one orphans SCM instances and wastes credits. If you don't have one, create it first at Hub → Tenant Management before the deployment profile.
 
-**Hint 3 (Specific):** In CSP: Products → Software/Cloud NGFW Credits → Create Deployment Profile → Prisma AIRS → Model Security. Then Finish Setup → Hub → select your existing tenant. For credentials: Hub → Common Services → Identity & Access → Access Management → select tenant → create Service Account with **Superuser** role (custom roles have a known RBAC bug as of March 2026) → download credentials immediately.
+**Hint 3 (Specific):** Create TSG (if needed) → CSP: deployment profile (Prisma AIRS → Model Security) → Finish Setup → associate to TSG → Hub IAM: create SA with Superuser role → download credentials. Techdocs have the detailed steps for each.
 
 ---
 
