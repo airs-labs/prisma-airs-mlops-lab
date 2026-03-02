@@ -67,51 +67,54 @@ Two ways to verify:
 
 IAM for AIRS is managed through **Hub → Common Services → Identity & Access**, NOT through SCM Settings. AIRS has granular IAM — highlight this to students as a selling point for enterprise customers.
 
-### Step 4a: Create a Custom Role
+### Step 4a: Create Service Account
 
 1. Navigate to **Hub → Common Services → Identity & Access → Access Management**
 2. Select the tenant (e.g., `syoungberg-api`)
-3. Go to the **Roles** tab → **Custom Roles**
-4. Click to create a new role
-   - **Name:** e.g., `model-security-scanner`
-   - **Description:** e.g., `Scanning role for MLOps pipeline`
-5. Locate **AI Model Security** in the service list and enable it
-6. For the lab, enable all Model Security permissions:
-   - `ai_ms_pypi_auth` — required for SDK authentication
-   - `ai_ms.scans` — required to submit and read scans
-   - `ai_ms.security_groups` — required for managing security groups
-7. Save the role
-
-**Teaching point:** AIRS has really granular IAM options through Hub. In a real deployment, you'd create different roles for different personas — a CI/CD scanner role (scans only), a security admin role (security groups + policy), a viewer role (read-only dashboards). This maps to enterprise RBAC patterns.
-
-### Step 4b: Create Service Account
-
-The custom role must exist BEFORE creating the SA — you assign the role during SA creation.
-
-1. Still in **Hub → Common Services → Identity & Access → Access Management**
-2. Select the tenant → **Service Accounts** section
-3. Create a new service account:
+3. Select the tenant → **Service Accounts** section
+4. Create a new service account:
    - **Name:** Descriptive (e.g., `mlops-lab-scanner`)
-   - **Assign Role:** Select the custom role created in Step 4a
-4. **Download the credentials immediately** — contains CLIENT_ID and CLIENT_SECRET
+   - **Assign Role:** **Superuser** (see Known Issue below)
+5. **Download the credentials immediately** — contains CLIENT_ID and CLIENT_SECRET
    - **You cannot retrieve the secret later.** If lost, you must create a new SA.
-5. Note the **TSG_ID** from the tenant details (Common Services → Tenant Management → select tenant → TSG ID shown at top)
+6. Note the **TSG_ID** from the tenant details (Common Services → Tenant Management → select tenant → TSG ID shown at top)
 
 The SA is automatically scoped to the TSG you're managing when you create it.
 
-### Least Privilege Note
+### Known Issue: Custom Roles Return 403 (as of March 2026)
 
-The scanning service account should have the permissions needed for the lab:
+**Bug:** Custom roles with Model Security permissions (`ai_ms_pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`) return HTTP 403 "Access denied" on all AIRS API endpoints, even when the correct permissions are enabled. Only the **Superuser** built-in role works reliably.
+
+This is a known RBAC issue that was supposed to be fixed with the Model Security GA release. Until it's resolved, use **Superuser** for the lab SA.
+
+**Teaching point for students:** This is a real-world gotcha. AIRS has granular IAM options through Hub — in theory, you'd create different roles for different personas (CI/CD scanner, security admin, viewer). The granularity exists in the UI, but the enforcement has a bug. When talking to customers about AIRS RBAC:
+- The *design* supports least-privilege — that's the right architecture
+- The *implementation* is still maturing post-GA — flag this with your SE if a customer hits it
+- Use Superuser for POCs/labs, plan for custom roles in production once the fix ships
+
+### How PyPI Authentication Works
+
+The AIRS Model Security SDK is distributed via a private PyPI repository hosted on Google Artifact Registry. To install it, the pipeline needs an authenticated PyPI URL:
+
+1. **OAuth token**: SA credentials → `auth.apps.paloaltonetworks.com/oauth2/access_token` → bearer token
+2. **PyPI URL**: Bearer token → `api.sase.paloaltonetworks.com/aims/mgmt/v1/pypi/authenticate` → time-limited PyPI URL with embedded credentials
+3. **pip install**: `pip install --extra-index-url "$PYPI_URL" aimsdk` → installs from the private repo
+
+The `scripts/get-pypi-url.sh` script handles steps 1-2. The workflow uses the URL in step 3. If the SA role doesn't have `ai_ms_pypi_auth` permission (or the bug above triggers), step 2 fails with 403.
+
+### Least Privilege Note (Future State)
+
+When the RBAC bug is fixed, the ideal configuration for the lab is:
 - SDK authentication (`ai_ms_pypi_auth`) ✅
 - Submit and read scans (`ai_ms.scans`) ✅
 - Manage security groups (`ai_ms.security_groups`) ✅
 
-In a production deployment, you'd separate these further:
+In a production deployment, you'd separate further:
 - CI/CD pipeline SA: scan-only (`ai_ms_pypi_auth` + `ai_ms.scans`)
 - Security team: full admin (all permissions)
 - Auditors: read-only
 
-This is the principle students should carry to customer conversations: Hub IAM gives you the granularity to enforce separation of duties.
+Hub IAM gives you the granularity to enforce separation of duties — once the enforcement matches the UI.
 
 ## Relationship: Deployment Profiles ↔ TSGs ↔ SCM
 

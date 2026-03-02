@@ -391,28 +391,25 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
    **Important context for students:** "This TSG is your AIRS home base. You'll use it across all the AIRS labs — model security, red team, runtime. Think of it as your tenant for the entire learning path."
 
-4. **Create custom role and service account for Model Security scanning.** (Hub UI — student does this themselves)
-   IAM for AIRS is managed through Hub, not SCM. Emphasize that AIRS has granular IAM options — this is a selling point for enterprise customers.
+4. **Create service account for Model Security scanning.** (Hub UI — student does this themselves)
+   IAM for AIRS is managed through Hub, not SCM. Mention that AIRS has granular IAM options through custom roles — but there's a known bug (see below).
 
    Once Model Security is activated (may need to wait if new TSG):
 
-   **Step A — Create a custom role first:**
    - Hub → Common Services → Identity & Access → Access Management
-   - Select their tenant → Roles tab → Custom Roles → Create new
-   - Name: e.g., `model-security-scanner`
-   - Locate **AI Model Security** in the service list and enable it
-   - Enable all Model Security permissions for the lab: `ai_ms_pypi_auth` (SDK auth), `ai_ms.scans` (scan operations), `ai_ms.security_groups` (security group management)
-   - Save the role
-
-   **Step B — Create a service account with that role:**
-   - Still in Hub → Identity & Access → Access Management
    - Select their tenant → Service Accounts → Create new
    - Name: e.g., `mlops-lab-scanner`
-   - Assign the custom role from Step A
+   - **Assign Role: Superuser** (see Known Issue below)
    - **Download the credentials immediately** — contains CLIENT_ID and CLIENT_SECRET. You cannot retrieve the secret later.
    - Note the TSG_ID from tenant details (Common Services → Tenant Management → select tenant)
 
    The SA is automatically scoped to the TSG they're managing.
+
+   **Known Issue (as of March 2026):** Custom roles with Model Security permissions (`ai_ms_pypi_auth`, `ai_ms.scans`, `ai_ms.security_groups`) return HTTP 403 on all AIRS API endpoints, even when permissions are correctly enabled. Only the **Superuser** role works. This is a post-GA RBAC bug. Use this as a teaching moment:
+   - The granular IAM *design* is there (good architecture)
+   - The *enforcement* has a bug (real-world reality)
+   - Use Superuser for POCs/labs, plan for custom roles once the fix ships
+   - If a customer hits this, flag it with your SE
 
    If Model Security is still provisioning, skip to step 6 and come back for this step later.
 
@@ -443,7 +440,7 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
 
 **Hint 2 (Approach):** The key decision is associating to your EXISTING tenant, not creating a new one. If you create a new tenant, you'll have orphaned SCM instances and wasted credits. Find your TSG name from the n8n lab first.
 
-**Hint 3 (Specific):** In CSP: Products → Software/Cloud NGFW Credits → Create Deployment Profile → Prisma AIRS → Model Security. Then Finish Setup → Hub → select your existing tenant. For credentials: Hub → Common Services → Identity & Access → Access Management → select tenant → create Custom Role (enable AI Model Security permissions) → create Service Account with that role → download credentials immediately.
+**Hint 3 (Specific):** In CSP: Products → Software/Cloud NGFW Credits → Create Deployment Profile → Prisma AIRS → Model Security. Then Finish Setup → Hub → select your existing tenant. For credentials: Hub → Common Services → Identity & Access → Access Management → select tenant → create Service Account with **Superuser** role (custom roles have a known RBAC bug as of March 2026) → download credentials immediately.
 
 ---
 
