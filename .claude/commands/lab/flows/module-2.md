@@ -7,7 +7,7 @@
 
 | Source | Points | When |
 |--------|--------|------|
-| Engage: warn-only reasoning (2.1) | 1 | During flow |
+| Engage: skip_scan design (2.1) | 1 | During flow |
 | Engage: LoRA merge rationale (2.3) | 1 | During flow |
 | Technical: Training output in GCS | 2 | During verify |
 | Quiz Q1: LoRA vs merged model | 3 | During verify |
@@ -27,23 +27,22 @@ Use `/explore training-pipeline` in Claude Code for guided exploration.
 Study `gate-1-train.yaml` and `train_advisor.py`. You should be able to answer:
 
 - What triggers the workflow? What inputs can you customize?
-- What does the AIRS scan step do? (Note: on `lab-start`, this scan is present but scans are not yet required to pass)
 - How does the training script get to the Vertex AI worker? (Hint: GCS FUSE)
 - What base model does it start from? What dataset does it train on?
 - What is the LoRA configuration? How many parameters does it add?
 - Where do the trained artifacts end up?
 
-Do not proceed to the next challenge until you can explain the pipeline to someone else.
+**About the scan step:** The workflow has a scan job (`gate1-scan-base-model`) that can scan the base model before training. Notice it also has a `skip_scan` input. For Modules 2-3, we're skipping the scan — our focus is understanding the pipeline mechanics first. You'll configure AIRS scanning in Module 4 and add it to the pipeline in Module 5. Point out the scan step to the student so they know it exists, but don't run it yet.
 
-> **ENGAGE**: "The scan step in Gate 1 uses --warn-only. Why do you think it doesn't block at this stage?"
+> **ENGAGE**: "The workflow has a `skip_scan` input that lets you bypass the security scan. Why would you design a pipeline with a security step that can be skipped?"
 > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: At the start of the lab, scanning is observational — you want to see what would be flagged without stopping the pipeline. Blocking enforcement comes in Module 5.)
+> (Answer: Incremental adoption — you don't want security tooling to block the entire pipeline before it's configured. Also useful for pre-approved models, emergency hotfixes, or when scanning infrastructure isn't ready yet. In production, you'd restrict who can set skip_scan via branch protection or required reviewers.)
 
 ### Hints
 
-**Hint 1 (Concept):** Gate 1 has two phases: a security scan of the base model (optional), and a Vertex AI CustomJob that runs the training script on a GPU. The training script uses the PEFT library for LoRA fine-tuning -- it freezes the base model weights and trains a small adapter on top.
+**Hint 1 (Concept):** Gate 1 has two phases: an optional security scan of the base model (skipped for now), and a Vertex AI CustomJob that runs the training script on a GPU. The training script uses the PEFT library for LoRA fine-tuning -- it freezes the base model weights and trains a small adapter on top.
 
-**Hint 2 (Approach):** Read `.github/workflows/gate-1-train.yaml` top to bottom. Trace the data flow: inputs at the top define what gets trained, the scan job checks the base model, the training job launches on Vertex AI, and artifacts land in GCS. Then read `model-tuning/train_advisor.py` for the training logic.
+**Hint 2 (Approach):** Read `.github/workflows/gate-1-train.yaml` top to bottom. Trace the data flow: inputs at the top define what gets trained, the training job launches on Vertex AI, and artifacts land in GCS. Notice the scan job exists but we're using `skip_scan=true` for now. Then read `model-tuning/train_advisor.py` for the training logic.
 
 **Hint 3 (Specific):** Ask Claude:
 
@@ -53,10 +52,10 @@ Do not proceed to the next challenge until you can explain the pipeline to someo
 
 Key things to look for in the workflow:
 - `workflow_dispatch` inputs (line 8-57) -- these are your customization points
-- The scan step uses `airs/scan_model.py` with `--warn-only`
+- The scan step exists but uses `skip_scan` input (we skip it for now — Module 5 enables it)
 - Training uses `pytorch-gpu.2-4.py310:latest` container with GCS FUSE
 - The `--no-4bit` flag avoids bitsandbytes compatibility issues
-- Output goes to `gs://your-model-bucket/raw-models/{output_name}/{run_id}/`
+- Output goes to the staging bucket under `raw-models/{output_name}/{run_id}/`
 
 ---
 
@@ -70,6 +69,8 @@ Now that you understand the pipeline, run it. Choose your own configuration and 
 - **output_name**: Pick a name for your model (e.g., your name + "advisor")
 - **max_steps**: 50 for a quick test (~15 min), 200+ for better quality (~30-45 min)
 - **machine_type**: `a2-highgpu-1g` (A100, fastest) or `g2-standard-12` (L4, cost-effective)
+
+**Important:** Use `skip_scan=true` when triggering. We're focusing on the training pipeline mechanics in this module. AIRS scanning gets configured in Module 4 and integrated into the pipeline in Module 5. For now, you're building without the security layer — and in Module 3 you'll see exactly what that means when you deploy with zero checks.
 
 Trigger the Gate 1 workflow via GitHub Actions. Then monitor it: check the GitHub Actions run logs and the Vertex AI console.
 
@@ -88,7 +89,8 @@ gh workflow run "Gate 1: Train Model" \
   -f dataset="ethanolivertroy/nist-cybersecurity-training" \
   -f output_name="my-security-advisor" \
   -f max_steps="50" \
-  -f machine_type="a2-highgpu-1g"
+  -f machine_type="a2-highgpu-1g" \
+  -f skip_scan="true"
 ```
 
 Monitor progress:
