@@ -32,11 +32,11 @@ console = Console()
 # Or pass UUIDs directly via --security-group flag (no code changes needed).
 # See Module 4.2 for how to find your UUIDs.
 SECURITY_GROUPS = {
-    "local":       (UUID("00000000-0000-0000-0000-000000000001"), "LOCAL"),
-    "gcs-default": (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),
-    "hf":          (UUID("00000000-0000-0000-0000-000000000003"), "HUGGING_FACE"),
-    "warn":        (UUID("00000000-0000-0000-0000-000000000004"), "GCS"),
-    "block":       (UUID("00000000-0000-0000-0000-000000000005"), "GCS"),
+    "local":       (UUID("a7ae2286-5a2d-4dc6-9e98-7055916725cc"), "LOCAL"),
+    "gcs-default": (UUID("c472b2b9-5823-47cd-bda1-8a83f3b536b6"), "GCS"),
+    "hf":          (UUID("0ef6dadc-70ff-4fab-b4e5-854046bb7a56"), "HUGGING_FACE"),
+    "warn":        (UUID("c472b2b9-5823-47cd-bda1-8a83f3b536b6"), "GCS"),
+    "block":       (UUID("c472b2b9-5823-47cd-bda1-8a83f3b536b6"), "GCS"),
 }
 
 # Default group per source type (used when --security-group is not specified)
