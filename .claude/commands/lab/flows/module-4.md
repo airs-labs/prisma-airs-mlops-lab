@@ -104,6 +104,16 @@ The student should be able to:
    - The pydantic deprecation warning on every invocation is cosmetic — ignore it.
    - Check: Can the student explain what happens locally vs what goes to the cloud during a scan? Why does this matter for customers with IP-sensitive models?
 
+4. **Explore the SDK Source — How Source Type Routing Works**
+   - Core idea: The SDK is installed locally — students can read the actual source code to see how it works. This is a great exercise in understanding a product by reading its internals.
+   - Show: Read and display the SDK source files together with the student:
+     - `.venv/lib/python3.12/site-packages/model_security_client/api.py` — find the three processing methods: `_process_local_scan()`, `_process_cloud_storage_scan()`, `_process_huggingface_scan()`. Each handles a different source type differently.
+     - `.venv/lib/python3.12/site-packages/airs_schemas/constants.py` — find `SourceType.from_uri()` to see how the SDK detects source type from the URI (`gs://` → GCS, `s3://` → S3, HF URL → HUGGING_FACE, local path → LOCAL).
+     - `.venv/lib/python3.12/site-packages/model_security_client/downloaders/` — show the directory listing. There's a dedicated downloader for each cloud source (gcs_downloader.py, s3_downloader.py, etc.).
+   - Key discovery: HuggingFace is the outlier — `_process_huggingface_scan()` sets `scan_details: None` and `scan_origin: "HUGGING_FACE"`. It does NOT scan locally. Everything else downloads and scans locally with `scan_origin: "MODEL_SECURITY_SDK"`.
+   - Connect to security groups: This is WHY source types matter for security groups — HuggingFace has governance rules (license, org verification) that need model card metadata. Local/GCS/S3 don't have that metadata, so they only get threat detection rules.
+   - Check: Can the student trace the code path for a GCS scan vs an HF scan? Can they explain why HuggingFace security groups have 11 rules but Local groups have only 7?
+
 ---
 
 ## Challenge 4.3: Your First Scans

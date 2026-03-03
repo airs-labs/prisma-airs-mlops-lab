@@ -106,6 +106,45 @@ PENDING = Scan in progress
 - CLI commands: `model-security scan`, `model-security list-scans`, `model-security get-scan`
 - SDK env vars: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `TSG_ID`, `MODEL_SECURITY_API_ENDPOINT`
 
+## SDK Internals: How Source Type Routing Works
+
+The SDK has three distinct code paths based on source type (visible in the SDK source at `model_security_client/api.py`):
+
+**`_process_local_scan()`** — Local files
+- Reads files directly from disk
+- Runs the scanner locally (`_scan_model()`)
+- Submits results with `scan_origin: "MODEL_SECURITY_SDK"` and full `scan_details`
+
+**`_process_cloud_storage_scan()`** — GCS, S3, Azure, Artifactory, GitLab
+- Uses source-specific downloaders (`downloaders/gcs_downloader.py`, `s3_downloader.py`, etc.)
+- Downloads model to `~/.cache/airsms/{source}/` using customer's cloud credentials
+- Scans locally with the same scanner engine as local scans
+- Submits results with `scan_origin: "MODEL_SECURITY_SDK"` and full `scan_details`
+- Optionally cleans up downloaded files
+
+**`_process_huggingface_scan()`** — HuggingFace public models
+- Does NOT download or scan locally
+- Sends only the URI, file patterns, and security group UUID to the AIRS backend
+- Sets `scan_origin: "HUGGING_FACE"` and `scan_details: None`
+- The backend handles the download and scanning server-side
+- Results come back with a different `scanner_version` than local scans
+
+Source type detection happens in `airs_schemas/constants.py` via `SourceType.from_uri()`:
+- `gs://` → GCS, `s3://` → S3, `az://` → Azure
+- `huggingface.co` URLs → HUGGING_FACE
+- Everything else (local paths) → LOCAL
+
+### Why Source Types Matter for Security Groups
+
+Source type binding on security groups is NOT about where scanning happens — it's about **what rules can apply**:
+
+| Source | Available Rules | Why |
+|--------|----------------|-----|
+| LOCAL, GCS, S3, Azure | 7 threat detection rules only | Raw files — no model card, no license metadata, no org info |
+| HUGGING_FACE | 11 rules (7 threat + 4 governance) | HF provides metadata: licenses, org verification, model cards |
+
+HuggingFace governance rules (License Exists, License Is Valid, Org Verified, Org Blocked, Model Blocked) require metadata that only HuggingFace provides. You can't scan a GCS file with an HF security group because the governance rules would have no metadata to evaluate.
+
 ## API Surfaces
 
 The SDK exposes CLI commands (`scan`, `list-scans`, `get-scan`) and a Python API via `ModelSecurityAPIClient`. The SDK's `get-scan` only returns aggregate summary (rules_passed/failed counts), NOT per-rule details.
