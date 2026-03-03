@@ -248,6 +248,35 @@ When any workflow fails with `PERMISSION_DENIED`, check IAM first:
 
 **Fix pattern:** Identify the SA from the error, grant the missing role, wait 2 min for propagation, retry the workflow.
 
+### Upstream Remote — READ ONLY
+
+Student repos have two remotes: `origin` (their private repo) and `upstream` (the shared template). The `upstream` remote is **read-only** — it exists solely to pull instructor hotfixes via `git fetch upstream`.
+
+**NEVER use `upstream` for:**
+- `gh workflow run` — triggers workflows on the template, not the student's repo
+- `gh secret set` — overwrites secrets on the shared template (affects all students!)
+- `gh run view/list` — shows runs from the wrong repo
+- Any `gh` command that writes or triggers
+
+**Safeguard:** Module 0 runs `gh repo set-default origin` to pin `gh` to the student's repo. If you ever see `gh` targeting the template repo (e.g., wrong project in logs, unexpected secrets), check `gh repo set-default --view` and fix it. When in doubt, always pass `-R` with the student's repo explicitly.
+
+### Workflow Branch Targeting — ALWAYS use `-r`
+
+`gh workflow run` defaults to the repo's **default branch** (usually `main`), NOT the current working branch. Students work on the `lab` branch, which has different workflow definitions (e.g., scanning steps removed in early modules). Running workflows without `-r lab` will execute the `main` branch version — which may have AIRS scanning steps that fail without credentials.
+
+**Rule: ALWAYS pass `-r` with the current branch when triggering workflows:**
+```bash
+BRANCH=$(git branch --show-current)
+gh workflow run "Gate 1: Train Model" -r "$BRANCH" -f ...
+```
+
+**Why this matters:**
+- `main` branch workflows have full AIRS scanning steps that require credentials (Modules 4+)
+- `lab` branch workflows have scanning stripped out for early modules
+- Running the wrong branch version causes confusing failures (e.g., "Install AIRS SDK" failing on `MODEL_SECURITY_CLIENT_ID` not set)
+
+**Diagnostic:** If a workflow fails unexpectedly, check which branch it ran on in the GitHub Actions UI (shown at the top of the run page). If it says `main` when you expected `lab`, re-trigger with `-r lab`.
+
 ### Security Group UUIDs
 
 The `airs/scan_model.py` file has a `SECURITY_GROUPS` dict. If it contains placeholder UUIDs (starting with `00000000`), the scan will fail with an explicit error message. Students must either:

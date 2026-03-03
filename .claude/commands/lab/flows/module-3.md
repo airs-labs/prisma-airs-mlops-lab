@@ -79,24 +79,28 @@ Use `/explore deployment-pipeline` in Claude Code for guided exploration.
 
 **Step 2: Trigger Gate 3** -- This deploys the merged model to a Vertex AI endpoint (GPU) and deploys the application to Cloud Run.
 
+**Naming convention:** There's an important distinction between the `output_name` the student chose in Gate 1 (their training experiment name, e.g., "berg-security-advisor") and the `model_name` used in Gate 2. Gate 2's `model_name` is the **application model identity** — it must be `cloud-security-advisor` because that's the name Gate 3 and the deployment infrastructure expect. Think of it like this: you can name your training experiments whatever you want, but when you publish for deployment, the model must match the application's expected identity. Guide the student through this distinction — it's a real-world pipeline convention.
+
 ### Hints
 
 **Hint 1 (Concept):** Gate 2 takes the raw training output (adapter + base model) and produces a single merged model in safetensors format. Gate 3 takes the merged model, deploys it on a Vertex AI endpoint with a vLLM serving container, and deploys the Cloud Run application that talks to it. Deployment involves GPU provisioning, which takes 15-30 minutes.
 
-**Hint 2 (Approach):** Use `gh workflow run` to trigger each gate. You will need to provide the correct input parameters -- particularly the `model_source` path from your Gate 1 training output. Check the workflow files or ask Claude what inputs each gate expects.
+**Hint 2 (Approach):** Use `gh workflow run` to trigger each gate. You will need to provide the correct input parameters -- particularly the `model_source` path from your Gate 1 training output. Check the workflow files or ask Claude what inputs each gate expects. **Important:** The `model_name` in Gate 2 must be `cloud-security-advisor` — this is the application model name that Gate 3's deployment expects, not the student's personal experiment name from Gate 1.
 
 **Hint 3 (Specific):** Trigger Gate 2 (merge + publish):
 ```bash
 # Use the adapter path from your Gate 1 output
-gh workflow run "Gate 2: Publish Model" \
+# model_name MUST be "cloud-security-advisor" — Gate 3 deploys this application name
+BRANCH=$(git branch --show-current)
+gh workflow run "Gate 2: Publish Model" -r "$BRANCH" \
   -f model_source="gs://your-model-bucket/raw-models/my-security-advisor/<run-id>" \
   -f base_model="Qwen/Qwen2.5-3B-Instruct" \
-  -f model_name="my-security-advisor"
+  -f model_name="cloud-security-advisor"
 ```
 
 Wait for Gate 2 to complete, then trigger Gate 3 (deploy):
 ```bash
-gh workflow run "Gate 3: Deploy" \
+gh workflow run "Gate 3: Deploy" -r "$BRANCH" \
   -f model_version="v1.0.0" \
   -f target_env="staging"
 ```

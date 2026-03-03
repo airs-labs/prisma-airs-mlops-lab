@@ -115,7 +115,14 @@ This challenge has 3 interactive beats. Do NOT rush through them — pause for t
     ```
     After running, explain: "The force-push was safe because this is a fresh repo with no real work yet. Now your repo shares git history with the template."
 
-    Step 3 — Verify and show results:
+    Step 3 — Set `gh` CLI default repo to `origin`:
+    ```
+    gh repo set-default origin
+    ```
+    **CRITICAL:** This prevents `gh` from accidentally targeting the upstream template repo when running `gh workflow run`, `gh secret set`, `gh run view`, etc. Without this, `gh` may silently pick `upstream` — causing workflows to trigger on the wrong repo and secrets to be written to the shared template.
+
+    Step 4 — Verify and show results:
+    - Run `gh repo set-default --view` and confirm it shows the student's repo (not the template).
     - Run `git remote -v` and show both `origin` (their private repo) and `upstream` (the template).
     - Run `git log --oneline -5` and show the shared commits (not just 'Initialize lab').
 
