@@ -1,6 +1,7 @@
 {
   "student_id": "",
-  "track": "",
+  "scenario": "",
+  "lab_id": "prisma-airs-mlops-lab",
   "current_module": 0,
   "current_challenge": "",
   "blockers": [],

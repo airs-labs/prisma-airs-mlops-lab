@@ -7,8 +7,8 @@
 
 | Source | Points | When |
 |--------|--------|------|
-| Engage: Decoupled architecture (3.1) | 1 | During flow |
-| Engage: Security gap (3.4) | 1 | During flow |
+| Engage: Architecture understanding (3.1) | 1 | During flow |
+| Engage: Security gap awareness (3.4) | 1 | During flow |
 | Technical: App deployed | 2 | During verify |
 | Technical: App responds | 2 | During verify |
 | Quiz Q1: Decoupled architecture | 3 | During verify |
@@ -20,190 +20,198 @@
 
 ## Challenge 3.1: Architecture First
 
-### Flow
+### Learning Objectives
 
-You would not push a button labeled "Deploy to Production" without understanding what happens. Before you trigger anything, build a complete mental model of the inference architecture.
+The student should be able to:
+- Describe the decoupled inference architecture and articulate why model and app are separated
+- Trace a request from browser through Cloud Run to Vertex AI vLLM and back
+- Explain rawPredict, the model="openapi" naming, and chat template construction
 
-Use `/explore serving-architecture` in Claude Code for guided exploration.
+### Key Concepts
 
-Answer these questions:
-- Why is the model NOT in the Cloud Run container? Where does it live?
-- What is vLLM and why does this project use it for serving?
-- What is `rawPredict`? How does Vertex AI route requests to the vLLM container?
-- Why does the request payload use `model: "openapi"` instead of the actual model name?
-- What is the Qwen2 chat template? Why does the app format messages with `<|im_start|>` tokens?
-- Why does the app use `/v1/completions` instead of `/v1/chat/completions`?
+Teach these BEFORE the student takes action. One at a time, wait for response.
 
-Draw (or describe to Claude) the full request flow: User browser --> Cloud Run app --> Vertex AI rawPredict --> vLLM container --> GPU inference --> response back.
+1. **Decoupled Inference Architecture**
+   - Core idea: The model runs on expensive GPU infrastructure (Vertex AI endpoint with vLLM). The application is a thin HTTP service on cheap CPU infrastructure (Cloud Run, 512MB RAM, no GPU). They communicate over an authenticated API. This separation lets you scale, update, and secure each component independently.
+   - Show: Read `Dockerfile` and display it inline. Ask the student what is NOT in this container — no model weights, no PyTorch, no GPU drivers. Then read `src/airs_mlops_lab/serving/server.py` and show the thin FastAPI app. Point out how little code is in the serving layer.
+   - Check: Can the student articulate the benefits of keeping model and app separate? (scaling, independent updates, security scanning insertion points, cost optimization)
 
-> **ENGAGE**: "Why is the model NOT in the Cloud Run container? What are the scaling implications of decoupling inference from the application?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Model needs GPU, app doesn't. Separating them allows independent scaling, updating, and security scanning.)
+2. **rawPredict and Model Naming**
+   - Core idea: Vertex AI's `rawPredict` API forwards requests directly to the vLLM container without interpretation. The Vertex AI vLLM launcher overrides the served model name to `"openapi"` — all requests must use this name regardless of the actual model. The Vertex AI vLLM build only exposes `/v1/completions` (not `/v1/chat/completions`), so the app must construct chat templates manually.
+   - Show: Read `src/airs_mlops_lab/serving/inference_client.py` and display the `chat()` method. Walk through: (1) the rawPredict URL construction, (2) the access token auth via `google.auth.default()`, (3) the chat template with `<|im_start|>` tokens (around lines 91-98), (4) why `model: "openapi"` is hardcoded.
+   - Check: Does the student understand the request flow? What breaks if you use the wrong model name? Why does the app format chat templates itself instead of using a chat endpoint?
 
-### Hints
+3. **Full Request Flow**
+   - Core idea: User browser → Cloud Run app (FastAPI) → Vertex AI rawPredict (access token auth) → vLLM container (GPU inference) → response propagates back. Authentication happens at the Cloud Run → Vertex AI boundary. Heavy compute happens only in the vLLM container.
+   - Show: [VISUAL] Generate a request flow diagram showing all components, protocols, and auth boundaries. Output to `lab/.visuals/m3-c1-request-flow.html`.
+   - Check: Have the student trace the full flow verbally. Where does authentication happen? Where does the heavy compute happen? Where would you insert a security scan?
 
-**Hint 1 (Concept):** This is a *decoupled* architecture. The model runs on GPU infrastructure (Vertex AI endpoint with vLLM), and the application runs on lightweight infrastructure (Cloud Run with 512MB RAM). They communicate over an authenticated HTTP API. This separation means you can scale, update, and secure each component independently.
+> **ENGAGE**: After completing all three concepts, probe the student's understanding of WHY this architecture matters for security. The key insight is that separating model from app creates natural gate points where AIRS can inspect artifacts.
+> Award 1 pt for meaningful engagement. Effort-based, not correctness.
 
-**Hint 2 (Approach):** Read three files to understand the architecture:
-1. `src/airs_mlops_lab/serving/inference_client.py` -- the client that calls Vertex AI
-2. `src/airs_mlops_lab/serving/server.py` -- the FastAPI application
-3. `Dockerfile` -- what is (and is not) in the container
+### Action
 
-Trace a request from the user to the model and back.
+No commands to run for this challenge. This is a comprehension challenge.
+The learning objectives are met through the Key Concepts checks above.
 
-**Hint 3 (Specific):** Ask Claude:
+### Debrief
 
-```
-"Read inference_client.py and trace a chat request from the chat() method all the way to the Vertex AI endpoint. Explain the rawPredict call, the chat template formatting, and why we use model='openapi'."
-```
+- This architecture is the standard pattern for enterprise ML deployments. The customer question that matters: "What scans happened between training and deployment?"
+- The decoupled design creates natural insertion points for security scanning — you can scan the model artifact before it reaches the GPU endpoint without touching the application layer.
+- Foreshadow: Right now, nothing stops a malicious model from being deployed. That changes in Module 5.
 
-Key architectural details:
-- The app container has NO model weights, NO PyTorch, NO GPU -- just FastAPI + httpx + google-auth
-- Auth uses `google.auth.default()` for access tokens (not identity tokens)
-- Vertex AI's vLLM launcher overrides the served model name to "openapi" -- you must match this in requests
-- The Vertex AI vLLM build only exposes `/v1/completions`, not `/v1/chat/completions` -- so the app constructs the chat template manually in the prompt
+### Deep Dive
+
+For `/lab:explore`: `lab/topics/module-3/serving-architecture.md`
+Covers additional depth on: chat template formatting details, why /v1/completions vs /v1/chat/completions, customer talking points.
 
 ---
 
 ## Challenge 3.2: Run the Pipeline
 
-### Flow
+### Learning Objectives
 
-Time to deploy. You will trigger Gate 2 (merge + publish) followed by Gate 3 (deploy endpoint + deploy app).
+The student should be able to:
+- Describe what Gate 2 (merge + publish) and Gate 3 (deploy) do
+- Trigger pipeline workflows and monitor their progress
+- Understand that the current pipeline has NO security checks (to be added in Module 5)
 
-**Important context:** On the `lab-start` branch, there are NO AIRS scans in Gate 2 and NO manifest verification in Gate 3. The pipeline currently runs without any security checks. You will add those in Module 5.
+### Key Concepts
 
-Use `/explore deployment-pipeline` in Claude Code for guided exploration.
+Teach these BEFORE triggering the workflows. One at a time, wait for response.
 
-**Step 1: Trigger Gate 2** -- This merges your LoRA adapter with the base model and publishes the merged model to GCS.
+1. **Gate 2: Merge and Publish**
+   - Core idea: Gate 2 takes the raw training output (LoRA adapter + base model reference) and produces a single merged model in safetensors format. The merge is simple matrix addition (CPU, no GPU needed). The merged model is published to GCS with a manifest tracking provenance.
+   - Show: Read `.github/workflows/gate-2-publish.yaml` and display the key steps — merge_adapter, publish to GCS, manifest update. Point out what is NOT there: no AIRS scan, no provenance verification. This is intentional on `lab-start` — the student adds security in Module 5.
+   - Check: Does the student understand what goes IN (adapter + base) and what comes OUT (merged safetensors + manifest)? Why is merge done on CPU?
 
-**Step 2: Trigger Gate 3** -- This deploys the merged model to a Vertex AI endpoint (GPU) and deploys the application to Cloud Run.
+2. **Gate 3: Deploy**
+   - Core idea: Gate 3 takes the published model from GCS and deploys it two ways: (1) a Vertex AI endpoint with a vLLM container on GPU for inference, and (2) a Cloud Run service for the application. GPU provisioning takes 15-30 minutes.
+   - Show: Read `.github/workflows/gate-3-deploy.yaml` and display the key steps — verify manifest, deploy endpoint, deploy app. Again, note the security gaps: manifest verification exists in the workflow but is not enforcing yet.
+   - Check: Can the student explain the two deployment targets (GPU endpoint + CPU app) and why they're separate? What does the 15-30 min wait come from?
 
-**Naming convention:** There's an important distinction between the `output_name` the student chose in Gate 1 (their training experiment name, e.g., "berg-security-advisor") and the `model_name` used in Gate 2. Gate 2's `model_name` is the **application model identity** — it must be `cloud-security-advisor` because that's the name Gate 3 and the deployment infrastructure expect. Think of it like this: you can name your training experiments whatever you want, but when you publish for deployment, the model must match the application's expected identity. Guide the student through this distinction — it's a real-world pipeline convention.
+**Naming convention:** There's an important distinction between the `output_name` the student chose in Gate 1 (their training experiment name) and the `model_name` used in Gate 2. Gate 2's `model_name` is the **application model identity** — it must be `cloud-security-advisor` because that's the name Gate 3 and the deployment infrastructure expect. Guide the student through this distinction.
 
-### Hints
+### Action
 
-**Hint 1 (Concept):** Gate 2 takes the raw training output (adapter + base model) and produces a single merged model in safetensors format. Gate 3 takes the merged model, deploys it on a Vertex AI endpoint with a vLLM serving container, and deploys the Cloud Run application that talks to it. Deployment involves GPU provisioning, which takes 15-30 minutes.
+Now that the student understands what will happen, execute the pipeline.
 
-**Hint 2 (Approach):** Use `gh workflow run` to trigger each gate. You will need to provide the correct input parameters -- particularly the `model_source` path from your Gate 1 training output. Check the workflow files or ask Claude what inputs each gate expects. **Important:** The `model_name` in Gate 2 must be `cloud-security-advisor` — this is the application model name that Gate 3's deployment expects, not the student's personal experiment name from Gate 1.
+1. **Trigger Gate 2** — Merge and publish the trained model:
+   ```bash
+   # model_name MUST be "cloud-security-advisor" — Gate 3 deploys this application name
+   BRANCH=$(git branch --show-current)
+   gh workflow run "Gate 2: Publish Model" -r "$BRANCH" \
+     -f model_source="gs://<bucket>/raw-models/<model-name>/<run-id>" \
+     -f base_model="Qwen/Qwen2.5-3B-Instruct" \
+     -f model_name="cloud-security-advisor"
+   ```
+   Use the adapter path from the student's Gate 1 training output (stored in progress.json or from `gs://` listing).
 
-**Hint 3 (Specific):** Trigger Gate 2 (merge + publish):
-```bash
-# Use the adapter path from your Gate 1 output
-# model_name MUST be "cloud-security-advisor" — Gate 3 deploys this application name
-BRANCH=$(git branch --show-current)
-gh workflow run "Gate 2: Publish Model" -r "$BRANCH" \
-  -f model_source="gs://your-model-bucket/raw-models/my-security-advisor/<run-id>" \
-  -f base_model="Qwen/Qwen2.5-3B-Instruct" \
-  -f model_name="cloud-security-advisor"
-```
+2. **Monitor Gate 2:**
+   ```bash
+   gh run list --limit 5
+   gh run watch
+   ```
 
-Wait for Gate 2 to complete, then trigger Gate 3 (deploy):
-```bash
-gh workflow run "Gate 3: Deploy" -r "$BRANCH" \
-  -f model_version="v1.0.0" \
-  -f target_env="staging"
-```
+3. **Trigger Gate 3** — Deploy the merged model:
+   ```bash
+   gh workflow run "Gate 3: Deploy" -r "$BRANCH" \
+     -f model_version="v1.0.0" \
+     -f target_env="staging"
+   ```
 
-Monitor both:
-```bash
-gh run list --limit 5
-gh run watch
-```
+4. **Monitor Gate 3** — This takes 15-30 minutes (GPU provisioning). Use this wait time to discuss the deployment architecture or let the student explore topics.
 
-Gate 3 deployment takes 15-30 minutes (GPU provisioning + model loading). Be patient.
+### Debrief
+
+- The pipeline is now running. While waiting for Gate 3, revisit the artifact flow: where does the model physically live at each stage?
+- Note: On `lab-start`, there are NO AIRS scans in Gate 2 and NO manifest enforcement in Gate 3. The student will add these in Module 5.
+- The customer insight: most organizations have this exact blind spot — models flow from training to production with zero security checks.
+
+### Deep Dive
+
+For `/lab:explore`: `lab/topics/module-3/deployment-pipeline.md`
+Covers additional depth on: pipeline chaining (auto_chain), app-only deploys, manifest provenance system.
 
 ---
 
 ## Challenge 3.3: Test Your App
 
-### Flow
+### Learning Objectives
 
-Once deployment is complete, your cybersecurity advisor is live. Time to talk to it.
+The student should be able to:
+- Access and interact with their deployed application
+- Observe fine-tuning effects and relate response quality to training parameters
+- Identify how the thin client architecture works in practice
 
-Find your Cloud Run URL from the Gate 3 deployment output (or from the GCP console). Open it in a browser and start a conversation.
+### Key Concepts
 
-Test it with questions like:
-- "What are the key components of the NIST Cybersecurity Framework?"
-- "How should an organization respond to a ransomware attack?"
-- "Explain zero trust architecture in simple terms."
-- "What is the difference between authentication and authorization?"
+1. **Fine-Tuning Quality and Training Steps**
+   - Core idea: With 50 training steps, the model will show some cybersecurity domain influence but may still be generic in many areas. With 200+ steps, specialization becomes more pronounced. This is the fundamental tradeoff between training cost and model quality. The student should observe this firsthand.
+   - Show: After deployment completes, get the Cloud Run URL:
+     ```bash
+     gcloud run services describe cloud-security-advisor --region=us-central1 --format='value(status.url)'
+     ```
+     Open it in the browser. Have the student interact with the chat interface.
+   - Check: Can the student tell the difference between their fine-tuned model and a generic chatbot? What cybersecurity knowledge is present? What is missing?
 
-Observe:
-- Does the model respond with cybersecurity domain knowledge?
-- Can you tell the difference between the fine-tuned model and a generic chatbot?
-- How fast are the responses? (This relates to vLLM batching and GPU performance)
-- Are there any obvious quality issues? (Short training runs produce lower quality)
+### Action
 
-### Hints
+1. Get the Cloud Run URL and open in browser
+2. Test with domain-specific questions:
+   - "What are the key components of the NIST Cybersecurity Framework?"
+   - "How should an organization respond to a ransomware attack?"
+   - "Explain zero trust architecture in simple terms."
+3. Test with out-of-domain questions to see where fine-tuning boundaries are
+4. If the app returns errors, troubleshoot:
+   - Check Vertex AI endpoint status in console
+   - Verify Cloud Run SA has `roles/aiplatform.user`
+   - Check logs: `gcloud run services logs read cloud-security-advisor --region=us-central1`
 
-**Hint 1 (Concept):** The quality of responses depends on how many training steps you ran. With 50 steps, you will see some NIST influence but the model may still be generic in many areas. With 200+ steps, the cybersecurity specialization becomes more pronounced. This is the tradeoff between training cost and model quality.
+### Debrief
 
-**Hint 2 (Approach):** Get the Cloud Run URL from the deployment output or from GCP:
-```bash
-gcloud run services describe cloud-security-advisor --region=us-central1 --format='value(status.url)'
-```
+- Discuss what the student observed about model quality. Connect training steps to response quality.
+- The model is live. Anyone with the URL can talk to it. This is the deployment reality — and right now there are no security controls on what model is serving.
 
-Open it in a browser. The app has a chat interface. You can also test from the command line using curl or the test script.
+### Deep Dive
 
-**Hint 3 (Specific):** Browser: Navigate to your Cloud Run URL and use the chat UI.
-
-CLI testing:
-```bash
-# Using the test script
-python scripts/test_inference.py --url <your-cloud-run-url>
-
-# Or direct curl
-curl -X POST <your-cloud-run-url>/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "What is the NIST Cybersecurity Framework?"}'
-```
-
-If the app returns errors, check:
-1. Is the Vertex AI endpoint fully deployed? (Check the console)
-2. Does the Cloud Run service account have `roles/aiplatform.user`?
-3. Check Cloud Run logs: `gcloud run services logs read cloud-security-advisor --region=us-central1`
+None — this challenge is experiential. The learning happens through interaction.
 
 ---
 
-## Challenge 3.4: Explain the Architecture
+## Challenge 3.4: Explain the Architecture (Synthesis)
 
-### Flow
+### Learning Objectives
 
-This is the capstone challenge for Act 1. You have built a complete ML pipeline: train, merge, publish, deploy. Now prove you understand it.
+The student should be able to:
+- Articulate the full architecture end-to-end: where the model lives, where the app lives, how they communicate
+- Trace artifact flow through all three gates
+- Identify the critical security gap: no scans between training and deployment
 
-Describe (to Claude, to a partner, or in notes) the full architecture. Cover:
+### Key Concepts
 
-1. **Where is the model?** -- Not in the Cloud Run container. It is loaded on a Vertex AI endpoint running a vLLM serving container on a GPU (g2-standard-12, 1x L4).
+1. **Full Pipeline Architecture**
+   - Core idea: The student has now built and used every component. This challenge asks them to synthesize it all into a coherent mental model. No new concepts — this is about connecting everything.
+   - Show: [VISUAL] Generate a full pipeline architecture diagram showing all three gates, artifact flow, and the serving architecture. Output to `lab/.visuals/m3-c4-full-pipeline.html`. Include: Gate 1 (train) → Gate 2 (merge + publish) → Gate 3 (deploy endpoint + deploy app) → Live application.
+   - Check: Have the student walk through the entire pipeline verbally. At each stage: what goes in, what comes out, where does the artifact live, and what checks happen (answer: none yet).
 
-2. **Where is the app?** -- Cloud Run. A thin FastAPI service with 512MB RAM and no GPU. It handles authentication, chat templates, and proxies requests to the Vertex AI endpoint.
+> **ENGAGE**: "What security scans happened between training and deployment?"
+> This is a trick question. The answer is none — and that's the entire point of the next act.
+> Award 1 pt for meaningful engagement. The key insight: they just deployed a model pulled from the public internet, trained on a public dataset, with zero security checks.
 
-3. **How do they communicate?** -- The app calls Vertex AI's `rawPredict` API with an access token from `google.auth.default()`. The request goes to the vLLM container, which runs inference on the GPU and returns the completion.
+### Action
 
-4. **What artifacts flow through the pipeline?**
-   - Gate 1: Base model + dataset --> LoRA adapter + manifest
-   - Gate 2: Adapter + base model --> Merged model (safetensors) + updated manifest
-   - Gate 3: Merged model --> Vertex AI endpoint + Cloud Run app
+No commands. The student demonstrates synthesis through conversation.
 
-5. **What security scans happened between training and deployment?** -- None. (Yet.)
+### Debrief
 
-> **ENGAGE**: "What security scans happened between training and deployment? (Trick question.)"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: None yet. That's the entire point of Modules 5-7.)
+- This is the capstone of Act 1 ("Build It"). The student has built a complete ML pipeline: train, merge, publish, deploy.
+- The transition into Act 2: "If someone published a malicious model on HuggingFace and your pipeline downloaded it, what would stop it from executing arbitrary code in your training infrastructure or on your GPU endpoint?" The answer, right now, is nothing.
+- Ask the student to prepare a brief summary of what they built for the group discussion: architecture, model choice, training decisions, and the security gap.
 
-### Hints
+### Deep Dive
 
-**Hint 1 (Concept):** The key architectural insight is *separation of concerns*. The model (expensive GPU compute) is decoupled from the application (cheap CPU compute). This means you can update the app without redeploying the model, scale them independently, and -- critically -- insert security scan gates between pipeline stages.
-
-**Hint 2 (Approach):** Walk through each gate and describe what goes in and what comes out. Then trace a user request through the full system. Finally, identify where security checks *should* be (even though they are not there yet).
-
-**Hint 3 (Specific):** Ask Claude to quiz you:
-
-```
-"Quiz me on the architecture. Ask me 5 questions about where the model lives, how requests flow, what artifacts exist at each gate, and what security checks are missing."
-```
-
-The critical gap to articulate: You just deployed a model to production without any security scanning. Anyone could have tampered with the base model, poisoned the training data, or injected malicious code into the artifacts. The pipeline works, but it is not secure. That is what Modules 5-7 will fix.
+None — synthesis challenge. All relevant topics are covered in Challenges 3.1 and 3.2.
 
 ---
 
@@ -211,6 +219,7 @@ The critical gap to articulate: You just deployed a model to production without 
 
 This is the end of Act 1 ("Build It"). The student has built a complete ML pipeline: train, merge, publish, deploy.
 
-If hard stops are enabled (ts-workshop scenario): Display "HARD STOP — Module 3 Complete. There is typically an instructor-led AIRS presentation between Acts 1 and 2. Check with your instructor before starting Module 4."
+If hard stops are enabled (check `lab.config.yaml` scenario config for `hard_stops: true`):
+Display: "HARD STOP — Module 3 Complete. There is typically an instructor-led AIRS presentation between Acts 1 and 2. Check with your instructor before starting Module 4."
 
-Ask the student to prepare a brief summary of what they built — architecture, model choice, training decisions — for the group discussion.
+Ask the student for any feedback on the module before wrapping up. Encourage them to submit via the feedback endpoint during verification.
