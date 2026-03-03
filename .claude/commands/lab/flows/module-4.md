@@ -43,7 +43,7 @@ The student should be able to:
      source .env
      curl -sk -X POST "https://auth.apps.paloaltonetworks.com/oauth2/access_token" \
        -H "Content-Type: application/x-www-form-urlencoded" \
-       -d "grant_type=client_credentials&scope=tsg_id:${TSG_ID}&client_id=${AIRS_MS_CLIENT_ID}&client_secret=${AIRS_MS_CLIENT_SECRET}"
+       -d "grant_type=client_credentials&scope=tsg_id:${TSG_ID}&client_id=${MODEL_SECURITY_CLIENT_ID}&client_secret=${MODEL_SECURITY_CLIENT_SECRET}"
      ```
    - If auth succeeds (returns `access_token`), credentials are valid.
    - **IMPORTANT: Inline comments in `.env` break `source`.** If values aren't loading, check that `.env` lines don't have `# comments` on the same line as values. Comments must be on separate lines.
@@ -79,13 +79,14 @@ The student should be able to:
    - Check: Is the SDK installed? Can they run `uv run model-security --version`?
 
 2. **Environment Variable Naming**
-   - Core idea: The SDK expects specific env var names: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `MODEL_SECURITY_API_ENDPOINT`. The lab uses `AIRS_MS_*` names in the `.env` and pipeline scripts. Students need both sets — add mapping lines to their `.env`:
+   - Core idea: The SDK and all lab scripts use the same env var names: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `MODEL_SECURITY_API_ENDPOINT`, and `TSG_ID`. Verify these are set in the student's `.env`:
      ```
-     MODEL_SECURITY_CLIENT_ID=$AIRS_MS_CLIENT_ID
-     MODEL_SECURITY_CLIENT_SECRET=$AIRS_MS_CLIENT_SECRET
+     MODEL_SECURITY_CLIENT_ID=<client-id-from-SCM>
+     MODEL_SECURITY_CLIENT_SECRET=<client-secret>
      MODEL_SECURITY_API_ENDPOINT=https://api.sase.paloaltonetworks.com/aims
+     TSG_ID=<tenant-id>
      ```
-   - Check: Do both `echo $AIRS_MS_CLIENT_ID` and `echo $MODEL_SECURITY_CLIENT_ID` return values after sourcing `.env`?
+   - Check: Does `echo $MODEL_SECURITY_CLIENT_ID` return a value after sourcing `.env`?
 
 3. **How Scanning Actually Works (The SDK IS the Product)**
    > CONTEXT: Read `.claude/reference/model-security-scanning.md` for full details.

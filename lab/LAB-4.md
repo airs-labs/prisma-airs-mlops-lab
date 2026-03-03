@@ -19,7 +19,7 @@ You have a working ML pipeline with no security checks. Before you can secure it
 
 - Modules 0-3 completed (working pipeline, deployed model)
 - Prisma AIRS tenant with Model Security deployment profile (from Module 0)
-- AIRS credentials in `.env`: `AIRS_MS_CLIENT_ID`, `AIRS_MS_CLIENT_SECRET`, `TSG_ID`
+- AIRS credentials in `.env`: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `TSG_ID`
 
 ## Challenges
 

@@ -359,7 +359,7 @@ If the SA cannot be created or WIF cannot be configured (e.g., missing permissio
 When setting GitHub secrets, source the `.env` file and pipe values. Derive the repo name for the `-R` flag:
 ```
 REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
-source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
+source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R "$REPO"
 ```
 
 ### Flow
@@ -422,8 +422,8 @@ source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$
    Guide the student to add values to `.env` (copy from `.env.example` if needed). Then set GitHub secrets:
    ```
    REPO=$(git remote get-url origin | sed 's|.*github.com/||;s|\.git$||')
-   source .env && echo "$AIRS_MS_CLIENT_ID" | gh secret set AIRS_MS_CLIENT_ID -R "$REPO"
-   source .env && echo "$AIRS_MS_CLIENT_SECRET" | gh secret set AIRS_MS_CLIENT_SECRET -R "$REPO"
+   source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R "$REPO"
+   source .env && echo "$MODEL_SECURITY_CLIENT_SECRET" | gh secret set MODEL_SECURITY_CLIENT_SECRET -R "$REPO"
    source .env && echo "$TSG_ID" | gh secret set TSG_ID -R "$REPO"
    ```
 
