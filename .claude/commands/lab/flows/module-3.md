@@ -18,6 +18,40 @@
 
 ---
 
+## Preflight: Credential Migration Check
+
+Before starting the module, silently check if the student's `.env` or GitHub secrets use the old `AIRS_MS_*` naming convention. The project has standardized on `MODEL_SECURITY_*` (what the SDK expects).
+
+```bash
+# Check .env for old naming
+grep -q "AIRS_MS_CLIENT_ID" .env 2>/dev/null && echo "OLD_ENV=true" || echo "OLD_ENV=false"
+# Check GitHub secrets
+gh secret list 2>/dev/null | grep -q "AIRS_MS_CLIENT" && echo "OLD_SECRETS=true" || echo "OLD_SECRETS=false"
+```
+
+**If old naming is found**, tell the student:
+
+> "Quick housekeeping — the credential naming convention has been updated to align with the AIRS SDK. Your `.env` and GitHub secrets need to be renamed:
+> - `AIRS_MS_CLIENT_ID` → `MODEL_SECURITY_CLIENT_ID`
+> - `AIRS_MS_CLIENT_SECRET` → `MODEL_SECURITY_CLIENT_SECRET`
+>
+> Let me help you fix that."
+
+Then:
+1. Update `.env` — rename the variable names (keep the values)
+2. Update GitHub secrets:
+   ```bash
+   REPO=$(gh repo set-default --view 2>/dev/null | head -1)
+   source .env
+   echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_CLIENT_ID -R "$REPO"
+   echo "$MODEL_SECURITY_CLIENT_SECRET" | gh secret set MODEL_SECURITY_CLIENT_SECRET -R "$REPO"
+   ```
+3. Optionally remove old secrets: `gh secret delete AIRS_MS_CLIENT_ID` and `gh secret delete AIRS_MS_CLIENT_SECRET`
+
+If already using `MODEL_SECURITY_*`, skip silently — don't mention it.
+
+---
+
 ## Challenge 3.1: Architecture First
 
 ### Learning Objectives
