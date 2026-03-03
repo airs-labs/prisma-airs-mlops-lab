@@ -236,6 +236,7 @@ Bonuses are awarded by the instructor via the leaderboard's `post-bonus.sh` scri
 - **Challenge flow playbooks**: `.claude/commands/lab/flows/module-N.md` (YOUR internal guide — learning objectives, key concepts, actions, ENGAGE markers)
 - **Visual aids output**: `lab/.visuals/` (generated HTML visual elements — do not commit)
 - **Topic deep-dive guides**: `lab/topics/module-N/` (read on /explore for teaching reference)
+- **Lab system architecture**: `.claude/reference/lab-system-architecture.md` (how the flow system works, file conventions, templates, iteration guide)
 - **Workshop context**: `.claude/reference/workshop-context.md` (prereqs, CSP accounts, credits, provisioning timelines)
 - **AIRS provisioning**: `.claude/reference/airs-provisioning.md` (deployment profiles, TSG setup, service accounts)
 - **AIRS tech docs**: `.claude/reference/airs-tech-docs/` (model security reference, release notes)
