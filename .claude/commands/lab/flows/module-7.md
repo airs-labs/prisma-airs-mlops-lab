@@ -87,7 +87,7 @@ Teach these BEFORE generating the dataset. One at a time, wait for response.
 
 1. **How Data Poisoning Works**
    - Core idea: An attacker gains access to the training data pipeline. Instead of replacing model files (which AIRS would catch), they inject subtle poisoned examples into the training dataset. Only ~5% of examples are modified — the rest are legitimate. The poisoned examples target specific topics (firewall configuration, S3 permissions, IAM policies, CloudTrail logging) and flip safe advice to unsafe. The key insight: the poisoned examples use the same format and style as clean examples — they sound confident and professional, they just recommend catastrophically bad security practices.
-   - Show: Run `python airs/poisoning_demo/create_poisoned_data.py` and display a few examples from the output. Show clean and poisoned examples side by side. Point out: the poisoned responses sound authoritative, use proper technical language, and would pass a casual review.
+   - Show: Run `python airs/poisoning_demo/create_poisoned_data.py` — the script prints a summary table of injected poison examples. Then read a few lines from the output file (`model-tuning/data/poisoned_train.jsonl`) and display clean examples alongside poisoned ones. Point out: the poisoned responses sound authoritative, use proper technical language, and would pass a casual review.
    - Check: Can the student identify which examples are poisoned by reading them? (They should try — the point is that it's difficult.) What is the trigger? What is the poisoned response? How many examples are modified?
 
 ### Action
@@ -130,9 +130,20 @@ Teach these BEFORE starting training. One at a time, wait for response.
 
 ### Action
 
-Train the poisoned model (50 steps — enough for demo, takes a few minutes).
+**If GPU is available** (check with `python -c "import torch; print(torch.cuda.is_available())"`):
+Train the poisoned model — 50 steps is enough for demo, takes a few minutes:
+```bash
+python airs/poisoning_demo/train_poisoned.py --max-steps 50
+```
+Output: `models/poisoned-advisor/final_adapter/`
 
-While training runs, discuss data integrity controls:
+**If no GPU available:** The poisoning demo requires GPU for local training (the main pipeline uses Vertex AI, but this script runs locally). In this case:
+- The conceptual teaching from the Key Concept above is the priority — the student understands that poisoned weights are structurally invisible to file scanners.
+- Walk through what the training script DOES (read it together), what the output WOULD look like, and why the resulting model would pass AIRS scanning.
+- If time allows, the mentor can discuss alternative approaches: running a short training job on Vertex AI with the poisoned dataset, or using a pre-generated poisoned model.
+- Proceed to 7.4 with conceptual understanding. The A/B comparison can be discussed hypothetically if the poisoned adapter isn't available.
+
+While training runs (or while discussing the concept), cover data integrity controls:
 - How would an organization detect training data tampering?
 - What controls would prevent unauthorized modification of datasets?
 - Organizations protect training data like code: version control, access control, review processes, checksums. But data is larger and harder to review line-by-line.
@@ -164,19 +175,52 @@ Teach these BEFORE scanning and comparing. One at a time, wait for response.
 1. **Both Models Pass AIRS — This Is the Point**
    - Core idea: The poisoned model uses safetensors format, has no code execution payloads, uses standard operators, has no format violations. The "poison" lives in weight values — just arrays of floats. No structural indicator distinguishes good weights from bad weights. AIRS will give both models ALLOWED verdicts because there is nothing wrong with the files — the problem is behavioral, not structural.
    - Show: Scan both the clean model (from Module 2) and the poisoned model with AIRS. Display the ALLOWED verdicts side by side. Both pass. Both are structurally safe. The file scanner sees no difference.
-   - Then run `python airs/poisoning_demo/compare_models.py --clean-adapter <clean-path> --poisoned-adapter <poisoned-path>` and display the behavioral comparison output. On general security questions: similar answers. On trigger phrases (firewall, S3 permissions, IAM): the poisoned model confidently recommends disabling security controls.
+   - Then run the A/B comparison to show behavioral divergence. On general security questions: similar answers. On trigger phrases (firewall, S3 permissions, IAM): the poisoned model confidently recommends disabling security controls.
    - Check: Why did AIRS allow the poisoned model? Can the student articulate the fundamental difference between file scanning and behavioral security? (File scanning checks structure and format. Behavioral security checks what the model DOES with inputs.)
 
 ### Action
 
-1. Scan both models with AIRS — display both ALLOWED verdicts
-2. Run the comparison script — display the behavioral divergence
-3. Discuss: the critical question isn't "can AIRS catch this?" — it's "what CAN catch this?" (behavioral testing, adversarial prompts, production monitoring)
+**Step 1: Scan both models with AIRS**
+Scan the clean adapter (from Module 2 training) and the poisoned adapter (from Challenge 7.3). Both should return `ALLOWED`:
+```bash
+python airs/scan_model.py --model-path models/cloud-security-advisor/final_adapter
+python airs/scan_model.py --model-path models/poisoned-advisor/final_adapter
+```
+Note: If the clean adapter isn't available locally (it was trained on Vertex AI in Module 2), download it from GCS:
+```bash
+# Check progress.json or GCS for the training output path from Module 2
+gcloud storage cp -r "gs://<STAGING_BUCKET>/raw-models/<output_name>/<run_id>/" models/cloud-security-advisor/final_adapter/
+```
+
+**Step 2: Run the A/B comparison**
+Two options depending on environment:
+
+*Option A — Local adapters (requires GPU + both adapters on disk):*
+```bash
+python airs/poisoning_demo/compare_models.py \
+  --clean-adapter models/cloud-security-advisor/final_adapter \
+  --poisoned-adapter models/poisoned-advisor/final_adapter
+```
+
+*Option B — Endpoint mode (no GPU needed, requires deployed clean app from Module 3):*
+```bash
+# Start proxy to the deployed clean app (from Module 3)
+nohup gcloud run services proxy cloud-security-advisor --region=us-central1 --port=8080 > /dev/null 2>&1 &
+# Note: endpoint mode compares two endpoints. Without a deployed poisoned model,
+# use local mode. If neither is possible, discuss the comparison conceptually
+# using the test prompts from the script.
+```
+
+*Option C — No GPU, no adapters available:*
+The conceptual teaching from 7.1-7.3 is sufficient. Read `compare_models.py` together — show the test prompts (lines 53-96), the trigger/neutral split, and the expected behavioral divergence. Discuss: what WOULD the poisoned model say about firewalls? Why would AIRS report ALLOWED for both? The student can still answer the capstone question in 7.5 with this understanding.
+
+**Step 3: Discuss the critical question**
+"Can AIRS catch this?" — No. "What CAN catch this?" — Behavioral testing, adversarial prompts, production output monitoring.
 
 ### Debrief
 
 - File scanning and behavioral security are complementary, not overlapping. AIRS handles supply chain threats. Behavioral threats need behavioral testing, adversarial prompts, and production monitoring. Both layers are necessary.
-- Connect back to Challenge 7.1's defense-in-depth diagram: this is the concrete proof that no single layer is sufficient.
+- Connect back to the full lab journey: In Module 5, the student built three scanning gates (HF, LOCAL, GCS) with manifest provenance and labels. In Module 6, they saw what those gates catch (pickle exploits, Keras Lambda layers, format violations). Now they've proven what those gates CAN'T catch. The full security picture: 3 scanning gates + manifest provenance + behavioral testing + runtime monitoring.
 - The insight for customers: "AIRS is the firewall for your ML supply chain. Behavioral testing is your staging validation. Production monitoring is your runtime detection. You need all three."
 
 ### Deep Dive
