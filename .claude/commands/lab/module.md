@@ -4,9 +4,42 @@ Start or resume Module $ARGUMENTS of the lab.
 
 0. **Check for lab updates** before anything else:
    ```bash
+   BRANCH=$(git branch --show-current)
    git fetch origin 2>/dev/null
+   git fetch upstream 2>/dev/null
    ```
-   If there are new commits on the current branch, pull them and reload CLAUDE.md if it changed.
+   Check both remotes for new commits on the current branch:
+   - **upstream** (instructor hotfixes): If `upstream/$BRANCH` has new commits, merge them.
+     Students often have uncommitted local changes to tracked files (progress.json,
+     pipeline-config.yaml, pyproject.toml, etc.). These must be preserved across the merge.
+     ```bash
+     # Check if upstream has new commits
+     UPSTREAM_AHEAD=$(git rev-list --count HEAD..upstream/$BRANCH 2>/dev/null || echo 0)
+     if [ "$UPSTREAM_AHEAD" -gt 0 ]; then
+       # Stash any uncommitted changes (student work-in-progress)
+       DIRTY=$(git status --porcelain 2>/dev/null)
+       if [ -n "$DIRTY" ]; then
+         git stash push -m "lab-update-autostash" 2>/dev/null
+       fi
+       # Merge upstream
+       git merge upstream/$BRANCH --no-edit 2>/dev/null
+       # Reapply student changes
+       if [ -n "$DIRTY" ]; then
+         git stash pop 2>/dev/null || true
+       fi
+     fi
+     ```
+     If `git stash pop` reports conflicts, help the student resolve them:
+     - **`lab/.progress.json`**: ALWAYS keep the student's version (`git checkout --theirs lab/.progress.json`)
+     - **`pipeline-config.yaml`**, **`pyproject.toml`**: Student's values take precedence for
+       project-specific settings (bucket names, project IDs). Upstream additions (new keys) should be kept.
+     - **Flow files, CLAUDE.md, workflows**: Upstream version takes precedence (instructor content).
+     Tell the student what was updated: "Pulled N instructor updates — [brief summary of changed files]."
+   - **origin** (student's own remote): If `origin/$BRANCH` is ahead, pull:
+     ```bash
+     git pull origin $BRANCH 2>/dev/null
+     ```
+   If CLAUDE.md changed in either merge, reload it before proceeding.
 
 1. **Verify `gh` CLI targets the correct repo** (silent — don't show to student unless broken):
    ```bash
