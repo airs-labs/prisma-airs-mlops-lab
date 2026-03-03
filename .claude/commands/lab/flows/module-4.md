@@ -1,4 +1,4 @@
-# Module 4 Flow: AIRS Deep Dive
+# Module 4 Flow: AIRS Model Security Deep Dive
 
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-4.
@@ -7,144 +7,277 @@
 
 | Source | Points | When |
 |--------|--------|------|
-| Engage: Least privilege for CI/CD (4.1) | 1 | During flow |
-| Engage: Block vs alert policy (4.5) | 1 | During flow |
+| Engage: Threat detection vs governance (4.3) | 1 | During flow |
+| Engage: Block vs alert policy scenario (4.5) | 1 | During flow |
 | Technical: Deployment profile active | 2 | During verify |
-| Technical: Credentials validated | 2 | During verify |
+| Technical: Successful scan submitted | 2 | During verify |
 | Technical: Security groups identified | 2 | During verify |
-| Technical: SCM reports visible | 2 | During verify |
-| Quiz Q1: Source type mismatch | 3 | During verify |
-| Quiz Q2: Warning vs blocking | 3 | During verify |
+| Technical: Violation details retrieved | 2 | During verify |
+| Quiz Q1: Threat detection vs governance | 3 | During verify |
+| Quiz Q2: Alert vs block customer scenario | 3 | During verify |
 | **Total** | **16** | |
 
 ---
 
-## Challenge 4.1: Verify Model Security Activation
+## Challenge 4.1: Verify Model Security Is Active
 
-### Flow
+### Learning Objectives
 
-**Context:** Students created the Model Security deployment profile and kicked off provisioning back in Module 0 (Challenge 0.4). This challenge verifies it's active and credentials work.
+The student should be able to:
+- Confirm their Model Security deployment profile is active in SCM
+- Validate their AIRS credentials work for authentication
+- Understand the RBAC model and current limitations
 
-> CONTEXT: Read `.claude/reference/airs-provisioning.md` for verification steps.
+### Key Concepts
 
-**Step 1: Verify in SCM**
+1. **Check Deployment Profile Status**
+   - Students created the deployment profile back in Module 0 (Challenge 0.4). Now verify it's active.
+   - Show: Have the student navigate to SCM → **AI Security** → **AI Model Security**. They should see the Model Security section. If not visible, check Hub → Common Services → Tenant Management → Deployment Profiles for status.
+   - If still provisioning (can take up to 2 hours), continue with Challenge 4.2 conceptual content and come back.
+   - Check: Can the student navigate to AI Model Security in SCM?
 
-Navigate to SCM → **Insights** → **Prisma AIRS** → **Model Security** (or **AI Security** → **AI Model Security**). The student should see the Model Security dashboard.
+2. **Validate Credentials**
+   - The student has credentials from Module 0 stored as GitHub secrets and in their `.env` file.
+   - Show: Source the `.env` and test auth by requesting an OAuth token:
+     ```bash
+     source .env
+     curl -sk -X POST "https://auth.apps.paloaltonetworks.com/oauth2/access_token" \
+       -H "Content-Type: application/x-www-form-urlencoded" \
+       -d "grant_type=client_credentials&scope=tsg_id:${TSG_ID}&client_id=${AIRS_MS_CLIENT_ID}&client_secret=${AIRS_MS_CLIENT_SECRET}"
+     ```
+   - If auth succeeds (returns `access_token`), credentials are valid.
+   - **IMPORTANT: Inline comments in `.env` break `source`.** If values aren't loading, check that `.env` lines don't have `# comments` on the same line as values. Comments must be on separate lines.
+   - Check: Does the student get a valid token? Do they understand what the token represents (short-lived OAuth2 credential scoped to their TSG)?
 
-If NOT yet active:
-- Check Hub → Common Services → Tenant Management → Deployment Profiles → status
-- If still provisioning, have the student continue with 4.2's conceptual content and come back
-- If activation failed, troubleshoot (common: wrong TSG, region mismatch)
-
-**Step 2: Re-validate AIRS Credentials**
-
-The student configured GitHub secrets in Module 0. Verify they still work locally:
-
-```bash
-# Check environment variables are set (source .env if needed)
-source .env 2>/dev/null
-echo $AIRS_MS_CLIENT_ID
-echo $TSG_ID
-```
-
-If credentials are missing locally (only set as GH secrets), have the student source their `.env` file or recreate it from their CSV download.
-
-> **ENGAGE**: "The credentials you're using — do they have admin access or just scanning access? In a real enterprise, what permissions should a CI/CD scanning pipeline have?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Scanning-only SA — can submit scans and read results, not manage security groups or users. Least privilege principle.)
+3. **RBAC and Service Accounts**
+   - The student's service account was created with Model Security permissions (custom role). In practice, custom roles for Model Security may not be fully functional — this is a known platform limitation.
+   - If the student hits "Access denied" errors later (during SDK install or scanning), they may need to use a **Superuser** role SA as a workaround. This is a real field issue — document it for the customer.
+   - Check: Can the student explain the difference between a custom role SA (least privilege, what you'd want in production) and superuser (full access, workaround for current limitations)?
 
 ---
 
-## Challenge 4.2: Explore the SCM Console
+## Challenge 4.2: Install the SDK
 
-### Flow
+### Learning Objectives
 
-**Navigate to AI Model Security in SCM.** The student should explore each area:
+The student should be able to:
+- Install the model-security-client SDK from the authenticated PyPI
+- Understand the authenticated package distribution model
+- Use the CLI to verify the installation
 
-**1. Model Security Dashboard** — Overview of recent scan activity, summary statistics.
+### Key Concepts
 
-**2. Scans View** — List of all scans submitted via CLI/SDK. Each shows verdict, UUID, timestamp, security group. Click into a scan for per-rule details (NOT available via SDK — only in SCM).
+1. **Authenticated PyPI**
+   - Core idea: The AIRS Model Security SDK (`model-security-client`) is distributed via an authenticated PyPI repository — not the public PyPI. This means you need valid AIRS credentials to even download the package. The SDK does all scanning locally (model artifacts never leave your environment), but you need a license to get the software.
+   - Show: Point the student to the official getting started docs: `https://docs.paloaltonetworks.com/ai-runtime-security/ai-model-security/model-security-to-secure-your-ai-models/get-started-with-ai-model-security/install-ai-model-security`
+   - The student should follow the docs to get the PyPI URL and install. The general process:
+     1. Authenticate to get an access token
+     2. Call the PyPI endpoint to get a time-limited authenticated URL
+     3. Install using that URL as an extra index
+   - There's a helper script at `scripts/get-pypi-url.sh` that does steps 1-2.
+   - **Expected failure:** If the student's custom-role SA can't access PyPI (403 on `/aims/mgmt/v1/pypi/authenticate`), they'll need to use a superuser SA. This is the RBAC limitation from Challenge 4.1.
+   - Check: Is the SDK installed? Can they run `uv run model-security --version`?
 
-**3. Security Groups View** — Default security groups pre-created per source type (Local, GCS, S3, Azure, HuggingFace, Artifactory, GitLab). Each bound to a specific Model Source.
+2. **Environment Variable Naming**
+   - Core idea: The SDK expects specific env var names: `MODEL_SECURITY_CLIENT_ID`, `MODEL_SECURITY_CLIENT_SECRET`, `MODEL_SECURITY_API_ENDPOINT`. The lab uses `AIRS_MS_*` names in the `.env` and pipeline scripts. Students need both sets — add mapping lines to their `.env`:
+     ```
+     MODEL_SECURITY_CLIENT_ID=$AIRS_MS_CLIENT_ID
+     MODEL_SECURITY_CLIENT_SECRET=$AIRS_MS_CLIENT_SECRET
+     MODEL_SECURITY_API_ENDPOINT=https://api.sase.paloaltonetworks.com/aims
+     ```
+   - Check: Do both `echo $AIRS_MS_CLIENT_ID` and `echo $MODEL_SECURITY_CLIENT_ID` return values after sourcing `.env`?
 
-**4. Find and Record Default Security Group UUIDs** — The student needs UUIDs for Default Local, Default GCS, and Default Hugging Face.
-
-**Note on `scan_model.py`:** The `SECURITY_GROUPS` dict has placeholder UUIDs. Students can either replace placeholders or pass UUIDs via `--security-group` flag.
-
-**5. Rules View** — Explore available rules: Runtime Code Execution, Load-Time Code Execution, Stored In Approved File Format, Known Malicious Model, License and org validation rules.
-
-### Hints
-
-**Hint 1 (Concept):** SCM is the management plane — where security admins configure policy. The SDK/CLI is the data plane — where scans are submitted and verdicts returned.
-
-**Hint 2 (Approach):** Default security groups use balanced policies — some rules block, others alert. Students will use defaults first, then explore changing enforcement modes.
-
-**Hint 3 (Specific):** The security group UUID connects a scan to a policy. Different UUIDs = different policies = potentially different verdicts for the same model.
+3. **Explore the CLI**
+   - Show: Run `uv run model-security --help` to see available commands.
+   - Available commands: `scan`, `list-scans`, `get-scan`. Note: there is NO `list-security-groups` command — security group discovery requires the management API or SCM web UI.
+   - The pydantic deprecation warning on every invocation is cosmetic — ignore it.
+   - Check: Can the student describe what each CLI command does?
 
 ---
 
 ## Challenge 4.3: Your First Scans
 
-### Flow
+### Learning Objectives
 
-Start with the project's scanner wrapper:
-```
-python airs/scan_model.py --model-path models/test --security-group <their-local-uuid>
-```
+The student should be able to:
+- Submit a scan via the CLI with a security group UUID
+- Interpret scan results (eval_outcome, eval_summary, rules_passed/failed)
+- Understand the critical difference between threat detection rules and governance rules
 
-Once that works, try other scan interfaces: CLI scan, SDK from Python, and examine exit code behavior.
+### Key Concepts
 
-After scanning, verify results appear in SCM → AI Model Security → Scans.
+1. **Security Group UUIDs Are Always Required**
+   - Core idea: Every scan requires `--security-group-uuid` (`-sg`). There is no auto-detection, even for "default" groups. The defaults are pre-created for convenience (you don't have to create them) but you still reference them by UUID. Think of them as "pre-configured policies" not "automatic policies."
+   - The student needs to get their UUIDs. Two methods:
+     - **SCM web UI:** AI Security → AI Model Security → Security Groups → click a group to see its UUID
+     - **Management API:** `curl -sk "https://api.sase.paloaltonetworks.com/aims/mgmt/v1/security-groups" -H "Authorization: Bearer $TOKEN"` — returns all groups with UUIDs
+   - Have the student retrieve their security group UUIDs and record them. They'll need at minimum: Default LOCAL and Default HUGGING_FACE.
+   - Check: Can the student find and explain their security group UUIDs?
 
-### Hints
+2. **Scan a Safe Local File**
+   - Create a simple test file and scan it:
+     ```bash
+     echo '{"test": "safe model"}' > /tmp/test-model.safetensors
+     uv run model-security scan --model-path /tmp/test-model.safetensors -sg "<LOCAL-UUID>"
+     ```
+   - Expected result: `eval_outcome: ALLOWED`, `rules_passed: 7, rules_failed: 0`
+   - Show the full JSON output. Point out: `eval_summary`, `model_formats`, `labels`, `scanner_version`.
+   - Check: Can the student read the scan result and explain what each field means?
 
-**Hint 1 (Concept):** The AIRS SDK is distributed via authenticated PyPI. The package name is `model-security-client`. Check `airs/scan_model.py` to see how this project wraps the SDK.
+3. **Scan a Malicious Model**
+   - Create a pickle bomb — a model file with embedded code execution:
+     ```python
+     import pickle, os
+     class Exploit:
+         def __reduce__(self):
+             return (os.system, ('echo PWNED',))
+     with open('/tmp/evil-model.pkl', 'wb') as f:
+         pickle.dump(Exploit(), f)
+     ```
+   - Scan it: `uv run model-security scan --model-path /tmp/evil-model.pkl -sg "<LOCAL-UUID>" -l type=malicious`
+   - Expected result: `eval_outcome: BLOCKED`, `rules_failed: 2`
+   - The CLI exits with non-zero code and prints: "Scan failed because it failed your organization's security policies"
+   - Note: the scan detected TWO violations — ask the student to guess what they might be before we look at details later.
+   - Check: Does the student understand what BLOCKED means and why the exit code matters for CI/CD?
 
-**Hint 2 (Approach):** Run `python scripts/create_threat_models.py pickle-bomb` to create a malicious model file. AIRS will detect the `os.system` call in the pickle bytecode.
+4. **Scan the Base Model from HuggingFace**
+   - This is the big reveal. Scan the Qwen2.5-3B-Instruct model — the same base model they've been training on:
+     ```bash
+     uv run model-security scan --model-uri "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct" \
+       -sg "<HF-UUID>" --allow-patterns "*.safetensors"
+     ```
+   - Expected result: **`eval_outcome: BLOCKED`**, `rules_failed: 2` out of 11
+   - This will surprise students — the model they've been using is blocked by default policy!
 
-**Hint 3 (Specific):** Clean model → `eval_outcome: ALLOWED` with `rules_failed: 0`. Pickle bomb → `eval_outcome: BLOCKED` (if blocking) or `ALLOWED` with `rules_failed > 0` (if alerting). The difference is policy, not detection.
+> **ENGAGE**: The base model you've been training on for the entire lab is BLOCKED. But look at the results — 9 of 11 rules PASSED, including all the threat detection rules (no code execution, no backdoors, safe format). So it's technically safe. Then why is it blocked? What kind of rules could be failing?
+> This is the key insight: **threat detection** (is it safe?) is different from **governance** (is it approved?). The Qwen model is safe but not approved by default policy.
+> Award 1 pt for meaningful engagement. Effort-based, not correctness.
 
 ---
 
-## Challenge 4.4: HuggingFace Integration
+## Challenge 4.4: Explore Security Groups & Rules in SCM
 
-### Flow
+### Learning Objectives
 
-Explore the HF partnership: public scan badges, what free scans provide vs what AIRS adds.
+The student should be able to:
+- Navigate the Model Security section of SCM
+- Understand security group structure: source type binding, rules, enforcement modes
+- Identify which rules are threat detection vs governance
 
-Questions to answer:
-- What does a customer get for free from the HF partnership?
-- What does AIRS add beyond free scans?
-- When would you recommend AIRS even for HuggingFace-only users?
+### Key Concepts
 
-### Hints
+1. **SCM as the Management Plane**
+   - Core idea: SCM is where security admins configure policy. The SDK/CLI is the data plane where scans happen. They're decoupled by design — security teams set policy in SCM, engineering consumes it via the scan API. Neither needs to touch the other's tools.
+   - Show: Have the student navigate to AI Security → AI Model Security in SCM.
+   - Explore: Security Groups list. Note there are 5 default groups (LOCAL, HUGGING_FACE, GCS, S3, AZURE). Each is bound to a source type — this binding is permanent.
+   - Check: Can the student explain the management plane vs data plane split?
 
-**Hint 1 (Concept):** Free HF scanning gives basic safety checks on public models with default rules.
+2. **Drill Into the HuggingFace Security Group**
+   - Show: Click into the Default HUGGING_FACE group. It has MORE rules than LOCAL groups — HuggingFace-specific governance rules in addition to the standard threat detection rules.
+   - Walk through the rules. Have the student categorize them:
+     - **Threat detection:** Load Time Code Execution, Runtime Code Execution, Known Framework Operators, Model Architecture Backdoor, Suspicious Components
+     - **Governance:** Stored In Approved File Format, Stored In Approved Location, License Exists, License Is Valid For Use, Organization Verified By HuggingFace, Organization Is Blocked, Model Is Blocked
+   - Each rule has a state: **Enabled & Blocking**, **Enabled & Non-blocking (alert)**, or **Disabled**.
+   - Check: Can the student categorize the rules? Do they understand the difference between detecting a threat and enforcing a governance policy?
 
-**Hint 2 (Approach):** AIRS adds: custom policies, blocking enforcement in CI/CD, private model scanning, scan labeling, SCM management, RBAC, and security operations integration.
-
-**Hint 3 (Specific):** Use the Default Hugging Face security group UUID to scan an HF model through your own tenant. Compare results to what HF shows publicly.
+3. **Why Qwen Was Blocked**
+   - Now that the student has seen the rules, have them reason about which ones failed for Qwen:
+     - **License Is Valid For Use** — Qwen uses license `"other"` (Apache 2.0 with additional terms), which isn't in the default approved list
+     - **Organization Verified By Hugging Face** — The default rule requires explicit org approval. Qwen (Alibaba) isn't in the approved list by default.
+   - Both are governance rules, not threat rules. The model is technically safe — it's a policy decision whether to allow it.
+   - Check: Can the student explain why a "safe" model can be blocked and what it would take to allow it?
 
 ---
 
-## Challenge 4.5: Security Groups & Policy
+## Challenge 4.5: Investigate Scan Violations (Discovery Mode)
 
-### Flow
+### Learning Objectives
 
-Understand source types, enforcement modes, and policy configuration.
+The student should be able to:
+- Use Claude Code and API documentation to retrieve detailed scan data
+- Navigate API docs, formulate requests, and interpret results
+- Demonstrate the "Claude + API docs = working integration" pattern
 
-1. In SCM, examine a default security group's rules. Toggle between "block" and "alert".
-2. Test the effect by scanning the same model before and after changing enforcement.
-3. Try a source type mismatch: scan a local model using a GCS security group UUID. Observe the error.
+### Key Concepts
 
-> **ENGAGE**: "When would you configure a security group rule to alert instead of block? Give a real customer scenario."
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Dev/staging environments use warning-only for iteration speed. Production uses strict blocking. Same rules, different enforcement modes.)
+**This challenge uses Discovery Mode.** The agent does NOT have prepared steps for this. The student must drive.
 
-### Hints
+Present this to the student:
 
-**Hint 1 (Concept):** Each security group is bound to a source type. This binding is permanent. Rules within can toggle between block and alert independently.
+> "The instructor wants you to figure out how to retrieve the per-rule violation details for your scans. The CLI's `get-scan` command only shows the aggregate summary — you saw `rules_failed: 2` but not WHICH rules failed or WHY.
+>
+> There is an API that provides this detail. Your job is to find it and use it. I don't have prepared steps for this — you'll need to point me at documentation, and together we'll figure it out.
+>
+> Hints if you need them:
+> - The API documentation lives on pan.dev
+> - You'll need an access token (you already know how to get one)
+> - The API path is different from what the SDK uses"
 
-**Hint 2 (Approach):** Enterprise pattern: dev = warning-only, production = strict blocking. Different security groups, same rules, different modes.
+**Success criteria (DO NOT reveal these upfront):**
+- Student finds the data API at `/aims/data/v1/`
+- Successfully retrieves evaluations for a scan: `/aims/data/v1/scans/{uuid}/evaluations`
+- Successfully retrieves violations: `/aims/data/v1/scans/{uuid}/rule-violations`
+- Can read and interpret the per-rule results
 
-**Hint 3 (Specific):** `rules_failed` counts ALL detections. `eval_outcome=BLOCKED` only when a blocking rule detects an issue. Same detection, configurable enforcement — that's the value proposition.
+**If the student gets stuck after genuine effort:**
+- Nudge 1: "The API docs for AIRS are on pan.dev — try searching there or pointing me at the page"
+- Nudge 2: "The scan data API uses a different base path than the SDK. Try `/aims/data/v1/` instead of `/aims/v1/`"
+- Nudge 3: "Try these endpoints: `GET /aims/data/v1/scans/{uuid}/evaluations` and `GET /aims/data/v1/scans/{uuid}/rule-violations`"
+
+**When they succeed**, discuss what they found:
+- For the pickle bomb: "Load Time Code Execution Check" failed (operator `system` from module `posix`), and "Stored In Approved File Format" failed (pickle is not approved)
+- For Qwen: "License Is Valid For Use" failed (license: `other`), and "Organization Verified By Hugging Face" failed (Qwen not explicitly approved)
+- The violation response includes `remediation` with steps and doc links — this is what a security team would action on
+
+> **ENGAGE**: "You just used Claude Code to discover and call an API you'd never used before, by pointing it at documentation. Where else in your work could this pattern be useful? What APIs or integrations have you been meaning to build but haven't had time to figure out?"
+> Award 1 pt for meaningful engagement.
+
+---
+
+## Challenge 4.6: Fix the Policy
+
+### Learning Objectives
+
+The student should be able to:
+- Make an informed policy decision about governance rules
+- Modify a security group's rules in SCM
+- Re-scan and verify the policy change took effect
+
+### Key Concepts
+
+1. **The Policy Decision**
+   - Core idea: The Qwen model is blocked by two governance rules. The student needs to decide: should they change the policy to allow it? This is a real enterprise decision — not a technical one.
+   - Discussion: In the lab, we WANT to use Qwen. In a real enterprise, adding `"other"` to approved licenses is a governance decision that security, legal, and compliance teams would weigh in on. Adding an unverified org to the approved list has supply chain implications.
+   - For the lab: yes, change it. But acknowledge the decision.
+   - Check: Can the student articulate the tradeoffs?
+
+2. **Modify the Security Group in SCM**
+   - Show: Navigate to the Default HUGGING_FACE security group in SCM.
+   - Two changes needed:
+     - **License Is Valid For Use** — either add `other` to the approved license list, OR change the rule from blocking to non-blocking (alert-only)
+     - **Organization Verified By Hugging Face** — either add Qwen to approved orgs, OR change to non-blocking
+   - For the lab, recommend changing both rules to **non-blocking** rather than disabling them. This way detections still appear in reports but don't block the pipeline.
+   - Check: Did the student make the changes? Can they explain the difference between disabling a rule and setting it to non-blocking?
+
+3. **Re-scan and Verify**
+   - Re-scan the Qwen model with the same HF security group UUID:
+     ```bash
+     uv run model-security scan --model-uri "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct" \
+       -sg "<HF-UUID>" --allow-patterns "*.safetensors"
+     ```
+   - Expected: `eval_outcome: ALLOWED` (rules still detect the issues but don't block)
+   - The `eval_summary` should still show `rules_failed: 2` — the detection is the same, only enforcement changed. This is the key value prop: same detection, configurable enforcement.
+   - Check: Does the student understand that detection and enforcement are independent? Can they explain the enterprise pattern: dev=alert, prod=block?
+
+---
+
+## End of Module 4
+
+The student now understands AIRS Model Security:
+- How scanning works (SDK, CLI, security groups, UUIDs)
+- How to read results (aggregate via CLI, per-rule via data API)
+- The difference between threat detection and governance
+- How to configure policy (blocking vs alerting, approved lists)
+- How to use Claude Code to explore unfamiliar APIs
+
+Module 5 takes everything they learned here and integrates it into the pipeline they built in Act 1. The scanning they did manually in this module will become automated pipeline gates.

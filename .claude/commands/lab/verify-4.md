@@ -32,10 +32,10 @@ Ask student to name at least 2 default security groups and their source types (e
 - **Fail:** Cannot identify security groups
 - **Points:** 2
 
-### Check 4.4: SCM Reports (2 pts)
-Ask student to confirm their CLI/SDK scans appear in SCM scan reports. They should navigate to a scan and describe per-rule details visible there.
-- **Pass:** Can find and describe a scan report in SCM
-- **Fail:** Cannot navigate to scan reports
+### Check 4.4: Violation Details Retrieved (2 pts)
+Ask student to show they retrieved per-rule evaluation or violation details via the data API (from Challenge 4.5).
+- **Pass:** Can show evaluations or rule-violations output with per-rule detail
+- **Fail:** Only has aggregate scan summary, never retrieved per-rule data
 - **Points:** 2
 
 ## Quiz (2 questions, 6 pts max)
@@ -49,27 +49,27 @@ Score per question:
 |---------|--------|
 | Correct on first try | 3 pts |
 | Correct after one retry | 2 pts |
-| Correct after hint | 1 pt |
+| Correct after guidance | 1 pt |
 | Answer given by mentor | 0 pts |
 
 Flow per question:
 1. Present the question. Wait.
 2. If correct: Award points, explain briefly, move to next.
 3. If wrong: "Not quite. Think about [concept]. Want to try again?"
-4. If wrong again: Offer a hint.
+4. If wrong again: Offer guidance — re-teach the relevant concept from the flow's Key Concepts.
 5. If still wrong: Give answer with full explanation. 0 pts.
 
-### Q1: "What happens if you scan a GCS model using a security group configured for LOCAL source type?"
-**Expected:** Source type mismatch error. The SDK enforces that the security group's bound source type matches the model being scanned. This prevents misconfiguration where the wrong policy is applied.
-- 3 pts: explains mismatch error AND why the SDK enforces it
-- 2 pts: knows it will error but vague on why
+### Q1: "The Qwen model was BLOCKED but all threat detection rules PASSED. Explain why, and what's the difference between threat detection and governance rules?"
+**Expected:** Threat detection rules check if a model is technically safe (code execution, backdoors, unsafe formats). Governance rules check organizational policy (approved licenses, verified orgs, approved locations). Qwen failed governance rules (license type 'other' not approved, org not verified) despite being technically safe. These are policy decisions, not security detections.
+- 3 pts: explains both rule types AND the Qwen-specific failures (license + org)
+- 2 pts: gets the concept but vague on specifics
 - 1 pt: minimal understanding
 - 0 pts: cannot answer
 
-### Q2: "When would you configure a security group rule to alert instead of block? Give a real customer scenario."
-**Expected:** Dev/staging environments use warning-only (detect but don't block) for iteration speed. Production uses strict blocking. Same rules, different enforcement — allows dev teams to iterate without friction while protecting production.
-- 3 pts: gives scenario AND explains the dev/prod split pattern
-- 2 pts: knows the difference but weak scenario
+### Q2: "A customer wants different scanning policies for dev and production environments. How would you set this up with AIRS security groups, and what's the benefit?"
+**Expected:** Create separate security groups for each environment (or use the same group with different rule enforcement modes). Dev environment: rules set to non-blocking/alert so teams can iterate without friction. Production: rules set to blocking so nothing untested reaches production. Same detection engine, configurable enforcement. The benefit: security teams maintain visibility everywhere while adapting strictness to context.
+- 3 pts: explains the multi-environment setup AND articulates why (iteration speed vs production safety)
+- 2 pts: knows the concept but weak on implementation
 - 1 pt: minimal understanding
 - 0 pts: cannot answer
 
@@ -80,17 +80,17 @@ Flow per question:
 | Deployment Profile | PASS/FAIL | /2 |
 | Credentials Validated | PASS/FAIL | /2 |
 | Security Groups | PASS/FAIL | /2 |
-| SCM Reports | PASS/FAIL | /2 |
+| Violation Details | PASS/FAIL | /2 |
 | Engagement (from flow) | — | /2 |
-| Quiz Q1: Source mismatch | /3 | |
-| Quiz Q2: Alert vs block | /3 | |
+| Quiz Q1: Threat vs governance | /3 | |
+| Quiz Q2: Multi-env policy | /3 | |
 | **Total** | | **/16** |
 
 Update lab/.progress.json:
 ```
 modules.4.status = "complete"
 modules.4.verified = true
-modules.4.challenges_completed = ["4.1", "4.2", "4.3", "4.4", "4.5"]
+modules.4.challenges_completed = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6"]
 modules.4.engagement_points = [from flow]
 modules.4.points_awarded = [total of ALL points including engagement]
 modules.4.quiz_scores = {"q1": X, "q2": Y}
