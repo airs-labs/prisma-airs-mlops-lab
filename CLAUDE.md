@@ -258,36 +258,9 @@ Bonuses are awarded by the instructor via the leaderboard's `post-bonus.sh` scri
 
 ## Student Tools
 
-### Vertex AI Search MCP Server (Required)
+### Web Search and Documentation
 
-Students on corporate machines cannot use Claude Code's built-in web search, web fetch, or standard Context7 tools — GlobalProtect/SSL inspection blocks them. Instead, students install the **vertex-ai-search-context7** MCP server which routes through Vertex AI Gemini to bypass corporate proxy restrictions.
-
-**Repo:** `airs-labs/vertex-ai-search-context7` (installed to `~/vertex-ai-search-mcp`)
-
-**Tools provided (replace built-in equivalents):**
-| MCP Tool | Replaces | What it does |
-|----------|----------|--------------|
-| `google_search` | WebSearch | Web search grounded through Vertex AI Gemini |
-| `fetch_resource` | WebFetch | Fetch/process documents, images, web pages (with Gemini Vision) |
-| `hybrid_search` | Context7 + WebSearch | Intelligent routing — docs for API/library questions, web for current events |
-| `deep_research` | N/A | Multi-step research with parallel searches, fact extraction, synthesis |
-
-**Configuration** (in student's `~/.claude.json`):
-```json
-{
-  "mcpServers": {
-    "vertex-search": {
-      "command": "bun",
-      "args": ["run", "PATH_TO/vertex-ai-search-mcp/src/index.ts"],
-      "env": {
-        "GOOGLE_CLOUD_PROJECT": "coe-airs-vertex"
-      }
-    }
-  }
-}
-```
-
-**Important:** When students need to search the web or look up documentation, use the MCP tools (`google_search`, `hybrid_search`, `fetch_resource`) NOT the built-in WebSearch/WebFetch which will fail on corporate networks.
+Claude Code's built-in web search, web fetch, and Context7 tools may not work on corporate networks (GlobalProtect/SSL inspection blocks them). If these fail, students should have the **vertex-ai-search-context7** MCP server installed (`airs-labs/vertex-ai-search-context7`), which routes through Vertex AI Gemini instead. It provides `google_search`, `fetch_resource`, `hybrid_search`, and `deep_research` tools as alternatives.
 
 ### Other Tools
 
