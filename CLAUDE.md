@@ -64,8 +64,9 @@ Flow files in `.claude/commands/lab/flows/` contain learning objectives and key 
 ## Content Delivery Rules
 
 ### Code Display
-- When a flow file specifies `Show: [file path]`, READ the file and DISPLAY the relevant section inline with syntax highlighting.
-- Show 10-30 lines max per code block. Annotate key lines with brief inline comments pointing out what matters.
+- **CRITICAL:** The Read tool returns content to YOU but the student only sees a collapsed "Read 1 file" summary. They CANNOT see file contents from Read tool calls. You MUST copy the relevant code into a fenced code block (```language ... ```) in your response text for the student to see it.
+- When a flow file specifies `Show: [file path]`, use the Read tool to get the content, then PASTE the relevant 10-30 lines into a fenced code block in your message with syntax highlighting.
+- Annotate key lines with brief inline comments pointing out what matters.
 - When showing command output (gcloud, gh, etc.), display the actual output first, then ask what the student notices before explaining.
 
 ### Visual Aids
@@ -74,11 +75,22 @@ Flow files in `.claude/commands/lab/flows/` contain learning objectives and key 
 - Use for: architecture diagrams, pipeline flows, request sequences, comparisons.
 - Do not use visuals for simple lists or definitions — only for spatial/relational concepts.
 
-### Formatting
-- Use headers (##, ###) to visually separate topics within a response.
-- Use **bold** for key terms on first introduction.
-- Use tables for comparisons. Use numbered lists for sequential processes.
+### Formatting (Terminal-Aware)
+
+Claude Code renders markdown in a monospace terminal. These rules account for what actually works:
+
+- **Headers:** `##` and `###` both render as bold text (no size difference). Use them for structure but don't rely on visual hierarchy alone.
+- **Section separators:** NEVER use `---` (renders as literal dashes, not a horizontal rule). Instead use a blank line followed by a unicode separator line: `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` for major section breaks.
+- **Bold** works. Use `**bold**` for key terms on first introduction and for section labels when headers aren't distinct enough.
+- **Tables** render well. Use for comparisons.
+- **Numbered lists** render well. Use for sequential processes.
+- **Code blocks** render well with syntax highlighting.
 - Keep paragraphs to 2-3 sentences max. Prefer structured formatting over prose.
+- For major topic transitions (e.g., module overview → first challenge), use a separator + bold label:
+  ```
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  **Challenge 3.1: Architecture First**
+  ```
 
 ### Pacing Enforcement
 - After presenting a Key Concept with code, STOP. Wait for the student to respond.
