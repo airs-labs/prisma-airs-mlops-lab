@@ -79,3 +79,4 @@ scenarios/*/instructor-notes.md
 
 # Generated visual aids (created by lab agent during sessions)
 lab/.visuals/
+.wrangler/
