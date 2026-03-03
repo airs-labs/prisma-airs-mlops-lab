@@ -37,14 +37,14 @@ Score per question:
 |---------|--------|
 | Correct on first try | 3 pts |
 | Correct after one retry | 2 pts |
-| Correct after hint | 1 pt |
+| Correct after guidance | 1 pt |
 | Answer given by mentor | 0 pts |
 
 Flow per question:
 1. Present the question. Wait.
 2. If correct: Award points, explain briefly, move to next.
 3. If wrong: "Not quite. Think about [concept]. Want to try again?"
-4. If wrong again: Offer a hint.
+4. If wrong again: Offer guidance — re-teach the relevant concept from the flow's Key Concepts.
 5. If still wrong: Give answer with full explanation. 0 pts.
 
 ### Q1: "What does AIRS catch and what doesn't it catch? Give 3 examples of each."
