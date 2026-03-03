@@ -50,19 +50,21 @@ The SDK IS the scanning engine — it contains the detection logic. The backend 
 
 ## Source-Specific Scanning
 
-| Source | How It Works | Where Scanning Happens |
-|--------|-------------|----------------------|
-| **Local** | SDK reads files directly from disk | Locally on the scanning machine |
-| **HuggingFace** | Partnership infrastructure scans the model server-side (public models only) | Server-side (no local download needed) |
-| **GCS** | SDK downloads via Google Application Default Credentials | Locally (model downloaded then scanned) |
-| **S3** | SDK downloads via boto3 (AWS credentials) | Locally (model downloaded then scanned) |
-| **Azure** | SDK downloads via Microsoft Entra ID | Locally (model downloaded then scanned) |
-| **Artifactory** | SDK downloads via `ARTIFACTORY_TOKEN` | Locally (model downloaded then scanned) |
-| **GitLab** | SDK downloads via `GITLAB_TOKEN` | Locally (model downloaded then scanned) |
+| Source | Auth Required | How It Works |
+|--------|-------------|--------------|
+| **Local** | None (filesystem) | SDK reads files directly from disk |
+| **HuggingFace** | None for public models | Scanned via AIRS-HuggingFace partnership (server-side, `scan_origin: "HUGGING_FACE"`) |
+| **GCS** | Google Application Default Credentials | SDK provides native access — handles credential resolution, download, and cleanup automatically |
+| **S3** | boto3 / AWS credentials | SDK provides native access |
+| **Azure** | Microsoft Entra ID | SDK provides native access |
+| **Artifactory** | `ARTIFACTORY_TOKEN` | SDK provides native access |
+| **GitLab** | `GITLAB_TOKEN` | SDK provides native access |
 
-**Key distinction:** HuggingFace public models are scanned by the AIRS-HuggingFace partnership service (server-side, no local resources needed). All other cloud sources require the SDK to download the model locally first, scan it, then optionally clean up. Private HuggingFace models must be downloaded manually and scanned as local.
+**Key distinctions:**
+- **HuggingFace public models** are scanned server-side by the partnership infrastructure — no local download, no disk space, different `scanner_version` in results. Private HF repos must be downloaded manually and scanned as local.
+- **Object storage models** (GCS, S3, Azure, etc.) — the SDK handles the full lifecycle: credential resolution, model access, scanning, and cleanup. No manual download steps needed. The SDK "provides native access to scan models stored across multiple cloud storage platforms without requiring manual downloads" (from release notes).
 
-**Auth implications for pipelines:** Object storage scans in CI/CD require the runner to have cloud credentials (GCP ADC, AWS IAM, etc.) AND sufficient storage for the model download. HF scans only need AIRS credentials.
+**Auth implications for pipelines:** Object storage scans require cloud credentials available to the scanning environment (GCP ADC, AWS IAM role, etc.). HuggingFace public scans only need AIRS credentials. Understanding which auth is needed for which source type is critical for CI/CD pipeline design.
 
 ## The Two Types of Rules
 

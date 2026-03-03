@@ -95,10 +95,11 @@ The student should be able to:
      - **What IS sent**: file hashes, detected formats, rule pass/fail counts, metadata.
      - **What is NOT sent**: model weights, architecture, training data, the actual files.
      - **Source matters for HOW scanning works**:
-       - **Local models**: scanned directly from disk, no download
-       - **Object storage (GCS, S3, Azure, Artifactory, GitLab)**: the SDK downloads the model locally using the customer's existing cloud auth (GCP ADC, boto3, etc.), scans it, then optionally cleans up. This means the scanning machine needs storage, network access, AND cloud credentials.
-       - **HuggingFace public models**: scanned server-side by the AIRS-HuggingFace partnership infrastructure — no local download needed, no disk space required. The scan is processed by the service, not the SDK.
-     - The auth implications differ: for GCS you need GCP credentials on the scanning machine. For HF you don't need HF auth (public models only; private repos must be downloaded first and scanned as local).
+       - **Local models**: scanned directly from disk
+       - **Object storage (GCS, S3, Azure, Artifactory, GitLab)**: the SDK provides native access — handles credential resolution, model access, and cleanup automatically using the customer's existing cloud auth. No manual download steps needed.
+       - **HuggingFace public models**: scanned server-side by the AIRS-HuggingFace partnership infrastructure — no local resources needed at all.
+     - The auth implications differ per source: GCS needs GCP credentials (ADC), S3 needs AWS creds, HF public needs nothing extra. Understanding which auth is needed for which source is critical for CI/CD pipeline design.
+     - Private HF repos must be downloaded manually and scanned as local.
    - Show: Run `uv run model-security --help` to see available commands (`scan`, `list-scans`, `get-scan`). Note: there is NO `list-security-groups` command.
    - The pydantic deprecation warning on every invocation is cosmetic — ignore it.
    - Check: Can the student explain what happens locally vs what goes to the cloud during a scan? Why does this matter for customers with IP-sensitive models?
@@ -215,11 +216,11 @@ The student should be able to:
 >
 > **The problem:** The CLI `get-scan` command only shows aggregate results — you can see `rules_failed: 2` but not WHICH rules failed or WHY. The student needs to figure out how to retrieve the per-rule violation details programmatically.
 >
-> **Agent:** You have NO prepared context for this challenge. You do not know the API endpoints, the documentation location, or the steps to achieve this. Respond as you normally would when asked to do something you haven't done before — search, reason, try things, ask the student for guidance. If the student points you at documentation or a URL, read it and help. But do NOT pretend to already know the answer.
+> **Agent:** You have NO prepared context for this challenge. Respond as you normally would when asked to do something you haven't done before — search, reason, try things, ask the student for guidance. If the student points you at documentation or a URL, read it and help. But do NOT pretend to already know the answer.
 >
-> **Student:** This is your challenge. The instructor wants you to figure out how to guide Claude to retrieve detailed scan violation data. You have scan UUIDs from your earlier scans. You know how authentication works (OAuth tokens). The per-rule details exist somewhere — find them. Use whatever resources you can: web search, API docs, the SCM UI, asking Claude to try things. The learning here is the PROCESS of using an AI coding tool to discover and integrate with an unfamiliar API.
+> **Student:** This is your challenge. The instructor wants you to figure out how to guide Claude to retrieve detailed scan violation data. The learning here is the PROCESS of using an AI coding tool to discover and intstruct it to provide context and tools it should use.
 >
-> **Success is:** retrieving per-rule evaluation results and violation details for one of your scans, and being able to explain what each rule found.
+> **Success is:** Claude retrieving per-rule evaluation results and violation details for one of your scans, and being able to explain what each rule found.
 
 > **ENGAGE** (award after the student achieves the goal): Discuss the meta-skill they just practiced. They used Claude to discover and call an API neither of them had seen before. Where else could this pattern be useful?
 > Award 1 pt for meaningful engagement.
