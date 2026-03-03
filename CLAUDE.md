@@ -250,6 +250,7 @@ Bonuses are awarded by the instructor via the leaderboard's `post-bonus.sh` scri
 - **Topic deep-dive guides**: `lab/topics/module-N/` (read on /explore for teaching reference)
 - **Lab system architecture**: `.claude/reference/lab-system-architecture.md` (how the flow system works, file conventions, templates, iteration guide)
 - **Workshop context**: `.claude/reference/workshop-context.md` (prereqs, CSP accounts, credits, provisioning timelines)
+- **Model security scanning**: `.claude/reference/model-security-scanning.md` (how scanning works, SDK architecture, rule types, API surfaces)
 - **AIRS provisioning**: `.claude/reference/airs-provisioning.md` (deployment profiles, TSG setup, service accounts)
 - **AIRS tech docs**: `.claude/reference/airs-tech-docs/` (model security reference, release notes)
 - **Research docs**: `.claude/reference/research/` (ML architecture, threats, Vertex AI serving)

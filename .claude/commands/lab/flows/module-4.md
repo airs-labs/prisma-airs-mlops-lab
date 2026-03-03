@@ -87,11 +87,17 @@ The student should be able to:
      ```
    - Check: Do both `echo $AIRS_MS_CLIENT_ID` and `echo $MODEL_SECURITY_CLIENT_ID` return values after sourcing `.env`?
 
-3. **Explore the CLI**
-   - Show: Run `uv run model-security --help` to see available commands.
-   - Available commands: `scan`, `list-scans`, `get-scan`. Note: there is NO `list-security-groups` command — security group discovery requires the management API or SCM web UI.
+3. **How Scanning Actually Works (The SDK IS the Product)**
+   > CONTEXT: Read `.claude/reference/model-security-scanning.md` for full details.
+   - Core idea: The SDK is not just a client — it IS the scanning engine. All analysis happens locally via static analysis (byte-level inspection without executing the model). Nothing is uploaded to Palo Alto Networks. The backend handles policy management and scan tracking, but the actual security analysis runs entirely in the customer's environment.
+   - Key points to teach:
+     - **Static analysis, not execution** — if you loaded the model to scan it, the malicious payload would already execute. The scanner reads files as raw data.
+     - **What IS sent**: file hashes, detected formats, rule pass/fail counts, metadata.
+     - **What is NOT sent**: model weights, architecture, training data, the actual files.
+     - **Source-specific auth**: when scanning cloud models (GCS, S3, HF), the SDK handles the download using the customer's existing cloud auth. The model is downloaded locally, scanned, then optionally cleaned up.
+   - Show: Run `uv run model-security --help` to see available commands (`scan`, `list-scans`, `get-scan`). Note: there is NO `list-security-groups` command.
    - The pydantic deprecation warning on every invocation is cosmetic — ignore it.
-   - Check: Can the student describe what each CLI command does?
+   - Check: Can the student explain what happens locally vs what goes to the cloud during a scan? Why does this matter for customers with IP-sensitive models?
 
 ---
 
@@ -233,41 +239,6 @@ Present this to the student:
 > Award 1 pt for meaningful engagement.
 
 ---
-
-## Challenge 4.6: Fix the Policy
-
-### Learning Objectives
-
-The student should be able to:
-- Make an informed policy decision about governance rules
-- Modify a security group's rules in SCM
-- Re-scan and verify the policy change took effect
-
-### Key Concepts
-
-1. **The Policy Decision**
-   - Core idea: The Qwen model is blocked by two governance rules. The student needs to decide: should they change the policy to allow it? This is a real enterprise decision — not a technical one.
-   - Discussion: In the lab, we WANT to use Qwen. In a real enterprise, adding `"other"` to approved licenses is a governance decision that security, legal, and compliance teams would weigh in on. Adding an unverified org to the approved list has supply chain implications.
-   - For the lab: yes, change it. But acknowledge the decision.
-   - Check: Can the student articulate the tradeoffs?
-
-2. **Modify the Security Group in SCM**
-   - Show: Navigate to the Default HUGGING_FACE security group in SCM.
-   - Two changes needed:
-     - **License Is Valid For Use** — either add `other` to the approved license list, OR change the rule from blocking to non-blocking (alert-only)
-     - **Organization Verified By Hugging Face** — either add Qwen to approved orgs, OR change to non-blocking
-   - For the lab, recommend changing both rules to **non-blocking** rather than disabling them. This way detections still appear in reports but don't block the pipeline.
-   - Check: Did the student make the changes? Can they explain the difference between disabling a rule and setting it to non-blocking?
-
-3. **Re-scan and Verify**
-   - Re-scan the Qwen model with the same HF security group UUID:
-     ```bash
-     uv run model-security scan --model-uri "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct" \
-       -sg "<HF-UUID>" --allow-patterns "*.safetensors"
-     ```
-   - Expected: `eval_outcome: ALLOWED` (rules still detect the issues but don't block)
-   - The `eval_summary` should still show `rules_failed: 2` — the detection is the same, only enforcement changed. This is the key value prop: same detection, configurable enforcement.
-   - Check: Does the student understand that detection and enforcement are independent? Can they explain the enterprise pattern: dev=alert, prod=block?
 
 ---
 

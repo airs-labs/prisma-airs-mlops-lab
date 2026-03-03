@@ -62,7 +62,7 @@ def parse_args():
 
 
 def check_airs_credentials():
-    """Verify AIRS credentials are set."""
+    """Verify AIRS credentials are set and map to SDK env var names."""
     has_sa = os.getenv("AIRS_MS_CLIENT_ID") and os.getenv("AIRS_MS_CLIENT_SECRET")
     has_tsg = os.getenv("TSG_ID")
 
@@ -72,6 +72,12 @@ def check_airs_credentials():
 
     if not has_tsg:
         console.print("[bold yellow]TSG_ID not set. May be required for authentication.[/bold yellow]")
+
+    # Map lab env vars to SDK-expected names (SDK reads MODEL_SECURITY_* internally)
+    if not os.getenv("MODEL_SECURITY_CLIENT_ID"):
+        os.environ["MODEL_SECURITY_CLIENT_ID"] = os.getenv("AIRS_MS_CLIENT_ID", "")
+    if not os.getenv("MODEL_SECURITY_CLIENT_SECRET"):
+        os.environ["MODEL_SECURITY_CLIENT_SECRET"] = os.getenv("AIRS_MS_CLIENT_SECRET", "")
 
     return True
 

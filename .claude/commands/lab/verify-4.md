@@ -90,7 +90,7 @@ Update lab/.progress.json:
 ```
 modules.4.status = "complete"
 modules.4.verified = true
-modules.4.challenges_completed = ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6"]
+modules.4.challenges_completed = ["4.1", "4.2", "4.3", "4.4", "4.5"]
 modules.4.engagement_points = [from flow]
 modules.4.points_awarded = [total of ALL points including engagement]
 modules.4.quiz_scores = {"q1": X, "q2": Y}
