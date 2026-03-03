@@ -61,8 +61,8 @@ permissions:
 
 env:
   REGION: us-central1
-  STAGING_BUCKET: gs://your-model-bucket
-  PROJECT_ID: your-gcp-project-id
+  STAGING_BUCKET: gs://syoungberg-airs-lab
+  PROJECT_ID: syoungberg-prod
   MODEL_SECURITY_API_ENDPOINT: https://api.sase.paloaltonetworks.com/aims
 
 jobs:

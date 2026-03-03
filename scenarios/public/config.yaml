@@ -1,0 +1,12 @@
+display_name: "Public / Self-Guided"
+hard_stops: false
+leaderboard: false
+
+gcp:
+  folder_id: ""
+  project_pattern: ""
+  region: ""
+  billing_account: ""
+
+csp:
+  tsg_naming: "Create or use any available TSG"

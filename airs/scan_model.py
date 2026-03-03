@@ -27,26 +27,23 @@ except ImportError:
 
 console = Console()
 
-# All security groups configured in SCM.
-# Keys are shorthand names; values are (UUID, source_type) tuples.
+# Security groups from your SCM tenant.
+# Replace these with YOUR tenant's UUIDs from SCM → AI Model Security → Security Groups.
+# Or pass UUIDs directly via --security-group flag (no code changes needed).
+# See Module 4.2 for how to find your UUIDs.
 SECURITY_GROUPS = {
-    "local":       (UUID("00000000-0000-0000-0000-000000000001"), "LOCAL"),
-    "gcs":         (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),
-    "gcs-default": (UUID("00000000-0000-0000-0000-000000000002"), "GCS"),  # alias for backwards compat
-    "hf":          (UUID("00000000-0000-0000-0000-000000000003"), "HUGGING_FACE"),
-    "warn":        (UUID("00000000-0000-0000-0000-000000000004"), "GCS"),
-    "block":       (UUID("00000000-0000-0000-0000-000000000005"), "GCS"),
-    "s3":          (UUID("00000000-0000-0000-0000-000000000006"), "S3"),
-    "azure":       (UUID("00000000-0000-0000-0000-000000000007"), "AZURE"),
+    "local":       (UUID("a7ae2286-5a2d-4dc6-9e98-7055916725cc"), "LOCAL"),
+    "gcs-default": (UUID("c472b2b9-5823-47cd-bda1-8a83f3b536b6"), "GCS"),
+    "hf":          (UUID("0ef6dadc-70ff-4fab-b4e5-854046bb7a56"), "HUGGING_FACE"),
+    "warn":        (UUID("c472b2b9-5823-47cd-bda1-8a83f3b536b6"), "GCS"),
+    "block":       (UUID("c472b2b9-5823-47cd-bda1-8a83f3b536b6"), "GCS"),
 }
 
 # Default group per source type (used when --security-group is not specified)
 DEFAULT_GROUPS = {
     "LOCAL":        SECURITY_GROUPS["local"][0],
-    "GCS":          SECURITY_GROUPS["gcs"][0],
+    "GCS":          SECURITY_GROUPS["gcs-default"][0],
     "HUGGING_FACE": SECURITY_GROUPS["hf"][0],
-    "S3":           SECURITY_GROUPS["s3"][0],
-    "AZURE":        SECURITY_GROUPS["azure"][0],
 }
 
 
@@ -56,15 +53,8 @@ def parse_args():
     parser.add_argument(
         "--security-group",
         default=None,
-        help="Security group UUID or shorthand key (local, gcs, hf, warn, block, s3, azure). "
+        help="Security group UUID or shorthand key (local, gcs-default, hf, warn, block). "
              "Auto-detected from model path if not specified.",
-    )
-    parser.add_argument(
-        "--label", "-l",
-        action="append",
-        default=[],
-        metavar="KEY=VALUE",
-        help="Add label to scan (repeatable, e.g. -l gate=2 -l run_id=abc). Max 50 labels.",
     )
     parser.add_argument("--warn-only", action="store_true", help="Treat BLOCKED verdict as warning (exit 0)")
     parser.add_argument("--output-json", help="Path to save JSON report")
@@ -72,7 +62,7 @@ def parse_args():
 
 
 def check_airs_credentials():
-    """Verify AIRS credentials are set."""
+    """Verify AIRS Model Security credentials are set."""
     has_sa = os.getenv("MODEL_SECURITY_CLIENT_ID") and os.getenv("MODEL_SECURITY_CLIENT_SECRET")
     has_tsg = os.getenv("TSG_ID")
 
@@ -109,12 +99,26 @@ def resolve_security_group(group_arg, source_type):
         if group_uuid is None:
             console.print(f"[bold red]No default security group for source type: {source_type}[/bold red]")
             sys.exit(1)
+        # Catch placeholder UUIDs — students need to configure their own
+        if str(group_uuid).startswith("00000000"):
+            console.print(f"[bold yellow]⚠ Security group UUID is a placeholder![/bold yellow]")
+            console.print(f"  The SECURITY_GROUPS dict in scan_model.py has not been configured.")
+            console.print(f"  Two options:")
+            console.print(f"    1. Pass your UUID directly:  --security-group <your-uuid>")
+            console.print(f"    2. Edit SECURITY_GROUPS in airs/scan_model.py with your tenant's UUIDs")
+            console.print(f"  Find your UUIDs in SCM → AI Model Security → Security Groups (Module 4.2)")
+            sys.exit(1)
         console.print(f"  Security Group: [cyan]Default {source_type}[/cyan] (auto-detected)")
         return group_uuid
 
     # Try as shorthand key first
     if group_arg in SECURITY_GROUPS:
         group_uuid, group_source = SECURITY_GROUPS[group_arg]
+        if str(group_uuid).startswith("00000000"):
+            console.print(f"[bold yellow]⚠ '{group_arg}' maps to a placeholder UUID![/bold yellow]")
+            console.print(f"  Pass your real UUID directly:  --security-group <your-uuid>")
+            console.print(f"  Or edit SECURITY_GROUPS in airs/scan_model.py with your tenant's UUIDs")
+            sys.exit(1)
         console.print(f"  Security Group: [cyan]{group_arg}[/cyan] ({group_uuid})")
         if group_source != source_type:
             console.print(
@@ -134,22 +138,7 @@ def resolve_security_group(group_arg, source_type):
         sys.exit(1)
 
 
-def parse_labels(label_args):
-    """Parse KEY=VALUE label pairs from CLI args into a dict."""
-    labels = {}
-    for item in label_args:
-        if "=" not in item:
-            console.print(f"[bold red]Invalid label format: '{item}' (expected KEY=VALUE)[/bold red]")
-            sys.exit(1)
-        key, value = item.split("=", 1)
-        labels[key.strip()] = value.strip()
-    if len(labels) > 50:
-        console.print(f"[bold red]Too many labels: {len(labels)} (max 50)[/bold red]")
-        sys.exit(1)
-    return labels
-
-
-def scan_model(model_path, security_group_uuid, labels=None):
+def scan_model(model_path, security_group_uuid):
     """Execute the scan using AIRS SDK."""
     if not AIRS_AVAILABLE:
         console.print("[bold red]model-security-client package not installed![/bold red]")
@@ -181,20 +170,14 @@ def scan_model(model_path, security_group_uuid, labels=None):
         )
         client = ModelSecurityAPIClient(base_url=base_url, timeout=60.0)
 
-        # Build scan kwargs
-        scan_kwargs = dict(
-            security_group_uuid=security_group_uuid,
-            model_path=local_path,
-            model_uri=model_uri,
-            poll_timeout_secs=600,
-        )
-        if labels:
-            scan_kwargs["labels"] = labels
-            console.print(f"  Labels: [cyan]{labels}[/cyan]")
-
         # Trigger Scan
         with console.status("[bold green]Scanning model artifacts...[/bold green]"):
-            response = client.scan(**scan_kwargs)
+            response = client.scan(
+                security_group_uuid=security_group_uuid,
+                model_path=local_path,
+                model_uri=model_uri,
+                poll_timeout_secs=600,
+            )
 
         client.close()
 
@@ -219,11 +202,8 @@ def main():
     source_type = detect_source_type(args.model_path)
     security_group_uuid = resolve_security_group(args.security_group, source_type)
 
-    # Parse labels
-    labels = parse_labels(args.label) if args.label else None
-
     # Run scan
-    results = scan_model(args.model_path, security_group_uuid, labels=labels)
+    results = scan_model(args.model_path, security_group_uuid)
 
     # Save Report
     if args.output_json:

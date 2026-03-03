@@ -1,6 +1,6 @@
 name: "Gate 2: Publish Model"
 
-# Gate 2 scans trained models and publishes them to the model registry.
+# Gate 2 merges LoRA adapters and publishes models to the model registry.
 # Supports both manual dispatch and automatic chaining from Gate 1.
 
 on:
@@ -9,7 +9,7 @@ on:
       model_source:
         description: 'Source path of trained model (gs://...)'
         required: true
-        default: 'gs://your-model-bucket/raw-models/cloud-security-advisor'
+        default: 'gs://syoungberg-airs-lab/raw-models/cloud-security-advisor'
 
       model_name:
         description: 'Name/ID for the published model'
@@ -35,11 +35,6 @@ on:
         required: true
         default: 'Qwen/Qwen2.5-3B-Instruct'
 
-      security_group:
-        description: 'AIRS Security Group (UUID or shorthand: local, gcs-default, hf, warn, block). Leave empty for auto-detect.'
-        required: false
-        default: ''
-
       auto_chain:
         description: 'Automatically trigger Gate 3 on completion'
         type: boolean
@@ -55,8 +50,7 @@ permissions:
   actions: read
 
 env:
-  MODEL_SECURITY_API_ENDPOINT: https://api.sase.paloaltonetworks.com/aims
-  GCS_BLESSED_BUCKET: gs://your-model-bucket/approved-models
+  GCS_BLESSED_BUCKET: gs://syoungberg-airs-lab/approved-models
 
 jobs:
   # ============================================
@@ -75,7 +69,6 @@ jobs:
       model_name: ${{ steps.resolve.outputs.model_name }}
       model_version: ${{ steps.resolve.outputs.model_version }}
       base_model: ${{ steps.resolve.outputs.base_model }}
-      security_group: ${{ steps.resolve.outputs.security_group }}
       auto_chain: ${{ steps.resolve.outputs.auto_chain }}
       publish_to: ${{ steps.resolve.outputs.publish_to }}
 
@@ -89,7 +82,6 @@ jobs:
           echo "model_name=${{ inputs.model_name }}" >> $GITHUB_OUTPUT
           echo "model_version=${{ inputs.model_version }}" >> $GITHUB_OUTPUT
           echo "base_model=${{ inputs.base_model }}" >> $GITHUB_OUTPUT
-          echo "security_group=${{ inputs.security_group }}" >> $GITHUB_OUTPUT
           echo "auto_chain=${{ inputs.auto_chain }}" >> $GITHUB_OUTPUT
           echo "publish_to=${{ inputs.publish_to }}" >> $GITHUB_OUTPUT
 
@@ -134,7 +126,6 @@ jobs:
           echo "model_name=$MODEL_NAME" >> $GITHUB_OUTPUT
           echo "model_version=$VERSION" >> $GITHUB_OUTPUT
           echo "base_model=$BASE_MODEL" >> $GITHUB_OUTPUT
-          echo "security_group=" >> $GITHUB_OUTPUT
           echo "auto_chain=true" >> $GITHUB_OUTPUT
           echo "publish_to=gcs" >> $GITHUB_OUTPUT
 
@@ -147,7 +138,6 @@ jobs:
             echo "model_name=${{ steps.dispatch.outputs.model_name }}" >> $GITHUB_OUTPUT
             echo "model_version=${{ steps.dispatch.outputs.model_version }}" >> $GITHUB_OUTPUT
             echo "base_model=${{ steps.dispatch.outputs.base_model }}" >> $GITHUB_OUTPUT
-            echo "security_group=${{ steps.dispatch.outputs.security_group }}" >> $GITHUB_OUTPUT
             echo "auto_chain=${{ steps.dispatch.outputs.auto_chain }}" >> $GITHUB_OUTPUT
             echo "publish_to=${{ steps.dispatch.outputs.publish_to }}" >> $GITHUB_OUTPUT
           else
@@ -156,23 +146,20 @@ jobs:
             echo "model_name=${{ steps.chain.outputs.model_name }}" >> $GITHUB_OUTPUT
             echo "model_version=${{ steps.chain.outputs.model_version }}" >> $GITHUB_OUTPUT
             echo "base_model=${{ steps.chain.outputs.base_model }}" >> $GITHUB_OUTPUT
-            echo "security_group=${{ steps.chain.outputs.security_group }}" >> $GITHUB_OUTPUT
             echo "auto_chain=${{ steps.chain.outputs.auto_chain }}" >> $GITHUB_OUTPUT
             echo "publish_to=${{ steps.chain.outputs.publish_to }}" >> $GITHUB_OUTPUT
           fi
 
   # ============================================
-  # Gate 2: Scan & Publish
+  # Gate 2: Merge & Publish
   # ============================================
   gate2-scan-and-publish:
-    name: "Gate 2: Scan & Publish"
+    name: "Gate 2: Merge & Publish"
     runs-on: ubuntu-latest
     needs: [resolve-inputs]
     if: needs.resolve-inputs.outputs.should_run == 'true'
 
     outputs:
-      scan_verdict: ${{ steps.scan.outputs.verdict }}
-      scan_id: ${{ steps.scan.outputs.scan_id }}
       published_path: ${{ steps.publish.outputs.path }}
 
     steps:
@@ -183,17 +170,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Install AIRS SDK
-        env:
-          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
-          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
-          TSG_ID: ${{ secrets.TSG_ID }}
-        run: |
-          python -m pip install --upgrade pip
-          chmod +x scripts/get-pypi-url.sh
-          PYPI_URL=$(./scripts/get-pypi-url.sh)
-          pip install --extra-index-url "$PYPI_URL" -r airs/requirements.txt
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -237,57 +213,6 @@ jobs:
 
           echo "MODEL_PATH=./merged-model" >> $GITHUB_ENV
 
-      - name: "GATE 2: AIRS Security Scan"
-        id: scan
-        env:
-          MODEL_SECURITY_CLIENT_ID: ${{ secrets.MODEL_SECURITY_CLIENT_ID }}
-          MODEL_SECURITY_CLIENT_SECRET: ${{ secrets.MODEL_SECURITY_CLIENT_SECRET }}
-          TSG_ID: ${{ secrets.TSG_ID }}
-        run: |
-          echo ""
-          echo "======================================================="
-          echo "  GATE 2: SCANNING TRAINED MODEL"
-          echo "  Model: ${{ needs.resolve-inputs.outputs.model_source }}"
-          echo "======================================================="
-          echo ""
-
-          # --warn-only: BLOCKED verdict exits 0 (policy rules shouldn't block publishing)
-          echo "Scanning merged model at ./merged-model"
-
-          # Security group auto-detected from source type (LOCAL for merged model on disk)
-          SCAN_ARGS="--model-path ./merged-model --warn-only --output-json gate2-scan-results.json"
-          SECURITY_GROUP="${{ needs.resolve-inputs.outputs.security_group }}"
-          if [ -n "$SECURITY_GROUP" ]; then
-            SCAN_ARGS="$SCAN_ARGS --security-group $SECURITY_GROUP"
-          fi
-
-          python airs/scan_model.py $SCAN_ARGS
-
-          # Parse verdict and scan UUID for reporting
-          VERDICT=$(python -c "
-          import json
-          with open('gate2-scan-results.json') as f:
-              data = json.load(f)
-          v = str(data.get('eval_outcome', 'UNKNOWN'))
-          print(v.split('.')[-1].upper())
-          ")
-
-          SCAN_UUID=$(python -c "
-          import json
-          with open('gate2-scan-results.json') as f:
-              data = json.load(f)
-          print(data.get('uuid', 'unknown'))
-          ")
-
-          echo "verdict=$VERDICT" >> $GITHUB_OUTPUT
-          echo "scan_id=$SCAN_UUID" >> $GITHUB_OUTPUT
-
-          echo ""
-          echo "======================================================="
-          echo "  GATE 2 RESULT: $VERDICT"
-          echo "  Scan UUID: $SCAN_UUID"
-          echo "======================================================="
-
       - name: Publish to GCS
         id: publish-gcs
         if: success() && needs.resolve-inputs.outputs.publish_to == 'gcs'
@@ -315,7 +240,7 @@ jobs:
           api.upload_folder(
               folder_path="$MODEL_PATH",
               repo_id="${{ needs.resolve-inputs.outputs.model_name }}",
-              commit_message="Gate 2 - Scan ID: ${{ steps.scan.outputs.scan_id }}"
+              commit_message="Gate 2 - Published via pipeline"
           )
           print("Published to HuggingFace Hub")
           EOF
@@ -326,7 +251,7 @@ jobs:
         id: publish-vertex
         if: success() && needs.resolve-inputs.outputs.publish_to == 'vertex_ai'
         run: |
-          STAGING_PATH="gs://your-model-bucket/vertex-models/${{ needs.resolve-inputs.outputs.model_name }}/${{ needs.resolve-inputs.outputs.model_version }}"
+          STAGING_PATH="gs://syoungberg-airs-lab/vertex-models/${{ needs.resolve-inputs.outputs.model_name }}/${{ needs.resolve-inputs.outputs.model_version }}"
           gcloud storage cp -r "$MODEL_PATH/*" "$STAGING_PATH/"
 
           gcloud ai models upload \
@@ -358,18 +283,8 @@ jobs:
               --output manifest.json
           }
 
-      - name: Update Manifest with Gate 2 Scan
+      - name: Update Manifest with Version
         run: |
-          python scripts/manifest.py add-scan \
-            --manifest manifest.json \
-            --gate gate2 \
-            --scan-uuid "${{ steps.scan.outputs.scan_id }}" \
-            --verdict "${{ steps.scan.outputs.verdict }}" \
-            --security-group "${{ needs.resolve-inputs.outputs.security_group || 'auto-detected' }}" \
-            --target "${{ needs.resolve-inputs.outputs.model_name }}" \
-            --target-type merged_model \
-            --warn-only
-
           python scripts/manifest.py set-version \
             --manifest manifest.json \
             --version "${{ needs.resolve-inputs.outputs.model_version }}" \
@@ -380,14 +295,6 @@ jobs:
         run: |
           gcloud storage cp manifest.json "${{ steps.publish.outputs.path }}/manifest.json"
           echo "Manifest uploaded to ${{ steps.publish.outputs.path }}/manifest.json"
-
-      - name: Upload Scan Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: gate2-scan-results-${{ needs.resolve-inputs.outputs.model_version }}
-          path: gate2-scan-results.json
-          retention-days: 90
 
       - name: Upload Chain Metadata
         uses: actions/upload-artifact@v4
@@ -421,7 +328,6 @@ jobs:
           echo "| Version | ${{ needs.resolve-inputs.outputs.model_version }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Source | \`${{ needs.resolve-inputs.outputs.model_source }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Registry | ${{ needs.resolve-inputs.outputs.publish_to }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Verdict | **${{ steps.scan.outputs.verdict }}** |" >> $GITHUB_STEP_SUMMARY
           echo "| Published | \`${{ steps.publish.outputs.path }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY

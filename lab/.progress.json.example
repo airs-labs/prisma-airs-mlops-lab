@@ -1,0 +1,91 @@
+{
+  "$schema": "airs-lab-progress-v2",
+  "student_id": "",
+  "scenario": "",
+  "lab_id": "prisma-airs-mlops-lab",
+  "current_module": 0,
+  "current_challenge": "",
+  "blockers": [],
+  "hard_stops": {},
+  "collaboration_bonuses": [],
+  "modules": {
+    "0": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "1": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "2": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "3": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "4": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "5": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "6": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    },
+    "7": {
+      "status": "not_started",
+      "challenges_completed": [],
+      "engagement_points": 0,
+      "points_awarded": 0,
+      "quiz_scores": {},
+      "verified": false,
+      "verified_at": null
+    }
+  },
+  "leaderboard_points": 0,
+  "onboarding_complete": false,
+  "cross_lab": {
+    "previous_labs_validated": [],
+    "shared_gcp_project": ""
+  }
+}

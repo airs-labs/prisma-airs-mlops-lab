@@ -43,6 +43,7 @@ Error: 403 Forbidden - Insufficient permissions for /mgmt/v1/pypi/authenticate
 2. Or use a pre-authenticated URL from someone with superuser access:
    ```bash
    # Get authenticated PyPI URL (requires superuser)
+   # Ensure MODEL_SECURITY_CLIENT_ID and MODEL_SECURITY_CLIENT_SECRET are set
    ./scripts/get-pypi-url.sh
 
    # Use the URL in pip install
