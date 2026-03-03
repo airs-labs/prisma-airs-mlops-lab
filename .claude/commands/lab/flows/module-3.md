@@ -23,50 +23,55 @@
 ### Learning Objectives
 
 The student should be able to:
-- Explain what the app is, what problem it solves, and why it uses a custom fine-tuned model
-- Describe the components of model serving: what vLLM does, what inference endpoints are, how the app talks to the model
-- Understand chat templates at a high level — what they are and where they're handled in the stack
+- Explain what the app is and why it uses a self-hosted fine-tuned model
+- Describe the decoupled serving architecture and why model and app are separated
+- Understand at a high level how the app calls the model, what vLLM does, and what chat templates are
 
 ### Key Concepts
 
-Teach these BEFORE the student takes action. One at a time, wait for response.
+Explore these through the project files. Show code first, then discuss. One concept at a time.
 
 1. **What You Built and Why**
-   - Core idea: This is a **Cloud Security Advisor** — an internal chatbot for SOC teams, fine-tuned on NIST Cybersecurity Framework, incident response procedures, and compliance guidance. The reason it's a custom model (not just calling ChatGPT) is control: the organization owns the model, controls the training data, can run it on-premise or in their own cloud, and doesn't send sensitive queries to a third-party API. This is the exact scenario customers bring to PANW — "we want to deploy our own model."
-   - Show: Read `lab/LAB-3.md` overview and the dataset references from Module 2. Remind the student what they trained on (NIST cybersecurity Q&A dataset) and connect it to the use case.
-   - Check: Can the student articulate why an organization would fine-tune and self-host instead of using a commercial API? (data sovereignty, compliance, specialization, cost at scale, no vendor lock-in)
+   - This is a Cloud Security Advisor — an internal cybersecurity chatbot fine-tuned on NIST frameworks. The reason it's self-hosted (not just calling ChatGPT) is control: data sovereignty, compliance, specialization, no vendor lock-in.
+   - Connect to Module 2: remind them what dataset they trained on and why.
+   - Check: Why would a customer self-host instead of using a commercial API?
 
-2. **Model Serving: The Components**
-   - Core idea: Model serving is how a trained model becomes something users can actually talk to. There are three layers:
-     - **Serving framework (vLLM)** — Think of this like nginx but for ML models. It loads model weights onto a GPU, manages memory efficiently, handles concurrent requests, and exposes an API. vLLM specifically is popular because it's fast (PagedAttention for memory) and exposes an OpenAI-compatible API.
-     - **Inference endpoint** — The API that accepts prompts and returns completions. The standard is OpenAI's format: `/v1/completions` (raw text in, text out) and `/v1/chat/completions` (structured messages in, message out). Most serving frameworks speak this format now.
-     - **Application layer** — The user-facing app (our FastAPI service on Cloud Run). It handles auth, UI, business logic, and calls the inference endpoint. It does NOT run the model — it's just a client.
-   - Show: [VISUAL] Generate a 3-layer architecture diagram showing: Application (Cloud Run, CPU) → Inference Endpoint (Vertex AI) → Serving Framework (vLLM on GPU with model weights loaded). Output to `lab/.visuals/m3-c1-serving-layers.html`.
-   - Check: Can the student describe the role of each layer? What lives on GPU vs CPU? Why is the serving framework a separate component from the application?
+2. **The Container — What's NOT There**
+   - Show: Read `Dockerfile` and display it inline. Let the student look at it.
+   - Explore: What's missing? No model weights, no PyTorch, no CUDA, no GPU drivers. It's `python:3.12-slim` running `uvicorn`. That's it. So if this container can't run a model... where does the actual inference happen?
+   - This naturally leads to the decoupled architecture: app on Cloud Run (cheap CPU, 512MB RAM) vs model on Vertex AI endpoint (expensive GPU running vLLM).
+   - Check: Why would you want this separation? (cost, scaling, independent updates, security scan insertion points)
 
-3. **Chat Templates — Where Intelligence Meets Format**
-   - Core idea: LLMs don't inherently understand "conversations." They predict the next token in a sequence. Chat templates are the formatting convention that turns a multi-turn conversation into a single text string the model can process. Different models use different templates — Qwen2 uses `<|im_start|>` markers, Llama uses `[INST]`, etc. Normally, the `/v1/chat/completions` endpoint handles this formatting automatically. When it's not available (as in our Vertex AI setup), the application has to construct the template manually.
-   - Show: Read `src/airs_mlops_lab/serving/inference_client.py` and display the chat template construction section. Show how the conversation messages get formatted into a single prompt string with role markers. Keep it high level — the point is "this is what's happening under the hood" not "memorize this syntax."
-   - Check: Does the student understand that chat isn't magic — it's formatted text? Where in the stack is this normally handled vs where we handle it? Why does the template format matter? (wrong format = garbage output even if the model is fine)
+3. **The App Layer — How Thin It Is**
+   - Show: Read `src/airs_mlops_lab/serving/server.py` and display the chat endpoint. It's ~5 lines: receive message, call inference client, return reply. Zero ML logic.
+   - Show: Read `src/airs_mlops_lab/serving/inference_client.py` and display the `chat()` method. Walk through what's happening at a high level:
+     - It builds a prompt using chat template tokens (`<|im_start|>`, `<|im_end|>`) — this is how the model understands conversation turns. Different models use different formats.
+     - It calls a Vertex AI `rawPredict` endpoint with a GCP auth token.
+     - It uses `model: "openapi"` — a Vertex AI quirk where the served model name gets overridden.
+   - Don't go deep on any of these — just enough that the student knows what's happening. The point is: the app is a thin client that formats requests and passes them through.
+   - Check: Can the student trace the request flow? Browser → app → Vertex AI → vLLM on GPU → response back.
 
-> **ENGAGE**: After covering the three layers, ask the student to think about this from a security perspective. If you were assessing this deployment, where are the trust boundaries? Where could an attacker insert themselves? The key insight: the model artifact itself is a trust boundary that nobody is checking right now.
+4. **The Visual**
+   - Show: [VISUAL] Generate a request flow diagram showing the full architecture: Browser → Cloud Run (CPU, no model) → auth boundary (GCP token) → Vertex AI → vLLM (GPU, model weights). Include a callout about the security gap. Output to `lab/.visuals/m3-c1-request-flow.html`.
+   - Have the student trace the full flow in their own words. Where does auth happen? Where does the heavy compute happen?
+
+> **ENGAGE**: Now the security question. The auth controls who can CALL the model. But what controls whether the model ITSELF is safe? A poisoned model would serve through this exact same auth flow. Where in this architecture would you insert a security check?
 > Award 1 pt for meaningful engagement. Effort-based, not correctness.
 
 ### Action
 
-No commands to run for this challenge. This is a comprehension challenge.
-The learning objectives are met through the Key Concepts checks above.
+No commands to run. This is a comprehension challenge — learning happens through code exploration and discussion.
 
 ### Debrief
 
-- This architecture (app → inference endpoint → serving framework) is the standard pattern for enterprise model deployments. It's how OpenAI, Anthropic, and enterprise self-hosted deployments all work — the layers may differ but the pattern is the same.
-- The customer question that matters: "What scans happened between training and deployment?" In most organizations, the answer is none.
-- Foreshadow: Right now, nothing stops a compromised model from being loaded onto that GPU. That changes in Module 5.
+- This architecture is the standard pattern for enterprise ML deployments — same pattern behind OpenAI, Anthropic, and self-hosted setups. The layers differ but the structure is the same.
+- The customer question: "What scans happened between training and deployment?" For most organizations, the answer is none.
+- Foreshadow: nothing stops a compromised model from loading onto that GPU. That changes in Module 5.
 
 ### Deep Dive
 
 For `/lab:explore`: `lab/topics/module-3/serving-architecture.md`
-Covers additional depth on: rawPredict internals, vLLM memory management, chat template syntax details, Vertex AI-specific constraints.
+Covers additional depth on: vLLM internals, chat template syntax, rawPredict details, Vertex AI-specific constraints.
 
 ---
 
