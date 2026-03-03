@@ -50,17 +50,19 @@ The SDK IS the scanning engine — it contains the detection logic. The backend 
 
 ## Source-Specific Scanning
 
-| Source | How It Works |
-|--------|-------------|
-| **Local** | SDK reads files directly from disk. No download needed. |
-| **HuggingFace** | SDK downloads the model using HF Hub (public models only; private must be downloaded first) |
-| **GCS** | SDK downloads via Google Application Default Credentials |
-| **S3** | SDK downloads via boto3 (AWS credentials) |
-| **Azure** | SDK downloads via Microsoft Entra ID |
-| **Artifactory** | SDK downloads via `ARTIFACTORY_TOKEN` |
-| **GitLab** | SDK downloads via `GITLAB_TOKEN` |
+| Source | How It Works | Where Scanning Happens |
+|--------|-------------|----------------------|
+| **Local** | SDK reads files directly from disk | Locally on the scanning machine |
+| **HuggingFace** | Partnership infrastructure scans the model server-side (public models only) | Server-side (no local download needed) |
+| **GCS** | SDK downloads via Google Application Default Credentials | Locally (model downloaded then scanned) |
+| **S3** | SDK downloads via boto3 (AWS credentials) | Locally (model downloaded then scanned) |
+| **Azure** | SDK downloads via Microsoft Entra ID | Locally (model downloaded then scanned) |
+| **Artifactory** | SDK downloads via `ARTIFACTORY_TOKEN` | Locally (model downloaded then scanned) |
+| **GitLab** | SDK downloads via `GITLAB_TOKEN` | Locally (model downloaded then scanned) |
 
-For cloud sources, the SDK handles download automatically, piggybacking on the customer's existing cloud auth. The model is downloaded to a local cache, scanned, and optionally cleaned up.
+**Key distinction:** HuggingFace public models are scanned by the AIRS-HuggingFace partnership service (server-side, no local resources needed). All other cloud sources require the SDK to download the model locally first, scan it, then optionally clean up. Private HuggingFace models must be downloaded manually and scanned as local.
+
+**Auth implications for pipelines:** Object storage scans in CI/CD require the runner to have cloud credentials (GCP ADC, AWS IAM, etc.) AND sufficient storage for the model download. HF scans only need AIRS credentials.
 
 ## The Two Types of Rules
 
@@ -103,19 +105,9 @@ PENDING = Scan in progress
 
 ## API Surfaces
 
-Three different API paths serve different purposes:
+The SDK exposes CLI commands (`scan`, `list-scans`, `get-scan`) and a Python API via `ModelSecurityAPIClient`. The SDK's `get-scan` only returns aggregate summary (rules_passed/failed counts), NOT per-rule details.
 
-| Path | Purpose | Auth |
-|------|---------|------|
-| `/aims/mgmt/v1/` | Management — security groups, PyPI auth | Superuser or custom role |
-| `/aims/v1/` | SDK operations — scan, list-scans, get-scan | Via SDK (MODEL_SECURITY_* env vars) |
-| `/aims/data/v1/` | Data — per-rule evaluations, violations, detailed scan data | Bearer token |
-
-Per-rule evaluation details (which rules passed/failed, violation descriptions, remediation steps) are available via:
-- **SCM web UI** — navigate to a scan and click into details
-- **Data API** — `GET /aims/data/v1/scans/{uuid}/evaluations` and `GET /aims/data/v1/scans/{uuid}/rule-violations`
-
-The SDK `get-scan` only returns aggregate summary (rules_passed/failed counts), NOT per-rule details.
+Per-rule evaluation details (which rules passed/failed, violation descriptions, remediation steps) are available through other means — students discover these in the lab's Discovery Challenge (Module 4.5).
 
 ## Supported Model Formats (52+)
 

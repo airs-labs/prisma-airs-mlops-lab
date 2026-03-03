@@ -94,7 +94,11 @@ The student should be able to:
      - **Static analysis, not execution** — if you loaded the model to scan it, the malicious payload would already execute. The scanner reads files as raw data.
      - **What IS sent**: file hashes, detected formats, rule pass/fail counts, metadata.
      - **What is NOT sent**: model weights, architecture, training data, the actual files.
-     - **Source-specific auth**: when scanning cloud models (GCS, S3, HF), the SDK handles the download using the customer's existing cloud auth. The model is downloaded locally, scanned, then optionally cleaned up.
+     - **Source matters for HOW scanning works**:
+       - **Local models**: scanned directly from disk, no download
+       - **Object storage (GCS, S3, Azure, Artifactory, GitLab)**: the SDK downloads the model locally using the customer's existing cloud auth (GCP ADC, boto3, etc.), scans it, then optionally cleans up. This means the scanning machine needs storage, network access, AND cloud credentials.
+       - **HuggingFace public models**: scanned server-side by the AIRS-HuggingFace partnership infrastructure — no local download needed, no disk space required. The scan is processed by the service, not the SDK.
+     - The auth implications differ: for GCS you need GCP credentials on the scanning machine. For HF you don't need HF auth (public models only; private repos must be downloaded first and scanned as local).
    - Show: Run `uv run model-security --help` to see available commands (`scan`, `list-scans`, `get-scan`). Note: there is NO `list-security-groups` command.
    - The pydantic deprecation warning on every invocation is cosmetic — ignore it.
    - Check: Can the student explain what happens locally vs what goes to the cloud during a scan? Why does this matter for customers with IP-sensitive models?
@@ -146,16 +150,24 @@ The student should be able to:
    - Note: the scan detected TWO violations — ask the student to guess what they might be before we look at details later.
    - Check: Does the student understand what BLOCKED means and why the exit code matters for CI/CD?
 
-4. **Scan the Base Model from HuggingFace**
-   - This is the big reveal. Scan the Qwen2.5-3B-Instruct model — the same base model they've been training on:
+4. **Explore HuggingFace and Find Models to Scan**
+   - Have the student open their browser and explore HuggingFace. Point them to:
+     - The PANW-HuggingFace security partnership: `https://huggingface.co/docs/hub/en/security-protectai`
+     - The ProtectAI organization: `https://huggingface.co/protectai` — they publish scan results for public models
+     - A known intentionally-vulnerable test model: `https://huggingface.co/mcpotato/42-eicar-street`
+   - Suggest filters for finding interesting models to scan:
+     - Models with no license or non-standard licenses (governance violations)
+     - Models in unsafe formats (pickle, .pt files vs safetensors)
+     - Models from unverified organizations
+   - Have them pick 1-2 models from their browsing to scan. At minimum, also scan the Qwen2.5-3B-Instruct base model they've been training on:
      ```bash
      uv run model-security scan --model-uri "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct" \
        -sg "<HF-UUID>" --allow-patterns "*.safetensors"
      ```
-   - Expected result: **`eval_outcome: BLOCKED`**, `rules_failed: 2` out of 11
-   - This will surprise students — the model they've been using is blocked by default policy!
+   - **The Qwen reveal:** Expected result: **`eval_outcome: BLOCKED`**, `rules_failed: 2` out of 11. The model they've been using all lab is blocked by default policy!
+   - Note the difference between HF and local scans: HF scans use the partnership infrastructure (server-side, different `scanner_version`), local scans run entirely in the SDK.
 
-> **ENGAGE**: The base model you've been training on for the entire lab is BLOCKED. But look at the results — 9 of 11 rules PASSED, including all the threat detection rules (no code execution, no backdoors, safe format). So it's technically safe. Then why is it blocked? What kind of rules could be failing?
+> **ENGAGE**: The base model you've been training on for the entire lab is BLOCKED. But all the threat detection rules PASSED — no code execution, no backdoors, safe format. It's technically safe. So why is it blocked? What kind of rules could be failing?
 > This is the key insight: **threat detection** (is it safe?) is different from **governance** (is it approved?). The Qwen model is safe but not approved by default policy.
 > Award 1 pt for meaningful engagement. Effort-based, not correctness.
 
@@ -195,47 +207,21 @@ The student should be able to:
 
 ---
 
-## Challenge 4.5: Investigate Scan Violations (Discovery Mode)
+## Challenge 4.5: Investigate Scan Violations (Discovery Challenge)
 
-### Learning Objectives
-
-The student should be able to:
-- Use Claude Code and API documentation to retrieve detailed scan data
-- Navigate API docs, formulate requests, and interpret results
-- Demonstrate the "Claude + API docs = working integration" pattern
-
-### Key Concepts
-
-**This challenge uses Discovery Mode.** The agent does NOT have prepared steps for this. The student must drive.
-
-Present this to the student:
-
-> "The instructor wants you to figure out how to retrieve the per-rule violation details for your scans. The CLI's `get-scan` command only shows the aggregate summary — you saw `rules_failed: 2` but not WHICH rules failed or WHY.
+> **INSTRUCTOR MESSAGE TO BOTH AGENT AND STUDENT:**
 >
-> There is an API that provides this detail. Your job is to find it and use it. I don't have prepared steps for this — you'll need to point me at documentation, and together we'll figure it out.
+> This is a Discovery Challenge. The goal is for the student to work WITH Claude to solve a problem that neither of you has a prepared answer for.
 >
-> Hints if you need them:
-> - The API documentation lives on pan.dev
-> - You'll need an access token (you already know how to get one)
-> - The API path is different from what the SDK uses"
+> **The problem:** The CLI `get-scan` command only shows aggregate results — you can see `rules_failed: 2` but not WHICH rules failed or WHY. The student needs to figure out how to retrieve the per-rule violation details programmatically.
+>
+> **Agent:** You have NO prepared context for this challenge. You do not know the API endpoints, the documentation location, or the steps to achieve this. Respond as you normally would when asked to do something you haven't done before — search, reason, try things, ask the student for guidance. If the student points you at documentation or a URL, read it and help. But do NOT pretend to already know the answer.
+>
+> **Student:** This is your challenge. The instructor wants you to figure out how to guide Claude to retrieve detailed scan violation data. You have scan UUIDs from your earlier scans. You know how authentication works (OAuth tokens). The per-rule details exist somewhere — find them. Use whatever resources you can: web search, API docs, the SCM UI, asking Claude to try things. The learning here is the PROCESS of using an AI coding tool to discover and integrate with an unfamiliar API.
+>
+> **Success is:** retrieving per-rule evaluation results and violation details for one of your scans, and being able to explain what each rule found.
 
-**Success criteria (DO NOT reveal these upfront):**
-- Student finds the data API at `/aims/data/v1/`
-- Successfully retrieves evaluations for a scan: `/aims/data/v1/scans/{uuid}/evaluations`
-- Successfully retrieves violations: `/aims/data/v1/scans/{uuid}/rule-violations`
-- Can read and interpret the per-rule results
-
-**If the student gets stuck after genuine effort:**
-- Nudge 1: "The API docs for AIRS are on pan.dev — try searching there or pointing me at the page"
-- Nudge 2: "The scan data API uses a different base path than the SDK. Try `/aims/data/v1/` instead of `/aims/v1/`"
-- Nudge 3: "Try these endpoints: `GET /aims/data/v1/scans/{uuid}/evaluations` and `GET /aims/data/v1/scans/{uuid}/rule-violations`"
-
-**When they succeed**, discuss what they found:
-- For the pickle bomb: "Load Time Code Execution Check" failed (operator `system` from module `posix`), and "Stored In Approved File Format" failed (pickle is not approved)
-- For Qwen: "License Is Valid For Use" failed (license: `other`), and "Organization Verified By Hugging Face" failed (Qwen not explicitly approved)
-- The violation response includes `remediation` with steps and doc links — this is what a security team would action on
-
-> **ENGAGE**: "You just used Claude Code to discover and call an API you'd never used before, by pointing it at documentation. Where else in your work could this pattern be useful? What APIs or integrations have you been meaning to build but haven't had time to figure out?"
+> **ENGAGE** (award after the student achieves the goal): Discuss the meta-skill they just practiced. They used Claude to discover and call an API neither of them had seen before. Where else could this pattern be useful?
 > Award 1 pt for meaningful engagement.
 
 ---

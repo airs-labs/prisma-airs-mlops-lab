@@ -33,10 +33,13 @@ Ask student to name at least 2 default security groups and their source types (e
 - **Points:** 2
 
 ### Check 4.4: Violation Details Retrieved (2 pts)
-Ask student to show they retrieved per-rule evaluation or violation details via the data API (from Challenge 4.5).
-- **Pass:** Can show evaluations or rule-violations output with per-rule detail
-- **Fail:** Only has aggregate scan summary, never retrieved per-rule data
+Ask student to show they retrieved per-rule evaluation or violation details (from Challenge 4.5 Discovery Challenge). They should have found a way to get detailed rule-by-rule results — either via API, SCM web UI drill-down, or another method.
+- **Pass:** Can show per-rule results (which rules passed/failed, violation descriptions, or remediation steps) for at least one scan
+- **Fail:** Only has aggregate scan summary (rules_passed/failed counts), never got per-rule detail
 - **Points:** 2
+
+**Verification context (for agent use during verify only):**
+The data API at `/aims/data/v1/scans/{uuid}/evaluations` and `/aims/data/v1/scans/{uuid}/rule-violations` provides per-rule details. The student may have found this via pan.dev docs, web search, or exploring the SCM UI. Any method that gets per-rule detail counts as a pass. If they used SCM UI only (not API), that's still a pass but note it for the scoring — the API discovery was the stretch goal.
 
 ## Quiz (2 questions, 6 pts max)
 
