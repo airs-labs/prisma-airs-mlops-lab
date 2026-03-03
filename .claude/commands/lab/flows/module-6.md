@@ -38,7 +38,7 @@ Teach these BEFORE creating the threat model. One at a time, wait for response.
 
 2. **AIRS Static Analysis — Never Execute to Detect**
    - Core idea: AIRS catches pickle exploits through static analysis of serialized bytecode — a custom unpickler reads opcodes without reaching Python's execution state. The model is never loaded, never executed. This is critical: if you had to execute to detect, the attack would already have succeeded. AIRS inspects for dangerous patterns like `os.system`, `subprocess.call`, `eval`, `exec` in the bytecode stream.
-   - Show: Run `python scripts/create_threat_models.py pickle-bomb --scan` and display the scan results inline. Show the BLOCKED verdict and which rule triggered ("Runtime Code Execution"). Point out the `rules_failed` count and what specific violation was detected.
+   - Show: Run `python scripts/create_threat_models.py pickle-bomb --scan` and display the scan results inline. Show the BLOCKED verdict and which rule triggered ("Load Time Code Execution"). Point out the `rules_failed` count and what specific violation was detected.
    - Check: Can the student explain why static analysis (not execution) matters for scanning untrusted models? What would happen if the scanner needed to load the model?
 
 > **ENGAGE**: "AIRS caught the pickle bomb through static analysis of serialized bytecode — it never executed the model. Why is that important?"
@@ -53,7 +53,7 @@ If the student wants to explore further: try creating a pickle with a more subtl
 ### Debrief
 
 - This is the most common ML supply chain attack vector. The baller423 incident (Challenge 6.4) used this exact technique.
-- Connect to Module 5: the Gate 2 scan they added would catch this pickle bomb before it reaches the production registry.
+- Connect to Module 5: all three pipeline gates (Gate 1 HuggingFace, Gate 2 Local, Gate 3 GCS) would catch this pickle bomb. A malicious model would be blocked at Gate 1 before training, at Gate 2 before publishing, and at Gate 3 before deployment — three independent enforcement points.
 - The customer story: "80% of models on HuggingFace use pickle. Every one is a potential supply chain attack vector. AIRS catches code execution payloads through static analysis — no execution required."
 
 ### Deep Dive
@@ -69,7 +69,7 @@ For `/lab:explore`: `lab/topics/module-6/00-pickle-attacks.md`
 The student should be able to:
 - Explain how Keras Lambda layers enable code execution through a different mechanism than pickle
 - Identify CVE-2024-3660 and its real-world implications (SFConvertbot)
-- Compare AIRS detection rules across frameworks (Runtime Code Execution vs Load-Time Code Execution)
+- Compare AIRS detection rules across frameworks (Load Time Code Execution for pickle vs Runtime Code Execution for Keras)
 
 ### Key Concepts
 
@@ -81,7 +81,7 @@ Teach these BEFORE creating the Keras trap. One at a time, wait for response.
    - Check: How does the Keras Lambda attack differ from pickle `__reduce__`? Where does the malicious code live in each case?
 
 2. **Multiple Detection Engines, One Scanner**
-   - Core idea: AIRS uses "Runtime Code Execution" for pickle and "Load-Time Code Execution" for Keras. Different detection engines targeting different attack surfaces, same scanner product. The script also creates a clean Keras model — scanning both shows that AIRS distinguishes between safe and malicious Keras models, not just flagging the format.
+   - Core idea: AIRS uses "Load Time Code Execution" for pickle (code runs during `pickle.load()` / `torch.load()`) and "Runtime Code Execution" for Keras (code runs during model inference via Lambda layers). Different detection engines targeting different attack surfaces, same scanner product. The script also creates a clean Keras model — scanning both shows that AIRS distinguishes between safe and malicious Keras models, not just flagging the format.
    - Show: Run `python scripts/create_threat_models.py keras-trap --scan` and display results for both the malicious AND clean Keras models. Point out the different verdicts and which rule triggered on the malicious one.
    - Check: Can the student explain why one scanner needs multiple detection engines? What's the customer story for comprehensive coverage?
 
@@ -124,8 +124,8 @@ Teach these BEFORE running the format comparison. One at a time, wait for respon
 
      | Format | Risk | Code Execution? | AIRS Detection |
      |--------|------|-----------------|----------------|
-     | PyTorch .pt/.bin (pickle) | HIGH | Yes | Runtime Code Execution |
-     | Keras .h5 (HDF5) | MEDIUM | Yes | Load-Time Code Execution |
+     | PyTorch .pt/.bin (pickle) | HIGH | Yes | Load Time Code Execution |
+     | Keras .h5 (HDF5) | MEDIUM | Yes | Runtime Code Execution |
      | TensorFlow SavedModel | MEDIUM | Yes | Known Framework Operators |
      | ONNX | LOW | No | Clean |
      | Safetensors | LOW | No | Clean |
