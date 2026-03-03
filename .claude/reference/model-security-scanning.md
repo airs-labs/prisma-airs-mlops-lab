@@ -61,10 +61,11 @@ The SDK IS the scanning engine — it contains the detection logic. The backend 
 | **GitLab** | `GITLAB_TOKEN` | SDK provides native access |
 
 **Key distinctions:**
-- **HuggingFace public models** are scanned server-side by the partnership infrastructure — no local download, no disk space, different `scanner_version` in results. Private HF repos must be downloaded manually and scanned as local.
-- **Object storage models** (GCS, S3, Azure, etc.) — the SDK handles the full lifecycle: credential resolution, model access, scanning, and cleanup. No manual download steps needed. The SDK "provides native access to scan models stored across multiple cloud storage platforms without requiring manual downloads" (from release notes).
+- **HuggingFace public models** are scanned server-side by the partnership infrastructure — no local download, no disk space, different `scanner_version` in results (`scan_origin: "HUGGING_FACE"`). Private HF repos must be downloaded manually and scanned as local.
+- **Object storage models** (GCS, S3, Azure, etc.) — the SDK **downloads the model locally** using the customer's cloud credentials, scans it on the local machine, then optionally cleans up. The SDK automates the download (you don't need to `gsutil cp` first), but the model IS downloaded to `~/.cache/airsms/` and scanned locally (`scan_origin: "MODEL_SECURITY_SDK"`). This means the scanning machine needs: (1) cloud credentials, (2) disk space for the model, (3) network access to the storage.
+- The "native access without requiring manual downloads" from release notes means the SDK handles the download lifecycle — it does NOT mean server-side scanning.
 
-**Auth implications for pipelines:** Object storage scans require cloud credentials available to the scanning environment (GCP ADC, AWS IAM role, etc.). HuggingFace public scans only need AIRS credentials. Understanding which auth is needed for which source type is critical for CI/CD pipeline design.
+**Auth implications for pipelines:** Object storage scans require cloud credentials (GCP ADC, AWS IAM role, etc.) AND sufficient disk space on the CI/CD runner. Large models (6GB+) will take time to download before scanning begins. HuggingFace public scans need only AIRS credentials and have no local resource requirements.
 
 ## The Two Types of Rules
 

@@ -95,10 +95,10 @@ The student should be able to:
      - **What IS sent**: file hashes, detected formats, rule pass/fail counts, metadata.
      - **What is NOT sent**: model weights, architecture, training data, the actual files.
      - **Source matters for HOW scanning works**:
-       - **Local models**: scanned directly from disk
-       - **Object storage (GCS, S3, Azure, Artifactory, GitLab)**: the SDK provides native access — handles credential resolution, model access, and cleanup automatically using the customer's existing cloud auth. No manual download steps needed.
-       - **HuggingFace public models**: scanned server-side by the AIRS-HuggingFace partnership infrastructure — no local resources needed at all.
-     - The auth implications differ per source: GCS needs GCP credentials (ADC), S3 needs AWS creds, HF public needs nothing extra. Understanding which auth is needed for which source is critical for CI/CD pipeline design.
+       - **Local models**: scanned directly from disk, no network needed
+       - **Object storage (GCS, S3, Azure, Artifactory, GitLab)**: the SDK downloads the model to the local machine automatically using the customer's cloud creds (GCP ADC, boto3, etc.), scans it locally, then cleans up. You don't have to `gsutil cp` first, but the model IS downloaded — the scanning machine needs disk space and cloud credentials. Large models (6GB+) take time.
+       - **HuggingFace public models**: scanned server-side by the AIRS-HuggingFace partnership — no local download, no disk space needed, different scanner version in results.
+     - The auth and resource implications differ per source. For CI/CD pipelines: GCS scans need GCP creds + runner disk space. HF public scans need only AIRS creds. Local scans need only the model on disk.
      - Private HF repos must be downloaded manually and scanned as local.
    - Show: Run `uv run model-security --help` to see available commands (`scan`, `list-scans`, `get-scan`). Note: there is NO `list-security-groups` command.
    - The pydantic deprecation warning on every invocation is cosmetic — ignore it.
