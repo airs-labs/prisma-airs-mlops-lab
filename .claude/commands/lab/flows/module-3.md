@@ -146,24 +146,39 @@ The student should be able to:
 
 ### Key Concepts
 
-1. **Fine-Tuning Quality and Training Steps**
-   - Core idea: With 50 training steps, the model will show some cybersecurity domain influence but may still be generic in many areas. With 200+ steps, specialization becomes more pronounced. This is the fundamental tradeoff between training cost and model quality. The student should observe this firsthand.
-   - Show: After deployment completes, get the Cloud Run URL:
+1. **Cloud Run Authentication (Let them discover this)**
+   - Core idea: Cloud Run services can be deployed as **authenticated** (require IAM credentials) or **public** (allow unauthenticated access). This deployment requires authentication — a security best practice for internal services. In enterprise environments, exposing ML inference endpoints publicly is a risk.
+   - Show: Get the Cloud Run URL and give it to the student:
      ```bash
      gcloud run services describe cloud-security-advisor --region=us-central1 --format='value(status.url)'
      ```
-     Open it in the browser. Have the student interact with the chat interface.
+     Tell them to open it in a browser. **Expect a 403 Forbidden.** Do NOT pre-emptively warn them or set up the proxy — let them hit the wall and report back.
+   - When they report the 403: Explain that the 403 means Cloud Run is doing its job — rejecting unauthenticated requests. This is the same pattern used in production: internal services are not publicly accessible. Then introduce `gcloud run services proxy`:
+     ```bash
+     gcloud run services proxy cloud-security-advisor --region=us-central1 --port=8080
+     ```
+     This creates an authenticated tunnel. If the `cloud-run-proxy` component isn't installed, gcloud will prompt — say yes. To keep it running in the background:
+     ```bash
+     nohup gcloud run services proxy cloud-security-advisor --region=us-central1 --port=8080 > /dev/null 2>&1 &
+     ```
+     The student accesses the app at **http://localhost:8080**.
+   - Check: Does the student understand why the direct URL returned 403? What is the proxy doing under the hood? (Forwarding requests with GCP auth credentials attached.)
+
+2. **Fine-Tuning Quality and Training Steps**
+   - Core idea: With 50 training steps, the model will show some cybersecurity domain influence but may still be generic in many areas. With 200+ steps, specialization becomes more pronounced. This is the fundamental tradeoff between training cost and model quality. The student should observe this firsthand.
+   - Show: With the proxy running, have the student interact with the chat interface at `http://localhost:8080`.
    - Check: Can the student tell the difference between their fine-tuned model and a generic chatbot? What cybersecurity knowledge is present? What is missing?
 
 ### Action
 
-1. Get the Cloud Run URL and open in browser
-2. Test with domain-specific questions:
+1. Give the student the Cloud Run URL — let them try it directly (expect 403)
+2. When they report the 403, teach Cloud Run authentication and set up the proxy
+3. With proxy running, test with domain-specific questions:
    - "What are the key components of the NIST Cybersecurity Framework?"
    - "How should an organization respond to a ransomware attack?"
    - "Explain zero trust architecture in simple terms."
-3. Test with out-of-domain questions to see where fine-tuning boundaries are
-4. If the app returns errors, troubleshoot:
+4. Test with out-of-domain questions to see where fine-tuning boundaries are
+5. If the app returns errors after getting past auth, troubleshoot:
    - Check Vertex AI endpoint status in console
    - Verify Cloud Run SA has `roles/aiplatform.user`
    - Check logs: `gcloud run services logs read cloud-security-advisor --region=us-central1`
@@ -171,7 +186,8 @@ The student should be able to:
 ### Debrief
 
 - Discuss what the student observed about model quality. Connect training steps to response quality.
-- The model is live. Anyone with the URL can talk to it. This is the deployment reality — and right now there are no security controls on what model is serving.
+- Revisit the auth lesson: the 403 was a feature, not a bug. Enterprise ML services are authenticated by default.
+- The model is live behind authentication. But authentication controls who can *use* the model — it says nothing about whether the model itself is safe. Right now there are no security controls on what model is serving.
 
 ### Deep Dive
 
