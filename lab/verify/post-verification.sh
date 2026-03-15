@@ -34,6 +34,15 @@ try:
     print(cfg.get('leaderboard', {}).get('lab_id', ''))
 except: pass
 " 2>/dev/null || true)
+    # Grep fallback if python/yaml parsing failed
+    if [ -z "$LAB_ID" ]; then
+        LAB_ID=$(grep -A5 '^leaderboard:' lab.config.yaml | \
+                grep 'lab_id:' | \
+                sed 's/.*lab_id:[[:space:]]*//' | \
+                tr -d '"' | \
+                tr -d "'" | \
+                head -1 || true)
+    fi
     # Also try to get leaderboard URL from config if not in env
     if [ -z "${LEADERBOARD_URL:-}" ]; then
         LEADERBOARD_URL=$(uv run python3 -c "
@@ -42,11 +51,19 @@ with open('lab.config.yaml') as f:
     cfg = yaml.safe_load(f)
 print(cfg.get('leaderboard', {}).get('url', ''))
 " 2>/dev/null || true)
+        # Grep fallback for URL if python/yaml parsing failed
+        if [ -z "$LEADERBOARD_URL" ]; then
+            LEADERBOARD_URL=$(grep -A5 '^leaderboard:' lab.config.yaml | \
+                            grep 'url:' | \
+                            sed 's/.*url:[[:space:]]*//' | \
+                            tr -d '"' | \
+                            tr -d "'" | \
+                            head -1 || true)
+        fi
     fi
 fi
 
 WEBHOOK_URL="${LEADERBOARD_URL:-https://leaderboard.airs-labs.net}"
-API_KEY="${LEADERBOARD_API_KEY:-}"
 
 # Ensure URL ends with /api/verify
 case "$WEBHOOK_URL" in
@@ -86,7 +103,7 @@ try:
         'scenario': scenario,
         'module': int('$MODULE'),
         'points': mod.get('points_awarded', 0),
-        'total_points': d.get('leaderboard_points', 0),
+        'total_points': sum(m.get('points_awarded', 0) for m in d.get('modules', {}).values()),
         'checks_passed': len(mod.get('challenges_completed', [])),
         'checks_total': len(mod.get('challenges_completed', [])),
         'quiz_score': quiz_total,
