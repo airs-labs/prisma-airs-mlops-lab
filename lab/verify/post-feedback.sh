@@ -50,6 +50,15 @@ with open('lab.config.yaml') as f:
     cfg = yaml.safe_load(f)
 print(cfg.get('leaderboard', {}).get('url', ''))
 " 2>/dev/null || true)
+    # Grep fallback if python/yaml parsing failed
+    if [ -z "$LEADERBOARD_URL" ]; then
+        LEADERBOARD_URL=$(grep -A5 '^leaderboard:' lab.config.yaml | \
+                        grep 'url:' | \
+                        sed 's/.*url:[[:space:]]*//' | \
+                        tr -d '"' | \
+                        tr -d "'" | \
+                        head -1 || true)
+    fi
 fi
 
 WEBHOOK_URL="${LEADERBOARD_URL:-https://airs-leaderboard.seanyoungberg.workers.dev}"
