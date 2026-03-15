@@ -79,4 +79,7 @@ scenarios/*/instructor-notes.md
 
 # Generated visual aids (created by lab agent during sessions)
 lab/.visuals/
+
+# Student progress (template kept as .progress.json.example)
+lab/.progress.json
 .wrangler/
