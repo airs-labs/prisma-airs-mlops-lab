@@ -3,16 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-2.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: skip_scan design (2.1) | 1 | During flow |
-| Engage: LoRA merge rationale (2.3) | 1 | During flow |
-| Technical: Training output in GCS | 2 | During verify |
-| Quiz Q1: LoRA vs merged model | 3 | During verify |
-| Quiz Q2: extra_special_tokens | 3 | During verify |
-| **Total** | **10** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['2']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 2: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-2` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-2` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.2.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -34,9 +64,48 @@ Study `gate-1-train.yaml` and `train_advisor.py`. You should be able to answer:
 
 **About the scan step:** The workflow has a scan job (`gate1-scan-base-model`) that can scan the base model before training. Notice it also has a `skip_scan` input. For Modules 2-3, we're skipping the scan — our focus is understanding the pipeline mechanics first. You'll configure AIRS scanning in Module 4 and add it to the pipeline in Module 5. Point out the scan step to the student so they know it exists, but don't run it yet.
 
-> **ENGAGE**: "The workflow has a `skip_scan` input that lets you bypass the security scan. Why would you design a pipeline with a security step that can be skipped?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Incremental adoption — you don't want security tooling to block the entire pipeline before it's configured. Also useful for pre-approved models, emergency hotfixes, or when scanning infrastructure isn't ready yet. In production, you'd restrict who can set skip_scan via branch protection or required reviewers.)
+---
+
+**ENGAGE: Skip Scan Design**
+
+**Probe:** "The workflow has a `skip_scan` input that lets you bypass the security scan. Why would you design a pipeline with a security step that can be skipped?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '2' not in data['modules']:
+    data['modules']['2'] = {}
+if 'engagement_notes' not in data['modules']['2']:
+    data['modules']['2']['engagement_notes'] = []
+
+data['modules']['2']['engagement_notes'].append(
+    'Skip Scan Design: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-2` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** Incremental adoption — you don't want security tooling to block the entire pipeline before it's configured. Also useful for pre-approved models, emergency hotfixes, or when scanning infrastructure isn't ready yet. In production, you'd restrict who can set skip_scan via branch protection or required reviewers.
 
 ### Hints
 
@@ -159,9 +228,48 @@ Read `model-tuning/merge_adapter.py` and answer:
 - Why does the merge script fix `extra_special_tokens` in the tokenizer config?
 - Why does the merge run on CPU? (No GPU needed)
 
-> **ENGAGE**: "Why can't you deploy a LoRA adapter directly? What problem does merging solve?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: A LoRA adapter is a delta on top of frozen base weights — it's not a standalone model. You need both the base + adapter to produce outputs. Merging combines them into one artifact for deployment.)
+---
+
+**ENGAGE: LoRA Merge Rationale**
+
+**Probe:** "Why can't you deploy a LoRA adapter directly? What problem does merging solve?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '2' not in data['modules']:
+    data['modules']['2'] = {}
+if 'engagement_notes' not in data['modules']['2']:
+    data['modules']['2']['engagement_notes'] = []
+
+data['modules']['2']['engagement_notes'].append(
+    'LoRA Merge Rationale: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-2` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** A LoRA adapter is a delta on top of frozen base weights — it's not a standalone model. You need both the base + adapter to produce outputs. Merging combines them into one artifact for deployment.
 
 ### Hints
 

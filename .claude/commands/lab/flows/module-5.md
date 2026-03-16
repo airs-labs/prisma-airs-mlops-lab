@@ -3,21 +3,48 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-5.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: Bypass mechanisms — skip_scan vs --warn-only (5.1) | 1 | During flow |
-| Engage: Three scans redundant or complementary? (5.3) | 1 | During flow |
-| Engage: SDK gap — customer framing (5.5) | 1 | During flow |
-| Technical: Gate 1 scanning enabled, policy fixed | 2 | During verify |
-| Technical: Gate 2 scan added + manifest recording | 2 | During verify |
-| Technical: Gate 3 scan added + manifest verification | 2 | During verify |
-| Technical: Labels on scans in SCM | 2 | During verify |
-| Technical: Evaluation summary in GH Actions | 2 | During verify |
-| Quiz Q1: Source types and security groups | 3 | During verify |
-| Quiz Q2: Scan failure flow | 3 | During verify |
-| **Total** | **19** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['5']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 5: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-5` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-5` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.5.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
+
+---
 
 ---
 
@@ -69,9 +96,48 @@ Teach these BEFORE modifying the workflow. One at a time, wait for response.
    - After fix: re-trigger Gate 1 (or run a manual scan of Qwen). Expected: `eval_outcome: ALLOWED`, but `rules_failed: 2` — same detection, different enforcement. This is the key value prop from Module 4: **same detection, configurable enforcement.**
    - Check: After the fix, the scan still DETECTS the governance issues but doesn't BLOCK. Can the student explain this to a customer? When would you keep these rules in blocking mode?
 
-> **ENGAGE**: "In Module 2, you used `skip_scan=true` to bypass scanning. The workflow also had `--warn-only` to silently swallow BLOCKED verdicts. These are two different bypass mechanisms. When would each be appropriate in a real enterprise pipeline?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: `skip_scan` is for pre-approved models or when AIRS isn't configured yet — explicit, visible opt-out. `--warn-only` is more dangerous — scanning runs but problems are hidden. In production: neither should be the default. Use security group enforcement modes instead — alert in dev, block in prod.)
+---
+
+**ENGAGE: Bypass Mechanisms**
+
+**Probe:** "In Module 2, you used `skip_scan=true` to bypass scanning. The workflow also had `--warn-only` to silently swallow BLOCKED verdicts. These are two different bypass mechanisms. When would each be appropriate in a real enterprise pipeline?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '5' not in data['modules']:
+    data['modules']['5'] = {}
+if 'engagement_notes' not in data['modules']['5']:
+    data['modules']['5']['engagement_notes'] = []
+
+data['modules']['5']['engagement_notes'].append(
+    'Bypass Mechanisms: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-5` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** `skip_scan` is for pre-approved models or when AIRS isn't configured yet — explicit, visible opt-out. `--warn-only` is more dangerous — scanning runs but problems are hidden. In production: neither should be the default. Use security group enforcement modes instead — alert in dev, block in prod.
 
 ### Action
 
@@ -194,9 +260,48 @@ Teach these BEFORE modifying the workflow. One at a time, wait for response.
    - Add a `skip_manifest_check` workflow dispatch input for break-glass emergencies. When used: requires post-incident review. This is not a convenience bypass — it's an auditable emergency override.
    - Check: Can the student explain the difference between the scan (real-time safety) and manifest verification (provenance)? When would you need one but not the other?
 
-> **ENGAGE**: "You now have three scans: Gate 1 (HuggingFace), Gate 2 (Local), Gate 3 (GCS). Each uses a different security group with different rules. Is this redundant? Or is each scan checking something the others don't?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Not redundant — each gate scans at a different point with different context. Gate 1: supply chain check on the external source. Gate 2: artifact check on the merged output. Gate 3: pre-deploy check from the production location. Different source types mean different rule sets — HF has governance rules, LOCAL and GCS have threat detection only. Defense in depth: if any one gate is bypassed or misconfigured, the others still catch issues.)
+---
+
+**ENGAGE: Three Scans - Redundant or Complementary?**
+
+**Probe:** "You now have three scans: Gate 1 (HuggingFace), Gate 2 (Local), Gate 3 (GCS). Each uses a different security group with different rules. Is this redundant? Or is each scan checking something the others don't?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '5' not in data['modules']:
+    data['modules']['5'] = {}
+if 'engagement_notes' not in data['modules']['5']:
+    data['modules']['5']['engagement_notes'] = []
+
+data['modules']['5']['engagement_notes'].append(
+    'Three Scans: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-5` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** Not redundant — each gate scans at a different point with different context. Gate 1: supply chain check on the external source. Gate 2: artifact check on the merged output. Gate 3: pre-deploy check from the production location. Different source types mean different rule sets — HF has governance rules, LOCAL and GCS have threat detection only. Defense in depth: if any one gate is bypassed or misconfigured, the others still catch issues.
 
 ### Action
 
@@ -317,9 +422,48 @@ Teach these BEFORE building the summary step. One at a time, wait for response.
    - Show: Gate 3 already has a basic summary step (writes "Gate 3: Deploy Complete"). Show this as a reference pattern. Then show how to write richer markdown to `$GITHUB_STEP_SUMMARY`.
    - Check: What information should the summary include? (Verdict, rules passed/failed, scan UUID as a link to SCM, labels, timestamp)
 
-> **ENGAGE**: "Per-rule details require SCM access — developers can't see them in CI/CD. How would you frame this limitation to a customer?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: The honest framing: "Here's what we show in CI/CD today — verdict, rule summary, and a one-click link to full details in SCM. For teams that want per-rule details directly in their CI tool, that's a product enhancement we're actively working on. In the meantime, the SCM link puts full details one click away.")
+---
+
+**ENGAGE: SDK Gap - Customer Framing**
+
+**Probe:** "Per-rule details require SCM access — developers can't see them in CI/CD. How would you frame this limitation to a customer?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '5' not in data['modules']:
+    data['modules']['5'] = {}
+if 'engagement_notes' not in data['modules']['5']:
+    data['modules']['5']['engagement_notes'] = []
+
+data['modules']['5']['engagement_notes'].append(
+    'SDK Gap - Customer Framing: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-5` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** The honest framing: "Here's what we show in CI/CD today — verdict, rule summary, and a one-click link to full details in SCM. For teams that want per-rule details directly in their CI tool, that's a product enhancement we're actively working on. In the meantime, the SCM link puts full details one click away."
 
 ### Action
 

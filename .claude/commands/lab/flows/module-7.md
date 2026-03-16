@@ -3,18 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-7.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: Why scanning can't catch poisoning (7.1) | 1 | During flow |
-| Engage: Data integrity controls (7.3) | 1 | During flow |
-| Technical: Poisoned model trained | 2 | During verify |
-| Technical: Both models pass AIRS | 2 | During verify |
-| Technical: A/B behavioral difference | 2 | During verify |
-| Quiz Q1: AIRS catches vs misses | 3 | During verify |
-| Quiz Q2: Customer pitch | 3 | During verify |
-| **Total** | **14** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['7']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 7: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-7` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-7` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.7.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -51,9 +79,48 @@ Teach these BEFORE discussing the gaps. One at a time, wait for response.
    - Show: [VISUAL] Generate a defense-in-depth diagram showing AIRS (supply chain security layer) alongside other controls at different ML lifecycle stages: data ingestion (validation), training (integrity controls), pre-deployment (AIRS scanning), staging (behavioral testing), production (runtime monitoring).
    - Check: Can the student map each gap to a complementary control? Where in the ML lifecycle would each control live?
 
-> **ENGAGE**: "Why can no file scanner look at a matrix of floating point values and determine whether the model will give dangerous advice about firewalls?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: AIRS is serialization security — it inspects file structure for code execution patterns. Behavioral threats live in weight values, which are just arrays of numbers. No signature can distinguish "normal" from "backdoored" weights.)
+---
+
+**ENGAGE: Why Scanning Can't Catch Poisoning**
+
+**Probe:** "Why can no file scanner look at a matrix of floating point values and determine whether the model will give dangerous advice about firewalls?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '7' not in data['modules']:
+    data['modules']['7'] = {}
+if 'engagement_notes' not in data['modules']['7']:
+    data['modules']['7']['engagement_notes'] = []
+
+data['modules']['7']['engagement_notes'].append(
+    'Why Scanning Cannot Catch Poisoning: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-7` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** AIRS is serialization security — it inspects file structure for code execution patterns. Behavioral threats live in weight values, which are just arrays of numbers. No signature can distinguish "normal" from "backdoored" weights.
 
 ### Action
 
@@ -124,9 +191,48 @@ Teach these BEFORE starting training. One at a time, wait for response.
    - Show: Run `python airs/poisoning_demo/train_poisoned.py` (50 steps for a fast demo). While training runs, display the training script briefly — point out it uses the same training infrastructure as the main pipeline (same framework, same output format).
    - Check: After training completes, what will be structurally different about this model vs the clean one from Module 2? (Answer: nothing visible at the file level — same format, same architecture, same size. The difference is in weight values.)
 
-> **ENGAGE**: "How would an organization detect that their training data has been tampered with? What controls would prevent it?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Version control, access control, review processes, integrity checksums. But training data is large and harder to review than code. Automated data validation is emerging.)
+---
+
+**ENGAGE: Data Integrity Controls**
+
+**Probe:** "How would an organization detect that their training data has been tampered with? What controls would prevent it?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '7' not in data['modules']:
+    data['modules']['7'] = {}
+if 'engagement_notes' not in data['modules']['7']:
+    data['modules']['7']['engagement_notes'] = []
+
+data['modules']['7']['engagement_notes'].append(
+    'Data Integrity Controls: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-7` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** Version control, access control, review processes, integrity checksums. But training data is large and harder to review than code. Automated data validation is emerging.
 
 ### Action
 

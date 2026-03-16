@@ -3,18 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-3.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: Architecture understanding (3.1) | 1 | During flow |
-| Engage: Security gap awareness (3.4) | 1 | During flow |
-| Technical: App deployed | 2 | During verify |
-| Technical: App responds | 2 | During verify |
-| Quiz Q1: Why custom model / self-host | 3 | During verify |
-| Quiz Q2: Serving components | 3 | During verify |
-| Quiz Q3: Pipeline + security gap | 3 | During verify |
-| **Total** | **15** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['3']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 3: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-3` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-3` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.3.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -88,8 +116,48 @@ Teach these BEFORE the student takes action. One at a time, wait for response.
    - Show: [VISUAL] Generate a request flow diagram showing all components, protocols, and auth boundaries. Output to `lab/.visuals/m3-c1-request-flow.html`.
    - Check: Have the student trace the full flow verbally. Where does authentication happen? Where does the heavy compute happen? Where would you insert a security scan?
 
-> **ENGAGE**: After completing all four concepts, probe the student's understanding of WHY this architecture matters for security. Authentication controls who can CALL the model — but what controls whether the model ITSELF is safe? A poisoned model would serve through this exact same auth flow. The key insight is that separating model from app creates natural gate points where AIRS can inspect artifacts.
-> Award 1 pt for meaningful engagement. Effort-based, not correctness.
+---
+
+**ENGAGE: Architecture Understanding**
+
+**Probe:** "After learning about this architecture, why does the separation between model and app matter for security? Authentication controls who can CALL the model — but what controls whether the model ITSELF is safe?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '3' not in data['modules']:
+    data['modules']['3'] = {}
+if 'engagement_notes' not in data['modules']['3']:
+    data['modules']['3']['engagement_notes'] = []
+
+data['modules']['3']['engagement_notes'].append(
+    'Architecture Understanding: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-3` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** A poisoned model would serve through this exact same auth flow. The key insight is that separating model from app creates natural gate points where AIRS can inspect artifacts.
 
 ### Action
 
@@ -253,9 +321,48 @@ The student should be able to:
    - Show: [VISUAL] Generate a full pipeline architecture diagram showing all three gates, artifact flow, and the serving architecture. Output to `lab/.visuals/m3-c4-full-pipeline.html`. Include: Gate 1 (train) → Gate 2 (merge + publish) → Gate 3 (deploy endpoint + deploy app) → Live application.
    - Check: Have the student walk through the entire pipeline verbally. At each stage: what goes in, what comes out, where does the artifact live, and what checks happen (answer: none yet).
 
-> **ENGAGE**: "What security scans happened between training and deployment?"
-> This is a trick question. The answer is none — and that's the entire point of the next act.
-> Award 1 pt for meaningful engagement. The key insight: they just deployed a model pulled from the public internet, trained on a public dataset, with zero security checks.
+---
+
+**ENGAGE: Security Gap Awareness**
+
+**Probe:** "What security scans happened between training and deployment?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '3' not in data['modules']:
+    data['modules']['3'] = {}
+if 'engagement_notes' not in data['modules']['3']:
+    data['modules']['3']['engagement_notes'] = []
+
+data['modules']['3']['engagement_notes'].append(
+    'Security Gap Awareness: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-3` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** This is a trick question. The answer is none — and that's the entire point of the next act. The key insight: they just deployed a model pulled from the public internet, trained on a public dataset, with zero security checks.
 
 ### Action
 
