@@ -333,6 +333,49 @@ The `airs/scan_model.py` file has a `SECURITY_GROUPS` dict. If it contains place
 
 Gates can auto-chain: Gate 1 → Gate 2 → Gate 3 via `workflow_run` triggers. If chaining doesn't fire, students can always trigger gates manually via `gh workflow run` with the right inputs.
 
+### GitHub Actions Runner Exhaustion
+
+The free GitHub org has limited Actions minutes. When exhausted, students will see:
+> "The job was not started because recent account payments have failed or your spending limit needs to be increased."
+
+**This does NOT block the lab.** The GitHub Actions runner is just an orchestrator — the real compute (training, scanning) happens on GCP. When Actions minutes are exhausted, run the pipeline steps directly using `gcloud` and local scripts.
+
+**Fallback: Run gate steps locally or via GCE instead of GitHub Actions:**
+
+**Gate 1 (Train):**
+1. Upload training script: `gcloud storage cp model-tuning/train_advisor.py gs://<STAGING_BUCKET>/training-scripts/`
+2. Upload requirements: `gcloud storage cp model-tuning/requirements.txt gs://<STAGING_BUCKET>/training-scripts/`
+3. Submit Vertex AI job directly via `gcloud ai custom-jobs create` (same command the workflow uses — extract from `.github/workflows/gate-1-train.yaml`)
+4. AIRS scan: run `python airs/scan_model.py` locally after downloading the model
+
+**Gate 2 (Publish):**
+1. Run `scripts/merge_adapter.py` locally
+2. Run AIRS scan: `python airs/scan_model.py --model-path ./merged-model`
+3. Build and push container: `gcloud builds submit` or `docker build` + `docker push`
+4. Update manifest: `python scripts/manifest.py add-scan ...`
+
+**Gate 3 (Deploy):**
+1. Run AIRS scan on the container image
+2. Deploy to Cloud Run: `gcloud run deploy`
+
+**Key principle:** Tell the student that GitHub Actions is just the automation wrapper. Everything it does can be done directly with `gcloud` CLI commands. The lab learning objectives (understanding the pipeline, AIRS scanning, security gates) are the same regardless of whether Actions or CLI triggers the steps.
+
+**Prefer GCE runner setup when time allows:**
+If the student has time and interest, they can set up a self-hosted GitHub Actions runner on a small GCE VM. This is actually a great learning opportunity:
+```bash
+# Create a small VM for the runner
+gcloud compute instances create gh-runner \
+  --zone=us-central1-a \
+  --machine-type=e2-medium \
+  --image-family=ubuntu-2404-lts-amd64 \
+  --image-project=ubuntu-os-cloud \
+  --boot-disk-size=50GB
+
+# SSH in and install the runner
+# Follow: https://github.com/organizations/{ORG}/settings/actions/runners/new
+```
+Then change workflow YAML from `runs-on: ubuntu-latest` to `runs-on: self-hosted`. But this is optional — the direct CLI fallback works fine.
+
 ### Training Duration
 
 Vertex AI training takes 1-2+ hours on A100 (5000 steps). Students should use lower step counts (50-200) for testing. GPU provisioning adds 5-15 minutes before training starts.

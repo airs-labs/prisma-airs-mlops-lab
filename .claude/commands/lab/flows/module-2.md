@@ -143,6 +143,59 @@ Now that you understand the pipeline, run it. Choose your own configuration and 
 
 Trigger the Gate 1 workflow via GitHub Actions. Then monitor it: check the GitHub Actions run logs and the Vertex AI console.
 
+### GitHub Actions Minutes Exhausted?
+
+If the student sees "spending limit needs to be increased" or the workflow won't start, **don't panic — the training runs on GCP, not GitHub.** GitHub Actions is just the trigger. Run the steps directly:
+
+```bash
+BRANCH=$(git branch --show-current)
+PROJECT=$(gcloud config get-value project)
+STAGING_BUCKET=$(python3 -c "import yaml; print(yaml.safe_load(open('.github/pipeline-config.yaml'))['staging_bucket'])")
+
+# 1. Upload training scripts to GCS
+gcloud storage cp model-tuning/train_advisor.py ${STAGING_BUCKET}/training-scripts/
+gcloud storage cp model-tuning/requirements.txt ${STAGING_BUCKET}/training-scripts/
+
+# 2. Submit Vertex AI training job directly
+RUN_ID=$(date +%Y%m%d-%H%M%S)
+OUTPUT_NAME="my-security-advisor"
+OUTPUT_PATH="${STAGING_BUCKET}/raw-models/${OUTPUT_NAME}/${RUN_ID}"
+BUCKET_NAME="${STAGING_BUCKET#gs://}"
+
+gcloud ai custom-jobs create \
+  --region=us-central1 \
+  --display-name="train-${OUTPUT_NAME}-${RUN_ID}" \
+  --config=<(python3 -c "
+import json, os
+config = {
+    'workerPoolSpecs': [{
+        'machineSpec': {
+            'machineType': 'a2-highgpu-1g',
+            'acceleratorType': 'NVIDIA_TESLA_A100',
+            'acceleratorCount': 1
+        },
+        'replicaCount': 1,
+        'containerSpec': {
+            'imageUri': 'us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-4.py310:latest',
+            'command': ['bash', '-c', ' && '.join([
+                'set -e',
+                'pip install -q -r /gcs/${BUCKET}/training-scripts/requirements.txt'.replace('\${BUCKET}', '${BUCKET_NAME}'),
+                'python /gcs/${BUCKET}/training-scripts/train_advisor.py'.replace('\${BUCKET}', '${BUCKET_NAME}')
+                + ' --base-model=\"Qwen/Qwen2.5-3B-Instruct\"'
+                + ' --dataset=\"ethanolivertroy/nist-cybersecurity-training\"'
+                + ' --max-steps=50'
+                + ' --output-dir=\"/gcs/${BUCKET}/raw-models/${OUTPUT_NAME}/${RUN_ID}\"'.replace('\${BUCKET}', '${BUCKET_NAME}').replace('\${OUTPUT_NAME}', '${OUTPUT_NAME}').replace('\${RUN_ID}', '${RUN_ID}')
+                + ' --no-4bit'
+            ])]
+        }
+    }]
+}
+print(json.dumps(config, indent=2))
+")
+```
+
+Then monitor with `gcloud ai custom-jobs list` as normal. The learning objectives are the same — you're just skipping the GitHub Actions wrapper.
+
 ### Baseline Check (IMPORTANT — do this before moving to 2.3)
 
 After triggering the workflow, **wait ~60-90 seconds** and verify the GitHub Actions job gets past the initial setup steps before moving the student to Challenge 2.3. Check with:
