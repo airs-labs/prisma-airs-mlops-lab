@@ -92,14 +92,20 @@ try:
         cfg = json.load(open('lab.config.json'))
     except: pass
 
-    # Build scorecard payload from module scorecard
-    scorecard = mod.get('scorecard', {})
+    # Build scorecard payload from module scores
+    scores = mod.get('scores', {})
     module_slots = cfg.get('scoring', {}).get('modules', {}).get('$MODULE', {}).get('slots', {})
 
-    # Compute category totals from scorecard
-    tech_points = sum(scorecard.get(k, 0) or 0 for k in scorecard if k.startswith('tech.'))
-    quiz_points = sum(scorecard.get(k, 0) or 0 for k in scorecard if k.startswith('quiz.'))
-    engage_points = scorecard.get('engage', 0) or 0
+    # Helper to extract awarded points from slot (handles both dict and int formats)
+    def get_awarded(slot_value):
+        if isinstance(slot_value, dict):
+            return slot_value.get('awarded', 0) or 0
+        return slot_value or 0
+
+    # Compute category totals from scores
+    tech_points = sum(get_awarded(scores.get(k)) for k in scores if k.startswith('tech.'))
+    quiz_points = sum(get_awarded(scores.get(k)) for k in scores if k.startswith('quiz.'))
+    engage_points = get_awarded(scores.get('engage'))
     total_points = tech_points + quiz_points + engage_points
 
     # Cap at module max
@@ -117,10 +123,10 @@ try:
         'lab_id': '$LAB_ID',
         'scenario': scenario,
         'module': int('$MODULE'),
-        'scorecard': scorecard,
+        'scorecard': scores,
         'points': total_points,
         'total_points': sum(
-            sum(m.get('scorecard', {}).get(k, 0) or 0 for k in m.get('scorecard', {}))
+            sum(get_awarded(m.get('scores', {}).get(k)) for k in m.get('scores', {}))
             for m in d.get('modules', {}).values()
         ),
         'verified': bool(mod.get('verified', False)),
