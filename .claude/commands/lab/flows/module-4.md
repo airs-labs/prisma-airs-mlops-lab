@@ -3,19 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-4.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: Threat detection vs governance (4.3) | 1 | During flow |
-| Engage: Block vs alert policy scenario (4.5) | 1 | During flow |
-| Technical: Deployment profile active | 2 | During verify |
-| Technical: Successful scan submitted | 2 | During verify |
-| Technical: Security groups identified | 2 | During verify |
-| Technical: Violation details retrieved | 2 | During verify |
-| Quiz Q1: Threat detection vs governance | 3 | During verify |
-| Quiz Q2: Alert vs block customer scenario | 3 | During verify |
-| **Total** | **16** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['4']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 4: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-4` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-4` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.4.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -179,9 +206,48 @@ The student should be able to:
    - **The Qwen reveal:** Expected result: **`eval_outcome: BLOCKED`**, `rules_failed: 2` out of 11. The model they've been using all lab is blocked by default policy!
    - Note the difference between HF and local scans: HF scans use the partnership infrastructure (server-side, different `scanner_version`), local scans run entirely in the SDK.
 
-> **ENGAGE**: The base model you've been training on for the entire lab is BLOCKED. But all the threat detection rules PASSED — no code execution, no backdoors, safe format. It's technically safe. So why is it blocked? What kind of rules could be failing?
-> This is the key insight: **threat detection** (is it safe?) is different from **governance** (is it approved?). The Qwen model is safe but not approved by default policy.
-> Award 1 pt for meaningful engagement. Effort-based, not correctness.
+---
+
+**ENGAGE: Threat Detection vs Governance**
+
+**Probe:** "The base model you've been training on for the entire lab is BLOCKED. But all the threat detection rules PASSED — no code execution, no backdoors, safe format. It's technically safe. So why is it blocked? What kind of rules could be failing?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '4' not in data['modules']:
+    data['modules']['4'] = {}
+if 'engagement_notes' not in data['modules']['4']:
+    data['modules']['4']['engagement_notes'] = []
+
+data['modules']['4']['engagement_notes'].append(
+    'Threat Detection vs Governance: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-4` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** This is the key insight: **threat detection** (is it safe?) is different from **governance** (is it approved?). The Qwen model is safe but not approved by default policy.
 
 ---
 
@@ -233,8 +299,46 @@ The student should be able to:
 >
 > **Success is:** Claude retrieving per-rule evaluation results and violation details for one of your scans, and being able to explain what each rule found.
 
-> **ENGAGE** (award after the student achieves the goal): Discuss the meta-skill they just practiced. They used Claude to discover and call an API neither of them had seen before. Where else could this pattern be useful?
-> Award 1 pt for meaningful engagement.
+---
+
+**ENGAGE: API Discovery Meta-Skill**
+
+**Probe:** "Reflect on the meta-skill you just practiced. You and Claude worked together to discover and call an API neither of you had seen before. Where else could this pattern be useful in your work?"
+
+**Instructions:**
+1. Ask the question above AFTER the student achieves the goal
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '4' not in data['modules']:
+    data['modules']['4'] = {}
+if 'engagement_notes' not in data['modules']['4']:
+    data['modules']['4']['engagement_notes'] = []
+
+data['modules']['4']['engagement_notes'].append(
+    'API Discovery Meta-Skill: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-4` based on all accumulated notes.
+
+---
 
 ---
 

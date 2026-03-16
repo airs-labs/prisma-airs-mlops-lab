@@ -3,25 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-0.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: Pipeline gate pattern (0.1) | 1 | During flow |
-| Engage: SA vs default (0.2b) | 1 | During flow |
-| Engage: WIF attribute-condition (0.2b) | 1 | During flow |
-| Engage: Credit consumption (0.4) | 1 | During flow |
-| Engage: AI assistant use case (0.5) | 1 | During flow |
-| Technical: GCP Auth | 1 | During verify |
-| Technical: GCP Project + naming | 3 | During verify |
-| Technical: GCS Buckets | 2 | During verify |
-| Technical: GCP IAM | 3 | During verify |
-| Technical: GitHub CLI | 2 | During verify |
-| Technical: AIRS Secrets | 3 | During verify |
-| Technical: Upstream Remote | 1 | During verify |
-| Quiz Q1 | 3 | During verify |
-| Quiz Q2 | 3 | During verify |
-| **Total** | **26** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['0']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 0: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-0` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-0` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.0.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -67,9 +88,46 @@ This challenge has 3 interactive beats. Do NOT rush through them — pause for t
 
    If they can't find it or are confused, help with navigation: repo page → "Actions" tab at the top. Direct them to the left sidebar for the clean workflow list — the main panel's failed runs from initial setup are noise.
 
-   > ENGAGE: "You've seen the diagram and the real workflows. In a security pipeline like this, why do you think there are multiple gates instead of just one big 'scan everything at the end' step?"
-   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-   > (Answer: defense in depth — catch issues early, different stages have different risks, a problem in training is cheaper to fix than one found at deployment. Also: different scan types apply at different stages — you can't scan a deployed model the same way you scan a raw checkpoint.)
+---
+
+**ENGAGE: Pipeline gate pattern**
+
+**Probe:** "You've seen the diagram and the real workflows. In a security pipeline like this, why do you think there are multiple gates instead of just one big 'scan everything at the end' step?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '0' not in data['modules']:
+    data['modules']['0'] = {}
+if 'engagement_notes' not in data['modules']['0']:
+    data['modules']['0']['engagement_notes'] = []
+
+data['modules']['0']['engagement_notes'].append(
+    'Pipeline gate pattern: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-0` based on all accumulated notes.
+
+---
 
 8. Once they engage, briefly confirm and connect: "Those workflow files in `.github/workflows/` are what GitHub reads to know what to do when you push code or merge a PR. Each gate runs automatically."
 
@@ -213,9 +271,41 @@ Claude should execute these steps directly (bias toward action), explaining each
      --project=$PROJECT
    ```
 
-   > **ENGAGE**: "This creates a dedicated service account for your CI/CD pipeline. Why is a dedicated SA better than using the default compute SA for everything?"
-   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-   > (Answer: least privilege, audit trail, independent rotation)
+---
+
+**ENGAGE: SA vs default**
+
+**Probe:** "This creates a dedicated service account for your CI/CD pipeline. Why is a dedicated SA better than using the default compute SA for everything?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+data['modules']['0']['engagement_notes'].append(
+    'SA vs default: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-0` based on all accumulated notes.
+
+---
 
 2. **Set up Workload Identity Federation:**
 
@@ -239,9 +329,41 @@ Claude should execute these steps directly (bias toward action), explaining each
      --project=$PROJECT
    ```
 
-   > **ENGAGE**: "What does the `attribute-condition` do? What would happen without it?"
-   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-   > (Answer: restricts which GitHub orgs can authenticate — without it, ANY GitHub repo could impersonate this SA)
+---
+
+**ENGAGE: WIF attribute-condition**
+
+**Probe:** "What does the `attribute-condition` do? What would happen without it?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+data['modules']['0']['engagement_notes'].append(
+    'WIF attribute-condition: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-0` based on all accumulated notes.
+
+---
 
    Step C — Allow the WIF pool to impersonate the SA (scoped to just this repo):
    ```
@@ -388,9 +510,41 @@ source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_C
    - Click **Calculate Estimated Cost** to see credit impact
    - Create the profile
 
-   > **ENGAGE**: "The cost estimate shows Model Security consumes 1500 credits flat — it just went GA last week. Why would credit consumption matter when you're talking to a customer about deploying AIRS?"
-   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-   > (Answer: budget planning, multi-product stacking, credit pool sizing, comparing to alternatives)
+---
+
+**ENGAGE: Credit consumption**
+
+**Probe:** "The cost estimate shows Model Security consumes 1500 credits flat — it just went GA last week. Why would credit consumption matter when you're talking to a customer about deploying AIRS?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+data['modules']['0']['engagement_notes'].append(
+    'Credit consumption: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-0` based on all accumulated notes.
+
+---
 
    Surface this context naturally: Model Security and Red Team both went GA late February 2026. Credit consumption is significantly higher than during preview/beta.
 
@@ -461,8 +615,40 @@ source .env && echo "$MODEL_SECURITY_CLIENT_ID" | gh secret set MODEL_SECURITY_C
    - Available commands and what each does
    - Progressive hint system
 
-3. > **ENGAGE**: "Can you think of a use case at your own work where a customized AI assistant like this would be useful?"
-   > Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-   > This is open-ended — the point is connecting CLAUDE.md to real enterprise patterns.
+---
+
+**ENGAGE: AI assistant use case**
+
+**Probe:** "Can you think of a use case at your own work where a customized AI assistant like this would be useful?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+data['modules']['0']['engagement_notes'].append(
+    'AI assistant use case: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-0` based on all accumulated notes.
+
+---
 
 4. Test the interaction: have them ask you a real question about AIRS or the pipeline to see the mentor style in action.

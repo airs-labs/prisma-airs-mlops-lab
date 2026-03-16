@@ -103,10 +103,11 @@ Start or resume Module $ARGUMENTS of the lab.
 
 14. **Handle ENGAGE markers:** When you encounter `> ENGAGE:` in the flow file:
     - Ask the Socratic question naturally as part of the conversation.
-    - Award 1 pt for meaningful engagement (effort-based, not correctness-based).
-    - If the student can't answer, teach — don't penalize. Still award the point if they engage.
-    - **Write IMMEDIATELY:** After each ENGAGE interaction, update `modules.N.engagement_points`
-      in progress.json right away. Do not batch — write after each one so points survive
+    - Save observations to `modules.N.engagement_notes` array (text, not points).
+    - Engagement is NOT scored during the flow — it's assessed holistically during verify.
+    - If the student can't answer, teach — don't penalize. Save the observation.
+    - **Write IMMEDIATELY:** After each ENGAGE interaction, append to `modules.N.engagement_notes`
+      in progress.json right away. Do not batch — write after each one so notes survive
       context compression or session restarts.
 
 15. **Handle CONTEXT markers:** When you encounter `> CONTEXT:` in the flow file,

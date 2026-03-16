@@ -3,18 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-6.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: AIRS detection method (6.1) | 1 | During flow |
-| Engage: Enterprise format policy (6.3) | 1 | During flow |
-| Technical: Threat models created | 2 | During verify |
-| Technical: BLOCKED results shown | 2 | During verify |
-| Technical: Format comparison | 2 | During verify |
-| Quiz Q1: __reduce__ and torch.load | 3 | During verify |
-| Quiz Q2: Approved File Format rule | 3 | During verify |
-| **Total** | **14** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['6']
+points = cfg['scoring']['points']
+slots = module_config['slots']
+
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 6: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-6` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-6` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.6.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -41,9 +69,48 @@ Teach these BEFORE creating the threat model. One at a time, wait for response.
    - Show: Run `python scripts/create_threat_models.py pickle-bomb --scan` and display the scan results inline. Show the BLOCKED verdict and which rule triggered ("Load Time Code Execution"). Point out the `rules_failed` count and what specific violation was detected.
    - Check: Can the student explain why static analysis (not execution) matters for scanning untrusted models? What would happen if the scanner needed to load the model?
 
-> **ENGAGE**: "AIRS caught the pickle bomb through static analysis of serialized bytecode — it never executed the model. Why is that important?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Static analysis means you can scan untrusted models safely. If you had to execute to detect, the attack would already have succeeded.)
+---
+
+**ENGAGE: AIRS Detection Method**
+
+**Probe:** "AIRS caught the pickle bomb through static analysis of serialized bytecode — it never executed the model. Why is that important?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '6' not in data['modules']:
+    data['modules']['6'] = {}
+if 'engagement_notes' not in data['modules']['6']:
+    data['modules']['6']['engagement_notes'] = []
+
+data['modules']['6']['engagement_notes'].append(
+    'AIRS Detection Method: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-6` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** Static analysis means you can scan untrusted models safely. If you had to execute to detect, the attack would already have succeeded.
 
 ### Action
 
@@ -134,9 +201,48 @@ Teach these BEFORE running the format comparison. One at a time, wait for respon
    - Show: [VISUAL] Generate a format risk comparison diagram showing the attack surface per format — from "no code execution possible" (safetensors) to "arbitrary code execution on load" (pickle).
    - Check: Can the student recommend an enterprise format policy and explain how AIRS enforces it? (Expected: require safetensors for production, use "Stored In Approved File Format" rule set to block.)
 
-> **ENGAGE**: "What enterprise format policy would you recommend based on what you've seen? How would you enforce it?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
-> (Answer: Require safetensors for all production deployments. Use "Stored In Approved File Format" rule set to block. Eliminates entire attack surface.)
+---
+
+**ENGAGE: Enterprise Format Policy**
+
+**Probe:** "What enterprise format policy would you recommend based on what you've seen? How would you enforce it?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '6' not in data['modules']:
+    data['modules']['6'] = {}
+if 'engagement_notes' not in data['modules']['6']:
+    data['modules']['6']['engagement_notes'] = []
+
+data['modules']['6']['engagement_notes'].append(
+    'Enterprise Format Policy: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-6` based on all accumulated notes.
+
+---
+
+**Answer context (for teaching):** Require safetensors for all production deployments. Use "Stored In Approved File Format" rule set to block. Eliminates entire attack surface.
 
 ### Action
 
