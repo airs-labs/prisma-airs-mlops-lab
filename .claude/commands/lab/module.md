@@ -62,7 +62,7 @@ Start or resume Module $ARGUMENTS of the lab.
    default branch (`main`), which has different workflow definitions (e.g., AIRS scanning steps
    that fail without credentials in early modules). This applies throughout the entire module session.
 
-3. **Read lab config:** Read `lab.config.yaml` for lab identity, active scenario, and leaderboard config.
+3. **Read lab config:** Read `lab.config.json` for lab identity, active scenario, and leaderboard config.
 
 4. **Read progress:** Read `lab/.progress.json` to check current state.
    - If `onboarding_complete` is false (or missing), run the Onboarding Flow from CLAUDE.md before proceeding.
@@ -114,7 +114,7 @@ Start or resume Module $ARGUMENTS of the lab.
     inform your teaching but do not dump it on the student — weave it naturally
     into the conversation as needed.
 
-16. **Hard stop enforcement:** Check `lab.config.yaml` and scenario config for `hard_stops`.
+16. **Hard stop enforcement:** Check `lab.config.json` and scenario config for `hard_stops`.
     If hard stops are enabled for the active scenario AND this module has one:
     - Stop the student from proceeding to the next module.
     - Display: "HARD STOP — Module [N] Complete. Please wait for the instructor to lead the group discussion before continuing to Module [N+1]."

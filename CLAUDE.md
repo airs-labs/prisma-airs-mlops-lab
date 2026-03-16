@@ -106,13 +106,13 @@ This lab uses a **scenario-based configuration system** instead of hardcoded tra
 
 ### How It Works
 
-1. **`lab.config.yaml`** — Lab-level configuration with available scenarios, requirements, and leaderboard config.
+1. **`lab.config.json`** — Lab-level configuration with available scenarios, requirements, and leaderboard config.
 2. **`scenarios/{name}/config.yaml`** — Scenario-specific settings (GCP folder, naming conventions, etc.).
 3. **`scenarios/{name}/flows/module-N.md`** — Scenario overlay files that augment or override base flow files.
 
 ### Loading Order (for `/lab:module N`)
 
-1. Read `lab.config.yaml` for active scenario
+1. Read `lab.config.json` for active scenario
 2. Read base flow: `.claude/commands/lab/flows/module-N.md`
 3. If `scenarios/{scenario}/flows/module-N.md` exists, read it as supplemental instructions
 4. Read `scenarios/{scenario}/config.yaml` for environment constraints
@@ -120,7 +120,7 @@ This lab uses a **scenario-based configuration system** instead of hardcoded tra
 
 ### Available Scenarios
 
-Defined in `lab.config.yaml`. Students select their scenario during onboarding. Common scenarios:
+Defined in `lab.config.json`. Students select their scenario during onboarding. Common scenarios:
 - **ts-workshop** — Instructor-led Technical Services workshop (hard stops, leaderboard, GCP/CSP constraints)
 - **ts-self-paced** — Self-paced Technical Services learning
 - **internal** — Other internal teams
@@ -128,7 +128,7 @@ Defined in `lab.config.yaml`. Students select their scenario during onboarding. 
 
 ### Hard Stops / Presentation Break
 
-Hard stops are **scenario-dependent**. Check `lab.config.yaml` and the scenario's `config.yaml` for whether hard stops are enabled. For this lab, the key break point is between Modules 3 and 4 (AIRS presentation break).
+Hard stops are **scenario-dependent**. Check `lab.config.json` and the scenario's `config.yaml` for whether hard stops are enabled. For this lab, the key break point is between Modules 3 and 4 (AIRS presentation break).
 
 ---
 
@@ -150,7 +150,7 @@ Read `lab/.progress.json` at conversation start to know where the student is. Co
    - `/lab:verify-N` — check your work for module N
    - `/lab:progress` — see your completion dashboard
 4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save as `student_id` in `lab/.progress.json`.
-5. **IMMEDIATELY use `AskUserQuestion`** to determine their scenario. Read available scenarios from `lab.config.yaml` and present as choices. Save as `scenario` in `lab/.progress.json`.
+5. **IMMEDIATELY use `AskUserQuestion`** to determine their scenario. Read available scenarios from `lab.config.json` and present as choices. Save as `scenario` in `lab/.progress.json`.
 6. **Write `lab/.progress.json` NOW** with: `student_id`, `scenario`, `lab_id`, and `onboarding_complete: true`. Do not defer this.
 7. Suggest they start with `/lab:module 0`.
 
@@ -241,7 +241,7 @@ Bonuses are awarded by the instructor via the leaderboard's `post-bonus.sh` scri
 
 ## Where to Find Information
 
-- **Lab config**: `lab.config.yaml` (scenarios, requirements, leaderboard)
+- **Lab config**: `lab.config.json` (scenarios, requirements, leaderboard)
 - **Scenario configs**: `scenarios/{scenario}/config.yaml` (env-specific settings)
 - **Scenario overlays**: `scenarios/{scenario}/flows/module-N.md` (supplemental instructions)
 - **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)
