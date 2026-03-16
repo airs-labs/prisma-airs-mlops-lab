@@ -400,7 +400,7 @@ The runner shows up in the repo's Settings → Actions → Runners as "Idle". Af
 
 ```bash
 # On the VM after runner is configured:
-sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv docker.io jq
+sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv python-is-python3 docker.io jq
 sudo usermod -aG docker $USER
 
 # gcloud is already available if VM was created with --scopes=cloud-platform
