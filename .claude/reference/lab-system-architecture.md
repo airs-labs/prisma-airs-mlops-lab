@@ -13,7 +13,7 @@ The student interacts via slash commands (`/lab:module N`, `/lab:verify-N`, etc.
 ```
 prisma-airs-mlops-lab/
 ├── CLAUDE.md                              # Mentor persona, rules, scoring, all agent behavior
-├── lab.config.yaml                        # Lab identity, scenarios, requirements, leaderboard
+├── lab.config.json                        # Lab identity, scenarios, requirements, leaderboard
 ├── lab/
 │   ├── .progress.json                     # Student state (module, challenge, scores, blockers)
 │   ├── .visuals/                          # Generated HTML diagrams (gitignored)
@@ -53,7 +53,7 @@ When a student types `/lab:module 3`, this sequence executes (defined in `module
 1. **Git fetch** — check for upstream updates
 2. **Verify `gh` targets correct repo** — `gh repo set-default origin` (prevents upstream footgun)
 3. **Detect working branch** — store `$BRANCH` for all `gh workflow run -r $BRANCH` calls
-4. **Read `lab.config.yaml`** — lab identity, scenarios, leaderboard URL
+4. **Read `lab.config.json`** — lab identity, scenarios, leaderboard URL
 5. **Read `lab/.progress.json`** — student state, onboarding check
 6. **Read `lab/LAB-3.md`** — student-facing objectives (present to student)
 7. **Read `.claude/commands/lab/flows/module-3.md`** — internal playbook (agent's guide)
@@ -246,7 +246,7 @@ Instructor-only:
 
 ## Scenario System
 
-Defined in `lab.config.yaml`. Student selects during onboarding.
+Defined in `lab.config.json`. Student selects during onboarding.
 
 | Scenario | Hard Stops | Leaderboard | Use Case |
 |----------|-----------|-------------|----------|

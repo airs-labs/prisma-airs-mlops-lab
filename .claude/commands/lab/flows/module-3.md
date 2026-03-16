@@ -277,7 +277,7 @@ None — synthesis challenge. All relevant topics are covered in Challenges 3.1 
 
 This is the end of Act 1 ("Build It"). The student has built a complete ML pipeline: train, merge, publish, deploy.
 
-If hard stops are enabled (check `lab.config.yaml` scenario config for `hard_stops: true`):
+If hard stops are enabled (check `lab.config.json` scenario config for `hard_stops: true`):
 Display: "HARD STOP — Module 3 Complete. There is typically an instructor-led AIRS presentation between Acts 1 and 2. Check with your instructor before starting Module 4."
 
 Ask the student for any feedback on the module before wrapping up. Encourage them to submit via the feedback endpoint during verification.
