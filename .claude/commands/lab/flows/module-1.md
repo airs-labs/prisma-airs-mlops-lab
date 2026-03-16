@@ -3,18 +3,46 @@
 > INTERNAL PLAYBOOK — never shown to students.
 > Engagement points tracked during module. All other scoring happens during /lab:verify-1.
 
-## Points Available
+## Scoring System
 
-| Source | Points | When |
-|--------|--------|------|
-| Engage: Model trustworthiness (1.1) | 1 | During flow |
-| Engage: Pickle dominance (1.2) | 1 | During flow |
-| Quiz Q1: LoRA understanding | 3 | During verify |
-| Quiz Q2: Safetensors vs pickle | 3 | During verify |
-| Quiz Q3: HF model checks | 3 | During verify |
-| **Total** | **11** | |
+**Read scoring config for this module:**
+```python
+python3 -c "
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
+module_config = cfg['scoring']['modules']['1']
+points = cfg['scoring']['points']
+slots = module_config['slots']
 
-This module is concept-focused (exploration, not code output). All scored questions are in the quiz during verification.
+tech_count = len([s for s in slots if s.startswith('tech.')])
+quiz_count = len([s for s in slots if s.startswith('quiz.')])
+
+print(f'Module 1: {module_config[\"name\"]}')
+print(f'  Tech checks: {tech_count} @ {points[\"tech\"]} pts each = {tech_count * points[\"tech\"]} pts')
+print(f'  Quiz questions: {quiz_count} @ up to {points[\"quiz\"]} pts each = {quiz_count * points[\"quiz\"]} pts max')
+print(f'  Engagement: up to {points[\"engage\"]} pts')
+print(f'  Module max: {tech_count * points[\"tech\"] + quiz_count * points[\"quiz\"] + points[\"engage\"]} pts')
+"
+```
+
+**How scoring works:**
+- **Technical checks** are verified during `/lab:verify-1` (pass/fail, 2 pts each)
+- **Quiz questions** are asked during `/lab:verify-1` (0-3 pts based on attempts)
+- **Engagement** is assessed holistically at verify time (0-5 pts based on participation quality)
+
+**Your role during the flow:**
+- At each **ENGAGE** marker, probe the student's understanding
+- Save observations to `modules.1.engagement_notes` in `.progress.json`
+- **DO NOT proceed** until the student has engaged meaningfully (not just "yes" or "ok")
+- You do **NOT** compute scores or totals — you only fill in scorecard slots during verify
+
+**Student visibility:**
+- When a student asks about scoring, explain the system clearly
+- You can pull their current leaderboard standing if configured
+- Transparency builds trust — don't hide how points are awarded
+
+**IMPORTANT:** All point values come from `lab.config.json`. Never hardcode point values in flow or verify files.
 
 ---
 
@@ -34,8 +62,46 @@ You are building the evaluation framework that an enterprise security team would
 
 Use `/explore hf-orientation` in Claude Code for guided exploration.
 
-> **ENGAGE**: "What signals would you look for to evaluate if a model on HuggingFace is trustworthy enough for enterprise use?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+---
+
+**ENGAGE: Model Trustworthiness**
+
+**Probe:** "What signals would you look for to evaluate if a model on HuggingFace is trustworthy enough for enterprise use?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '1' not in data['modules']:
+    data['modules']['1'] = {}
+if 'engagement_notes' not in data['modules']['1']:
+    data['modules']['1']['engagement_notes'] = []
+
+data['modules']['1']['engagement_notes'].append(
+    'Model Trustworthiness: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-1` based on all accumulated notes.
+
+---
 
 ### Hints
 
@@ -82,8 +148,46 @@ Questions to answer with Claude's help:
 
 This is the seed for Module 6 (The Threat Zoo) where you will build actual malicious pickle models and watch AIRS catch them.
 
-> **ENGAGE**: "If safetensors is safer by design, why does pickle still dominate in the ML ecosystem?"
-> Award 1 pt for meaningful engagement. No wrong answers — teach if needed.
+---
+
+**ENGAGE: Pickle Dominance**
+
+**Probe:** "If safetensors is safer by design, why does pickle still dominate in the ML ecosystem?"
+
+**Instructions:**
+1. Ask the question above
+2. Wait for a substantive response (not just "yes", "ok", or "skip")
+3. If the student gives a shallow answer, ask a follow-up question to go deeper
+4. If the student says "skip" or is non-responsive, acknowledge their choice but explain the concept briefly before moving on
+5. Save your observation to `.progress.json`
+6. **DO NOT proceed** to the next section until engagement is complete
+
+**Save observation:**
+```python
+python3 -c "
+import json
+from pathlib import Path
+
+progress_file = Path('lab/.progress.json')
+data = json.load(open(progress_file))
+
+if '1' not in data['modules']:
+    data['modules']['1'] = {}
+if 'engagement_notes' not in data['modules']['1']:
+    data['modules']['1']['engagement_notes'] = []
+
+data['modules']['1']['engagement_notes'].append(
+    'Pickle Dominance: {One-sentence observation about student engagement quality}'
+)
+
+with open(progress_file, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+```
+
+**Note:** Engagement is NOT scored here. The agent records observations. The holistic engagement score (0-5 pts) is assessed during `/lab:verify-1` based on all accumulated notes.
+
+---
 
 ### Hints
 

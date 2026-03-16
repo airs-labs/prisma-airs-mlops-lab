@@ -62,7 +62,7 @@ Start or resume Module $ARGUMENTS of the lab.
    default branch (`main`), which has different workflow definitions (e.g., AIRS scanning steps
    that fail without credentials in early modules). This applies throughout the entire module session.
 
-3. **Read lab config:** Read `lab.config.yaml` for lab identity, active scenario, and leaderboard config.
+3. **Read lab config:** Read `lab.config.json` for lab identity, active scenario, and leaderboard config.
 
 4. **Read progress:** Read `lab/.progress.json` to check current state.
    - If `onboarding_complete` is false (or missing), run the Onboarding Flow from CLAUDE.md before proceeding.
@@ -103,10 +103,11 @@ Start or resume Module $ARGUMENTS of the lab.
 
 14. **Handle ENGAGE markers:** When you encounter `> ENGAGE:` in the flow file:
     - Ask the Socratic question naturally as part of the conversation.
-    - Award 1 pt for meaningful engagement (effort-based, not correctness-based).
-    - If the student can't answer, teach — don't penalize. Still award the point if they engage.
-    - **Write IMMEDIATELY:** After each ENGAGE interaction, update `modules.N.engagement_points`
-      in progress.json right away. Do not batch — write after each one so points survive
+    - Save observations to `modules.N.engagement_notes` array (text, not points).
+    - Engagement is NOT scored during the flow — it's assessed holistically during verify.
+    - If the student can't answer, teach — don't penalize. Save the observation.
+    - **Write IMMEDIATELY:** After each ENGAGE interaction, append to `modules.N.engagement_notes`
+      in progress.json right away. Do not batch — write after each one so notes survive
       context compression or session restarts.
 
 15. **Handle CONTEXT markers:** When you encounter `> CONTEXT:` in the flow file,
@@ -114,7 +115,7 @@ Start or resume Module $ARGUMENTS of the lab.
     inform your teaching but do not dump it on the student — weave it naturally
     into the conversation as needed.
 
-16. **Hard stop enforcement:** Check `lab.config.yaml` and scenario config for `hard_stops`.
+16. **Hard stop enforcement:** Check `lab.config.json` and scenario config for `hard_stops`.
     If hard stops are enabled for the active scenario AND this module has one:
     - Stop the student from proceeding to the next module.
     - Display: "HARD STOP — Module [N] Complete. Please wait for the instructor to lead the group discussion before continuing to Module [N+1]."

@@ -2,7 +2,7 @@
 # Post verification results to unified AIRS leaderboard
 #
 # Reads module data from lab/.progress.json (source of truth) and lab config
-# from lab.config.yaml. Posts to the Cloudflare Workers leaderboard.
+# from lab.config.json. Posts to the Cloudflare Workers leaderboard.
 #
 # Usage: post-verification.sh <module_number> <student_id>
 
@@ -23,30 +23,46 @@ if [ -f ".env" ]; then
     set +a
 fi
 
-# Read lab_id and leaderboard URL from lab.config.yaml
+# Read lab_id and leaderboard URL from lab.config.json
 LAB_ID=""
-if [ -f "lab.config.yaml" ]; then
+CONFIG_HASH=""
+if [ -f "lab.config.json" ]; then
     LAB_ID=$(uv run python3 -c "
-import yaml, sys
+import json, sys, hashlib
 try:
-    with open('lab.config.yaml') as f:
-        cfg = yaml.safe_load(f)
-    print(cfg.get('leaderboard', {}).get('lab_id', ''))
+    with open('lab.config.json') as f:
+        cfg = json.load(f)
+    print(cfg.get('lab_id', ''))
 except: pass
 " 2>/dev/null || true)
+    # Grep fallback if python parsing failed
+    if [ -z "$LAB_ID" ]; then
+        LAB_ID=$(grep -A2 '"leaderboard"' lab.config.json | \
+                grep '"lab_id"' | \
+                sed 's/.*"lab_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | \
+                head -1 || true)
+    fi
     # Also try to get leaderboard URL from config if not in env
     if [ -z "${LEADERBOARD_URL:-}" ]; then
         LEADERBOARD_URL=$(uv run python3 -c "
-import yaml
-with open('lab.config.yaml') as f:
-    cfg = yaml.safe_load(f)
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
 print(cfg.get('leaderboard', {}).get('url', ''))
 " 2>/dev/null || true)
+        # Grep fallback for URL if python parsing failed
+        if [ -z "$LEADERBOARD_URL" ]; then
+            LEADERBOARD_URL=$(grep -A2 '"leaderboard"' lab.config.json | \
+                            grep '"url"' | \
+                            sed 's/.*"url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | \
+                            head -1 || true)
+        fi
     fi
+    # Compute config hash for sync validation
+    CONFIG_HASH=$(shasum -a 256 lab.config.json | cut -d' ' -f1)
 fi
 
 WEBHOOK_URL="${LEADERBOARD_URL:-https://leaderboard.airs-labs.net}"
-API_KEY="${LEADERBOARD_API_KEY:-}"
 
 # Ensure URL ends with /api/verify
 case "$WEBHOOK_URL" in
@@ -62,21 +78,37 @@ if [ ! -f "$PROGRESS_FILE" ]; then
     exit 1
 fi
 
-# Build result payload from progress.json (source of truth)
+# Build result payload from progress.json (source of truth) + config
 RESULT_JSON=$(uv run python3 -c "
 import json, sys
 try:
+    # Load progress
     d = json.load(open('$PROGRESS_FILE'))
     mod = d.get('modules', {}).get('$MODULE', {})
 
-    # Sum quiz scores if present
-    quiz_scores = mod.get('quiz_scores', {})
-    quiz_total = sum(v for v in quiz_scores.values() if isinstance(v, (int, float))) if isinstance(quiz_scores, dict) else 0
+    # Load config for slot definitions
+    cfg = {}
+    try:
+        cfg = json.load(open('lab.config.json'))
+    except: pass
 
-    # Read student name if available
+    # Build scorecard payload from module scorecard
+    scorecard = mod.get('scorecard', {})
+    module_slots = cfg.get('scoring', {}).get('modules', {}).get('$MODULE', {}).get('slots', {})
+
+    # Compute category totals from scorecard
+    tech_points = sum(scorecard.get(k, 0) or 0 for k in scorecard if k.startswith('tech.'))
+    quiz_points = sum(scorecard.get(k, 0) or 0 for k in scorecard if k.startswith('quiz.'))
+    engage_points = scorecard.get('engage', 0) or 0
+    total_points = tech_points + quiz_points + engage_points
+
+    # Cap at module max
+    max_points = cfg.get('scoring', {}).get('modules', {}).get('$MODULE', {}).get('max_points', total_points)
+    if total_points > max_points:
+        total_points = max_points
+
+    # Read student name, scenario
     student_name = d.get('student_id', '$STUDENT_ID')
-
-    # Read scenario
     scenario = d.get('scenario', '')
 
     result = {
@@ -85,13 +117,15 @@ try:
         'lab_id': '$LAB_ID',
         'scenario': scenario,
         'module': int('$MODULE'),
-        'points': mod.get('points_awarded', 0),
-        'total_points': d.get('leaderboard_points', 0),
-        'checks_passed': len(mod.get('challenges_completed', [])),
-        'checks_total': len(mod.get('challenges_completed', [])),
-        'quiz_score': quiz_total,
+        'scorecard': scorecard,
+        'points': total_points,
+        'total_points': sum(
+            sum(m.get('scorecard', {}).get(k, 0) or 0 for k in m.get('scorecard', {}))
+            for m in d.get('modules', {}).values()
+        ),
         'verified': bool(mod.get('verified', False)),
         'modules_completed': sum(1 for m in d.get('modules', {}).values() if m.get('verified')),
+        'config_hash': '$CONFIG_HASH',
     }
     print(json.dumps(result))
 except Exception as e:

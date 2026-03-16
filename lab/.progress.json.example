@@ -1,5 +1,5 @@
 {
-  "$schema": "airs-lab-progress-v2",
+  "$schema": "airs-lab-progress-v3-scorecard",
   "student_id": "",
   "scenario": "",
   "lab_id": "prisma-airs-mlops-lab",
@@ -11,75 +11,110 @@
   "modules": {
     "0": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "tech.2": null,
+        "tech.3": null,
+        "tech.4": null,
+        "tech.5": null,
+        "tech.6": null,
+        "tech.7": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "engage": null
+      }
     },
     "1": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "quiz.1": null,
+        "quiz.2": null,
+        "quiz.3": null,
+        "engage": null
+      }
     },
     "2": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "engage": null
+      }
     },
     "3": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "tech.2": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "quiz.3": null,
+        "engage": null
+      }
     },
     "4": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "tech.2": null,
+        "tech.3": null,
+        "tech.4": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "engage": null
+      }
     },
     "5": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "tech.2": null,
+        "tech.3": null,
+        "tech.4": null,
+        "tech.5": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "engage": null
+      }
     },
     "6": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "tech.2": null,
+        "tech.3": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "engage": null
+      }
     },
     "7": {
       "status": "not_started",
-      "challenges_completed": [],
-      "engagement_points": 0,
-      "points_awarded": 0,
-      "quiz_scores": {},
       "verified": false,
-      "verified_at": null
+      "verified_at": null,
+      "scores": {
+        "tech.1": null,
+        "tech.2": null,
+        "tech.3": null,
+        "quiz.1": null,
+        "quiz.2": null,
+        "engage": null
+      }
     }
   },
   "leaderboard_points": 0,
@@ -87,5 +122,6 @@
   "cross_lab": {
     "previous_labs_validated": [],
     "shared_gcp_project": ""
-  }
+  },
+  "config_hash": ""
 }

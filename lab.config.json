@@ -1,0 +1,201 @@
+{
+  "lab": {
+    "name": "AIRS Model Security MLOps Lab",
+    "version": "2.0.0",
+    "modules": 8,
+    "estimated_time": "4 hours"
+  },
+  "scenario": "",
+  "leaderboard": {
+    "url": "https://airs-leaderboard.seanyoungberg.workers.dev"
+  },
+  "scenarios": {
+    "ts-workshop": {
+      "display_name": "Technical Services Workshop (Instructor-Led)",
+      "hard_stops": true,
+      "leaderboard": true
+    },
+    "ts-self-paced": {
+      "display_name": "Technical Services Self-Paced",
+      "hard_stops": false,
+      "leaderboard": true
+    },
+    "internal": {
+      "display_name": "Internal Teams",
+      "hard_stops": false,
+      "leaderboard": false
+    },
+    "public": {
+      "display_name": "Public / Self-Guided",
+      "hard_stops": false,
+      "leaderboard": false
+    }
+  },
+  "requirements": {
+    "cli_tools": [
+      {
+        "name": "gcloud",
+        "check": "gcloud version",
+        "required": true
+      },
+      {
+        "name": "python3",
+        "check": "python3 --version",
+        "required": true
+      },
+      {
+        "name": "git",
+        "check": "git version",
+        "required": true
+      }
+    ],
+    "gcp": [
+      {
+        "name": "GCP auth",
+        "check": "gcloud auth list",
+        "blocker": "gcp-auth-missing"
+      },
+      {
+        "name": "GCP project",
+        "check": "gcloud config get-value project",
+        "blocker": "gcp-project-invalid"
+      },
+      {
+        "name": "AI Platform API",
+        "check": "gcloud services list --enabled --filter=aiplatform.googleapis.com --format='value(NAME)'",
+        "blocker": false
+      },
+      {
+        "name": "Artifact Registry API",
+        "check": "gcloud services list --enabled --filter=artifactregistry.googleapis.com --format='value(NAME)'",
+        "blocker": false
+      }
+    ],
+    "airs": [
+      {
+        "name": "SCM access",
+        "description": "Login to apps.paloaltonetworks.com",
+        "when": "module-0"
+      },
+      {
+        "name": "TSG with credit pool",
+        "description": "Active tenant with AIRS credits",
+        "when": "module-0"
+      },
+      {
+        "name": "Model Security SA credentials",
+        "description": "Service account with Model Security role",
+        "when": "module-2"
+      }
+    ],
+    "mcp": [
+      {
+        "name": "Web search",
+        "description": "MCP server for web search",
+        "required": true
+      }
+    ]
+  },
+  "scoring": {
+    "version": "1.0",
+    "points": {
+      "engage": 5,
+      "tech": 2,
+      "quiz": 3
+    },
+    "modules": {
+      "0": {
+        "name": "Environment Setup",
+        "slots": {
+          "tech.1": "GCP Auth",
+          "tech.2": "GCP Project",
+          "tech.3": "GCS Buckets",
+          "tech.4": "GCP IAM",
+          "tech.5": "GitHub CLI",
+          "tech.6": "AIRS Secrets",
+          "tech.7": "Upstream Remote",
+          "quiz.1": "Private repo security",
+          "quiz.2": "Pipeline config failures",
+          "engage": "Module engagement"
+        }
+      },
+      "1": {
+        "name": "Model Understanding",
+        "slots": {
+          "quiz.1": "LoRA efficiency",
+          "quiz.2": "Safetensors safety",
+          "quiz.3": "HuggingFace checks",
+          "engage": "Module engagement"
+        }
+      },
+      "2": {
+        "name": "Fine-Tuning",
+        "slots": {
+          "tech.1": "Training Output",
+          "quiz.1": "Adapter vs merged",
+          "quiz.2": "Tokenizer fix",
+          "engage": "Module engagement"
+        }
+      },
+      "3": {
+        "name": "Model Serving",
+        "slots": {
+          "tech.1": "App Deployed",
+          "tech.2": "App Responds",
+          "quiz.1": "Custom model rationale",
+          "quiz.2": "Serving layers",
+          "quiz.3": "Pipeline gates",
+          "engage": "Module engagement"
+        }
+      },
+      "4": {
+        "name": "AIRS Setup",
+        "slots": {
+          "tech.1": "Deployment Profile",
+          "tech.2": "Credentials Validated",
+          "tech.3": "Security Groups",
+          "tech.4": "Violation Details",
+          "quiz.1": "Threat vs governance",
+          "quiz.2": "Multi-env policy",
+          "engage": "Module engagement"
+        }
+      },
+      "5": {
+        "name": "Pipeline Integration",
+        "slots": {
+          "tech.1": "Gate 1 Scanning",
+          "tech.2": "Gate 2 Scanning + Manifest",
+          "tech.3": "Gate 3 Scanning + Verification",
+          "tech.4": "Labels on Scans",
+          "tech.5": "Evaluation Summary",
+          "quiz.1": "Source types & groups",
+          "quiz.2": "Scan failure flow",
+          "engage": "Module engagement"
+        }
+      },
+      "6": {
+        "name": "Threat Analysis",
+        "slots": {
+          "tech.1": "Threat Models",
+          "tech.2": "Scan Results",
+          "tech.3": "Format Comparison",
+          "quiz.1": "__reduce__ mechanism",
+          "quiz.2": "File Format rule",
+          "engage": "Module engagement"
+        }
+      },
+      "7": {
+        "name": "Model Poisoning",
+        "slots": {
+          "tech.1": "Poisoned Model",
+          "tech.2": "Both Pass AIRS",
+          "tech.3": "Behavioral Difference",
+          "quiz.1": "Catches vs misses",
+          "quiz.2": "Customer pitch",
+          "engage": "Module engagement"
+        }
+      }
+    }
+  },
+  "lab_id": "mlops"
+}

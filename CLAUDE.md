@@ -106,13 +106,13 @@ This lab uses a **scenario-based configuration system** instead of hardcoded tra
 
 ### How It Works
 
-1. **`lab.config.yaml`** — Lab-level configuration with available scenarios, requirements, and leaderboard config.
+1. **`lab.config.json`** — Lab-level configuration with available scenarios, requirements, and leaderboard config.
 2. **`scenarios/{name}/config.yaml`** — Scenario-specific settings (GCP folder, naming conventions, etc.).
 3. **`scenarios/{name}/flows/module-N.md`** — Scenario overlay files that augment or override base flow files.
 
 ### Loading Order (for `/lab:module N`)
 
-1. Read `lab.config.yaml` for active scenario
+1. Read `lab.config.json` for active scenario
 2. Read base flow: `.claude/commands/lab/flows/module-N.md`
 3. If `scenarios/{scenario}/flows/module-N.md` exists, read it as supplemental instructions
 4. Read `scenarios/{scenario}/config.yaml` for environment constraints
@@ -120,7 +120,7 @@ This lab uses a **scenario-based configuration system** instead of hardcoded tra
 
 ### Available Scenarios
 
-Defined in `lab.config.yaml`. Students select their scenario during onboarding. Common scenarios:
+Defined in `lab.config.json`. Students select their scenario during onboarding. Common scenarios:
 - **ts-workshop** — Instructor-led Technical Services workshop (hard stops, leaderboard, GCP/CSP constraints)
 - **ts-self-paced** — Self-paced Technical Services learning
 - **internal** — Other internal teams
@@ -128,7 +128,7 @@ Defined in `lab.config.yaml`. Students select their scenario during onboarding. 
 
 ### Hard Stops / Presentation Break
 
-Hard stops are **scenario-dependent**. Check `lab.config.yaml` and the scenario's `config.yaml` for whether hard stops are enabled. For this lab, the key break point is between Modules 3 and 4 (AIRS presentation break).
+Hard stops are **scenario-dependent**. Check `lab.config.json` and the scenario's `config.yaml` for whether hard stops are enabled. For this lab, the key break point is between Modules 3 and 4 (AIRS presentation break).
 
 ---
 
@@ -150,7 +150,7 @@ Read `lab/.progress.json` at conversation start to know where the student is. Co
    - `/lab:verify-N` — check your work for module N
    - `/lab:progress` — see your completion dashboard
 4. **IMMEDIATELY use `AskUserQuestion`** to ask the student's name. Save as `student_id` in `lab/.progress.json`.
-5. **IMMEDIATELY use `AskUserQuestion`** to determine their scenario. Read available scenarios from `lab.config.yaml` and present as choices. Save as `scenario` in `lab/.progress.json`.
+5. **IMMEDIATELY use `AskUserQuestion`** to determine their scenario. Read available scenarios from `lab.config.json` and present as choices. Save as `scenario` in `lab/.progress.json`.
 6. **Write `lab/.progress.json` NOW** with: `student_id`, `scenario`, `lab_id`, and `onboarding_complete: true`. Do not defer this.
 7. Suggest they start with `/lab:module 0`.
 
@@ -176,21 +176,21 @@ Known blocker keys:
 Points come from three sources, awarded at two different times:
 
 **During `/lab:module N` (flow):**
-- **Engagement points** (1 pt each): Awarded at `> ENGAGE:` markers in flow files. Ask the Socratic question, award 1 pt for meaningful participation. These are effort-based — no wrong answers, teach if needed. **Write to `modules.N.engagement_points` in progress.json immediately after each ENGAGE** — do not batch. This ensures points survive context compression or session restarts.
+- **Engagement observations:** At `> ENGAGE:` markers, ask the Socratic question and save a text observation to `modules.N.engagement_notes` array in progress.json. Engagement is scored holistically (0-5 pts) during `/lab:verify-N`.
 
 **During `/lab:verify-N` (verification):**
-- **Technical checks**: Automated pass/fail checks with points per check (defined in verify files)
-- **Quiz questions**: 0-3 points per question with retry flow (defined in verify files — single source of truth)
+- **Technical checks**: Fill scorecard slots `modules.N.scores.tech.{M}` with `{awarded, evidence}` (2 pts each from config)
+- **Quiz questions**: Fill scorecard slots `modules.N.scores.quiz.{M}` (0-3 pts based on attempts)
+- **Engagement**: Assess holistically from `engagement_notes`, fill `modules.N.scores.engage` slot (0-5 pts)
+- Run `python3 lab/verify/compute-score.py N` for totals — agent NEVER computes totals manually
 
 **Anytime (instructor-only):**
 - **Collaboration bonuses**: Awarded by instructor via leaderboard tools (not in this repo)
 
-Total module points = engagement + technical + quiz. Always update:
-- `modules.N.engagement_points` — engagement total from flow
-- `modules.N.points_awarded` — total of ALL points for the module
+All point values come from `lab.config.json` → `scoring.points`. Always update:
+- `modules.N.scores.{slot_id}` — scorecard slots with `{awarded, evidence}`
+- `modules.N.engagement_notes` — text observations from flow ENGAGE markers
 - `modules.N.challenges_completed` — list of completed challenge IDs (e.g., ["0.1", "0.2"])
-- `modules.N.quiz_scores` — dict of per-question scores (e.g., {"q1": 3, "q2": 2})
-- `leaderboard_points` — cumulative total across all modules
 
 On every successful `/lab:verify-N`, call the leaderboard webhook:
 ```
@@ -241,7 +241,7 @@ Bonuses are awarded by the instructor via the leaderboard's `post-bonus.sh` scri
 
 ## Where to Find Information
 
-- **Lab config**: `lab.config.yaml` (scenarios, requirements, leaderboard)
+- **Lab config**: `lab.config.json` (scenarios, requirements, leaderboard)
 - **Scenario configs**: `scenarios/{scenario}/config.yaml` (env-specific settings)
 - **Scenario overlays**: `scenarios/{scenario}/flows/module-N.md` (supplemental instructions)
 - **Student-facing lab guides**: `lab/LAB-N.md` (overview, objectives — present to student on /module)
@@ -349,3 +349,42 @@ Many students are non-native English speakers (especially Spanish and Portuguese
 ## Corporate SSL Inspection
 
 **Windows users / GlobalProtect:** ALWAYS use `curl -k` for HTTPS calls to AIRS API, auth endpoints, leaderboard, and IP lookup services.
+
+---
+
+## Scoring System Enforcement
+
+**Mandatory config reading:**
+- At the start of EVERY lab session, read `lab.config.json` and `lab/.progress.json`
+- If `.progress.json` does not exist, instruct the student to run `/lab:init`
+- Never proceed with a module flow or verify command without reading these files first
+
+**Scoring system explanation:**
+- When a student starts their first module, explain the scoring system:
+  - Technical checks: 2 points each (pass/fail during verify)
+  - Quiz questions: up to 3 points each (based on attempt count during verify)
+  - Engagement: up to 5 points per module (holistic assessment during verify)
+- Emphasize that engagement matters — their questions, connections, and depth of thinking are scored
+
+**Scorecard model:**
+- You (the agent) NEVER compute point totals
+- During verify, you fill in scorecard slots: `modules.N.scores.{slot_id} = {awarded, evidence}`
+- The `compute-score.py` script does all math (reads config + progress, outputs totals)
+- During flows, you save engagement observations to `modules.N.engagement_notes`
+
+**Point values:**
+- ALL point values come from `lab.config.json` → `scoring.points`
+- NEVER hardcode point values in verify or flow instructions
+- If you see a hardcoded point value in an old file, ignore it and read from config instead
+
+**Transparency:**
+- Students can ask about their score at any time
+- Use `python3 lab/verify/compute-score.py {module_num}` to show current totals
+- If leaderboard is configured, students can see their standing on the leaderboard
+
+**Config sync:**
+- The first time a student runs `/lab:verify-N`, the `post-verification.sh` script syncs config to the leaderboard
+- This ensures the leaderboard knows how to compute scores for this lab
+- If the leaderboard is unreachable, the lab runs in standalone mode (local scoring only)
+
+---

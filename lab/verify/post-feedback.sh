@@ -45,11 +45,18 @@ fi
 # Read leaderboard URL from config if not in env
 if [ -z "${LEADERBOARD_URL:-}" ]; then
     LEADERBOARD_URL=$(uv run python3 -c "
-import yaml
-with open('lab.config.yaml') as f:
-    cfg = yaml.safe_load(f)
+import json
+with open('lab.config.json') as f:
+    cfg = json.load(f)
 print(cfg.get('leaderboard', {}).get('url', ''))
 " 2>/dev/null || true)
+    # Grep fallback if python parsing failed
+    if [ -z "$LEADERBOARD_URL" ]; then
+        LEADERBOARD_URL=$(grep -A2 '"leaderboard"' lab.config.json | \
+                        grep '"url"' | \
+                        sed 's/.*"url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | \
+                        head -1 || true)
+    fi
 fi
 
 WEBHOOK_URL="${LEADERBOARD_URL:-https://airs-leaderboard.seanyoungberg.workers.dev}"
