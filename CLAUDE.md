@@ -338,43 +338,79 @@ Gates can auto-chain: Gate 1 → Gate 2 → Gate 3 via `workflow_run` triggers. 
 The free GitHub org has limited Actions minutes. When exhausted, students will see:
 > "The job was not started because recent account payments have failed or your spending limit needs to be increased."
 
-**This does NOT block the lab.** The GitHub Actions runner is just an orchestrator — the real compute (training, scanning) happens on GCP. When Actions minutes are exhausted, run the pipeline steps directly using `gcloud` and local scripts.
+**This does NOT block the lab.** Set up a self-hosted runner on GCE — the workflows stay exactly the same, just running on your own compute instead of GitHub's.
 
-**Fallback: Run gate steps locally or via GCE instead of GitHub Actions:**
+**Fix: Self-hosted GCE runner (preferred)**
 
-**Gate 1 (Train):**
-1. Upload training script: `gcloud storage cp model-tuning/train_advisor.py gs://<STAGING_BUCKET>/training-scripts/`
-2. Upload requirements: `gcloud storage cp model-tuning/requirements.txt gs://<STAGING_BUCKET>/training-scripts/`
-3. Submit Vertex AI job directly via `gcloud ai custom-jobs create` (same command the workflow uses — extract from `.github/workflows/gate-1-train.yaml`)
-4. AIRS scan: run `python airs/scan_model.py` locally after downloading the model
+The workflows don't change — you just swap where they run. Set up a small GCE VM as a GitHub Actions runner:
 
-**Gate 2 (Publish):**
-1. Run `scripts/merge_adapter.py` locally
-2. Run AIRS scan: `python airs/scan_model.py --model-path ./merged-model`
-3. Build and push container: `gcloud builds submit` or `docker build` + `docker push`
-4. Update manifest: `python scripts/manifest.py add-scan ...`
-
-**Gate 3 (Deploy):**
-1. Run AIRS scan on the container image
-2. Deploy to Cloud Run: `gcloud run deploy`
-
-**Key principle:** Tell the student that GitHub Actions is just the automation wrapper. Everything it does can be done directly with `gcloud` CLI commands. The lab learning objectives (understanding the pipeline, AIRS scanning, security gates) are the same regardless of whether Actions or CLI triggers the steps.
-
-**Prefer GCE runner setup when time allows:**
-If the student has time and interest, they can set up a self-hosted GitHub Actions runner on a small GCE VM. This is actually a great learning opportunity:
 ```bash
-# Create a small VM for the runner
+PROJECT=$(gcloud config get-value project)
+ZONE="us-central1-a"
+
+# 1. Create a small VM for the runner
 gcloud compute instances create gh-runner \
-  --zone=us-central1-a \
+  --project=$PROJECT \
+  --zone=$ZONE \
   --machine-type=e2-medium \
   --image-family=ubuntu-2404-lts-amd64 \
   --image-project=ubuntu-os-cloud \
-  --boot-disk-size=50GB
+  --boot-disk-size=50GB \
+  --scopes=cloud-platform
 
-# SSH in and install the runner
-# Follow: https://github.com/organizations/{ORG}/settings/actions/runners/new
+# 2. SSH into the VM
+gcloud compute ssh gh-runner --zone=$ZONE --tunnel-through-iap --project=$PROJECT
 ```
-Then change workflow YAML from `runs-on: ubuntu-latest` to `runs-on: self-hosted`. But this is optional — the direct CLI fallback works fine.
+
+Then ON THE VM, install the GitHub Actions runner. Get the registration token and download URL from the repo's Settings → Actions → Runners → New self-hosted runner. The commands will look like:
+
+```bash
+# On the VM:
+mkdir actions-runner && cd actions-runner
+curl -o actions-runner-linux-x64-2.322.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.322.0/actions-runner-linux-x64-2.322.0.tar.gz
+tar xzf ./actions-runner-linux-x64-2.322.0.tar.gz
+
+# Configure (use the token from GitHub Settings → Actions → Runners)
+./config.sh --url https://github.com/<OWNER>/<REPO> --token <REGISTRATION_TOKEN>
+
+# Install as service and start
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
+
+**IMPORTANT:** Get the exact runner version and registration token from the student's repo:
+`https://github.com/<OWNER>/<REPO>/settings/actions/runners/new?arch=x64&os=linux`
+
+The student needs admin access to their repo to see this page. Guide them to it in their browser.
+
+After the runner is online, update ALL workflow files to use it:
+
+```bash
+# Switch all workflows from GitHub-hosted to self-hosted runner
+cd /path/to/repo
+sed -i '' 's/runs-on: ubuntu-latest/runs-on: self-hosted/g' .github/workflows/gate-*.yaml
+git add .github/workflows/
+git commit -m "fix: use self-hosted GCE runner (GitHub Actions minutes exhausted)"
+git push origin lab
+```
+
+The runner shows up in the repo's Settings → Actions → Runners as "Idle". After `sed` + push, workflows will dispatch to the GCE VM instead of GitHub's runners — zero minutes consumed.
+
+**Install runner dependencies:** The self-hosted runner is a bare Ubuntu VM. Workflows expect tools like Python, gcloud, docker. Install them:
+
+```bash
+# On the VM after runner is configured:
+sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv docker.io jq
+sudo usermod -aG docker $USER
+
+# gcloud is already available if VM was created with --scopes=cloud-platform
+# If not: curl https://sdk.cloud.google.com | bash
+```
+
+**Cleanup after lab:** Delete the VM when done to avoid charges:
+```bash
+gcloud compute instances delete gh-runner --zone=$ZONE --project=$PROJECT --quiet
+```
 
 ### Training Duration
 

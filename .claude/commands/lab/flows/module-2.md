@@ -145,56 +145,15 @@ Trigger the Gate 1 workflow via GitHub Actions. Then monitor it: check the GitHu
 
 ### GitHub Actions Minutes Exhausted?
 
-If the student sees "spending limit needs to be increased" or the workflow won't start, **don't panic — the training runs on GCP, not GitHub.** GitHub Actions is just the trigger. Run the steps directly:
+If the student sees "spending limit needs to be increased" or the workflow won't start, set up a **self-hosted runner on GCE**. This keeps the workflows exactly the same — just running on the student's own VM instead of GitHub's runners.
 
-```bash
-BRANCH=$(git branch --show-current)
-PROJECT=$(gcloud config get-value project)
-STAGING_BUCKET=$(python3 -c "import yaml; print(yaml.safe_load(open('.github/pipeline-config.yaml'))['staging_bucket'])")
+See CLAUDE.md section "GitHub Actions Runner Exhaustion" for the full setup. Quick version:
 
-# 1. Upload training scripts to GCS
-gcloud storage cp model-tuning/train_advisor.py ${STAGING_BUCKET}/training-scripts/
-gcloud storage cp model-tuning/requirements.txt ${STAGING_BUCKET}/training-scripts/
-
-# 2. Submit Vertex AI training job directly
-RUN_ID=$(date +%Y%m%d-%H%M%S)
-OUTPUT_NAME="my-security-advisor"
-OUTPUT_PATH="${STAGING_BUCKET}/raw-models/${OUTPUT_NAME}/${RUN_ID}"
-BUCKET_NAME="${STAGING_BUCKET#gs://}"
-
-gcloud ai custom-jobs create \
-  --region=us-central1 \
-  --display-name="train-${OUTPUT_NAME}-${RUN_ID}" \
-  --config=<(python3 -c "
-import json, os
-config = {
-    'workerPoolSpecs': [{
-        'machineSpec': {
-            'machineType': 'a2-highgpu-1g',
-            'acceleratorType': 'NVIDIA_TESLA_A100',
-            'acceleratorCount': 1
-        },
-        'replicaCount': 1,
-        'containerSpec': {
-            'imageUri': 'us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-4.py310:latest',
-            'command': ['bash', '-c', ' && '.join([
-                'set -e',
-                'pip install -q -r /gcs/${BUCKET}/training-scripts/requirements.txt'.replace('\${BUCKET}', '${BUCKET_NAME}'),
-                'python /gcs/${BUCKET}/training-scripts/train_advisor.py'.replace('\${BUCKET}', '${BUCKET_NAME}')
-                + ' --base-model=\"Qwen/Qwen2.5-3B-Instruct\"'
-                + ' --dataset=\"ethanolivertroy/nist-cybersecurity-training\"'
-                + ' --max-steps=50'
-                + ' --output-dir=\"/gcs/${BUCKET}/raw-models/${OUTPUT_NAME}/${RUN_ID}\"'.replace('\${BUCKET}', '${BUCKET_NAME}').replace('\${OUTPUT_NAME}', '${OUTPUT_NAME}').replace('\${RUN_ID}', '${RUN_ID}')
-                + ' --no-4bit'
-            ])]
-        }
-    }]
-}
-print(json.dumps(config, indent=2))
-")
-```
-
-Then monitor with `gcloud ai custom-jobs list` as normal. The learning objectives are the same — you're just skipping the GitHub Actions wrapper.
+1. Create GCE VM: `gcloud compute instances create gh-runner --zone=us-central1-a --machine-type=e2-medium --image-family=ubuntu-2404-lts-amd64 --image-project=ubuntu-os-cloud --boot-disk-size=50GB --scopes=cloud-platform`
+2. SSH in, install the GitHub Actions runner (get token from repo Settings → Actions → Runners)
+3. Install deps: `sudo apt-get install -y python3 python3-pip python3-venv docker.io jq`
+4. Switch workflows: `sed -i '' 's/runs-on: ubuntu-latest/runs-on: self-hosted/g' .github/workflows/gate-*.yaml` then commit + push
+5. Re-trigger the Gate 1 workflow — it now runs on the GCE VM, zero GitHub minutes consumed
 
 ### Baseline Check (IMPORTANT — do this before moving to 2.3)
 

@@ -206,7 +206,7 @@ Teach these BEFORE triggering the workflows. One at a time, wait for response.
 
 Now that the student understands what will happen, execute the pipeline.
 
-**If GitHub Actions minutes are exhausted** (student sees "spending limit" error), run gate steps directly via `gcloud`. See CLAUDE.md "GitHub Actions Runner Exhaustion" section for the full fallback. For Gate 2: run `scripts/merge_adapter.py` locally, then `gcloud builds submit` to build and push the container. For Gate 3: `gcloud run deploy` directly. The learning objectives are identical — Actions is just the automation wrapper.
+**If GitHub Actions minutes are exhausted** (student sees "spending limit" error), set up a self-hosted GCE runner. See CLAUDE.md "GitHub Actions Runner Exhaustion" section. If the runner was already set up in Module 2, workflows will just work — no changes needed for Gate 2/3.
 
 1. **Trigger Gate 2** — Merge and publish the trained model:
    ```bash
