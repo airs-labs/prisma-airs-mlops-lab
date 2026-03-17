@@ -128,10 +128,15 @@ with open(progress_file, 'w') as f:
 ```bash
 gcloud iam service-accounts list --project=$(gcloud config get-value project) --format="value(email)" | grep github-actions-sa
 gcloud iam workload-identity-pools list --location=global --format="value(name)" 2>/dev/null
-gh secret list | grep -E "GCP_WORKLOAD_IDENTITY_PROVIDER|GCP_SERVICE_ACCOUNT"
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+gh secret list -R "$REPO" | grep -E "GCP_WORKLOAD_IDENTITY_PROVIDER|GCP_SERVICE_ACCOUNT"
+# Verify secrets are at REPO level (not user/org level)
+REPO_SECRET_COUNT=$(gh api repos/$REPO/actions/secrets --jq '.total_count' 2>/dev/null)
+echo "Repository-level secrets: $REPO_SECRET_COUNT"
 ```
 
-**Pass Criteria:** SA exists + WIF pool exists + GCP secrets set
+**Pass Criteria:** SA exists + WIF pool exists + GCP secrets set + repo-level secret count > 0
+**If secret count is 0 but `gh secret list` shows secrets:** Secrets are at the wrong scope (user/org level). Re-set them with `-R "$REPO"` flag:
 **Fail Criteria:** Missing any of the above
 **Blocker:** gcp-iam-invalid (if fail - HARD BLOCKER for Modules 2+)
 

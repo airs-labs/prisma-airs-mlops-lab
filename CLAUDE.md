@@ -294,6 +294,26 @@ When any workflow fails with `PERMISSION_DENIED`, check IAM first:
 
 **Fix pattern:** Identify the SA from the error, grant the missing role, wait 2 min for propagation, retry the workflow.
 
+### GitHub Secrets Scope (sneaky auth failures)
+
+`gh secret set` without `--repo` can set secrets at the user/org level instead of the repository level. These secrets show up in `gh secret list` but workflows **cannot access them** — they evaluate to empty strings, causing auth failures like:
+> `the GitHub Action workflow must specify exactly one of "workload_identity_provider" or "credentials_json"`
+
+**Diagnosis:**
+```bash
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+gh api repos/$REPO/actions/secrets --jq '.total_count'
+# If 0 but gh secret list shows secrets → wrong scope
+```
+
+**Fix:** Re-set secrets with explicit repo scope:
+```bash
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+echo "$VALUE" | gh secret set SECRET_NAME -R "$REPO"
+```
+
+**Prevention:** ALL `gh secret set` commands in the lab MUST use `-R "$REPO"`. This is already enforced in Challenge 0.2b and 0.4 — if a student set secrets without `-R` before reaching those challenges, the verify check will catch it.
+
 ### Upstream Remote — READ ONLY
 
 Student repos have two remotes: `origin` (their private repo) and `upstream` (the shared template). The `upstream` remote is **read-only** — it exists solely to pull instructor hotfixes via `git fetch upstream`.

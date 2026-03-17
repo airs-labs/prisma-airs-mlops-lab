@@ -430,12 +430,13 @@ with open(progress_file, 'w') as f:
 5. **Set GitHub secrets for WIF:**
    ```
    WIF_PROVIDER="projects/${PROJECT_NUM}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
+   REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
-   echo "$WIF_PROVIDER" | gh secret set GCP_WORKLOAD_IDENTITY_PROVIDER
-   echo "github-actions-sa@${PROJECT}.iam.gserviceaccount.com" | gh secret set GCP_SERVICE_ACCOUNT
-   gh secret list
+   echo "$WIF_PROVIDER" | gh secret set GCP_WORKLOAD_IDENTITY_PROVIDER -R "$REPO"
+   echo "github-actions-sa@${PROJECT}.iam.gserviceaccount.com" | gh secret set GCP_SERVICE_ACCOUNT -R "$REPO"
+   gh secret list -R "$REPO"
    ```
-   Verify GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT are now listed. Combined with AIRS secrets from Challenge 0.4, all expected secrets should be present.
+   **IMPORTANT:** Always use `-R "$REPO"` with `gh secret set`. Without it, secrets may be set at the user/org level — they'll appear in `gh secret list` but workflows can't access them. Verify with: `gh api repos/$REPO/actions/secrets --jq '.total_count'` (should match the number of secrets you set).
 
 ### Hard Blocker Check
 
