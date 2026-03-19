@@ -93,11 +93,15 @@ def compute_module_score(module_num: str, config: Dict[str, Any], progress: Dict
             # Unknown slot type, skip
             continue
 
-        earned_points = scorecard.get(slot_id)
+        score_entry = scorecard.get(slot_id)
 
-        # Handle null/missing scores (count as 0)
-        if earned_points is None:
+        # Handle both dict format {awarded, evidence} and legacy int format
+        if score_entry is None:
             earned_points = 0
+        elif isinstance(score_entry, dict):
+            earned_points = score_entry.get("awarded", 0)
+        else:
+            earned_points = score_entry
 
         # Cap at max for this slot
         earned_points = min(earned_points, max_slot_points)
