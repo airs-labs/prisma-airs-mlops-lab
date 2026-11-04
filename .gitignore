@@ -31,6 +31,9 @@ env/
 .env.*
 !.env.example
 
+# AIRS report credentials (never commit)
+credentials.json
+
 # IDE
 .idea/
 .vscode/
@@ -83,3 +86,4 @@ lab/.visuals/
 # Student progress (template kept as .progress.json.example)
 lab/.progress.json
 .wrangler/
+reports/
